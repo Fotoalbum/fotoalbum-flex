@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   width="450" maxWidth="450" backgroundColor="#FFFFFF" borderColor="0x4E4E4E"
+				   borderVisible="true" cornerRadius="0" dropShadowVisible="true"
+				   hideEffect="{FadeOut}" showEffect="{FadeIn}">
+	<s:layout>
+		<s:VerticalLayout gap="5" horizontalAlign="left" 
+						  paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" />
+	</s:layout>
+	
+	<fx:Declarations>
+		<s:Fade id="FadeIn" alphaFrom="0" alphaTo="1" />
+		<s:Fade id="FadeOut" alphaFrom="1" alphaTo="0" />
+		<mx:NumberFormatter id="numberFormatter" precision="2" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import mx.events.FlexEvent;
+			
+			import spark.filters.DropShadowFilter;
+			
+			[Bindable] private var singleton:Singleton = Singleton.getInstance();
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				var shadow:DropShadowFilter = new DropShadowFilter(5, 90, 0x000000, .5, 20, 20, 1, 1, false, false, false);
+				this.filters = [shadow];
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" paddingLeft="20" paddingRight="20" paddingTop="20" paddingBottom="20">
+		<s:Label id="header" color="#4E4E4E" fontSize="18" text="Wijzigingen opslaan" fontFamily="_AppFontBold"/>
+	</s:HGroup>
+	
+	<mx:HRule width="100%" />
+	
+	<s:HGroup width="100%" paddingLeft="20" paddingRight="20" paddingTop="20" paddingBottom="20">
+		<s:VGroup gap="10" width="100%">
+			<s:TextArea id="message" width="100%" borderVisible="false" color="#4E4E4E" minHeight="0"
+						contentBackgroundAlpha="0.0" editable="false" fontSize="16" lineHeight="22"
+						selectable="false" text="Wil je de wijzigingen opslaan in je fotoalbum?"
+						textAlign="left" verticalAlign="top" change="{message.height = message.scroller.viewport.contentHeight + 2;}" />
+			
+			<s:TextArea id="uploadLbl" width="100%"  color="#4E4E4E" fontSize="18" text="Je project wordt opgeslagen en de voorbeelden voor in je bibliotheek worden nu geupload.\n\nDit kan even duren, afhankelijk van je internet verbinding.\n\nAls het uploaden klaar is wordt je automatisch doorgestuurd naar je winkelwagen." 
+						visible="false" height="0" verticalAlign="bottom"/>
+			
+			<mx:ProgressBar id="progress" visible="false" height="0" width="100%"
+							label="" chromeColor="#64AADD" color="#4E4E4E" indeterminate="false"
+							maximum="100" minimum="0" mode="manual"/>		
+		</s:VGroup>
+	</s:HGroup>
+	
+	<mx:HRule width="100%" visible="true" />
+	
+	<s:HGroup id="btnGroup" width="100%" verticalAlign="middle" horizontalAlign="right" gap="10" paddingLeft="20" paddingRight="20" paddingTop="10" paddingBottom="10">
+		<s:Button id="btnCancel" label="Annuleren" skinClass="skins.btnGraySkin" />
+		<s:Button id="btnOk" label="OK" skinClass="skins.btnBlueSkin" />
+	</s:HGroup>	
+		
+</s:BorderContainer>
+

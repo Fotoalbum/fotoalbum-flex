@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true"
+				width="22" height="22">
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.undoActions;
+			
+			import events.updateElementsEvent;
+			
+			import mx.core.FlexGlobals;
+			
+			import spark.components.Image;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			
+			override public function set data(value:Object):void 
+			{
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				creationCompleteHandler();
+				
+			}
+			
+			protected function creationCompleteHandler():void
+			{
+				
+				colorRect.setStyle("backgroundColor", uint(data));
+			}
+			
+			protected function colorRect_mouseDownHandler(event:MouseEvent):void
+			{
+			
+				if (singleton.selected_element) {
+					
+					// STORE THE OLD DATA FOR LATER UNDO //
+					var oldData:Object = singleton.CloneObject(singleton.selected_element.data);
+					
+					singleton.selected_element.data.bordercolor = uint(event.currentTarget.selectedItem);
+					
+					//Update the border
+					singleton.selected_element.DrawBorder();
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+					
+					singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+					
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer id="colorRect" width="20" height="20" borderVisible="false"
+					   borderWeight="1" borderColor="0xFFFFFF" horizontalCenter="0" verticalCenter="0"
+					   mouseUp="colorRect_mouseDownHandler(event)"/>
+	
+</s:ItemRenderer>

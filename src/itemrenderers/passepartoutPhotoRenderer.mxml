@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				creationComplete="_creationCompleteHandler()">
+	
+	<fx:Declarations>
+		<s:Fade id="showEff" alphaFrom="0.0" alphaTo="1.0" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.barMenuEvent;
+			import events.dragdropExposeEvent;
+			
+			import mx.core.DragSource;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.DragEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.managers.DragManager;
+			
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void 
+			{
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			protected function _creationCompleteHandler():void
+			{
+			
+				if (data) {
+					
+					if (data.thumb_url && data.hires != "") {
+						var request:URLRequest = new URLRequest(encodeURI(singleton.assets_url + data.thumb_url));
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+					} else {
+						
+						if (data.overlay_thumb_url && data.overlay_hires != "") {
+							
+							request = new URLRequest(singleton.assets_url + data.overlay_thumb_url);
+							context = new LoaderContext();
+							context.checkPolicyFile = true;
+							if (Capabilities.isDebugger == false) {
+								context.securityDomain = SecurityDomain.currentDomain;
+								context.applicationDomain = ApplicationDomain.currentDomain;
+							}
+							
+							loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+							loader.load(request, context);
+						}
+					}
+					
+				}
+			}
+			
+			private function onComplete(e:Event):void 
+			{
+				
+				img.source = e.target.content;
+				img.scaleMode = BitmapScaleMode.LETTERBOX;
+				img.horizontalAlign = HorizontalAlign.CENTER;
+				img.verticalAlign = VerticalAlign.MIDDLE;
+				img.visible = true;
+				
+				if (data) {
+					
+					if (data.overlay_thumb_url && data.overlay_hires != "") {
+						
+						var request:URLRequest = new URLRequest(singleton.assets_url + data.overlay_thumb_url);
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteOverlay);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+					}
+				}
+				
+			}
+			
+			private function onCompleteOverlay(e:Event):void 
+			{
+				
+				img_overlay.source = e.target.content;
+				img_overlay.visible = true;
+				
+			}		
+			
+			private function onError(e:Event):void {
+				//trace(e);
+			}
+			
+			protected function img_mouseDownHandler(event:MouseEvent):void
+			{
+				
+				FlexGlobals.topLevelApplication.explodedView.removeAllElements();
+				FlexGlobals.topLevelApplication.explodedView.visible = false;
+				
+				event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.addEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+			}
+			
+			private function DragItem(event:MouseEvent):void 
+			{
+				try {
+			
+					//Start drag
+					var ds:DragSource = new DragSource();
+					
+					ds.addData("PASSEPARTOUTS", "type");
+					
+					var maxWidth:Number = (parentApplication.vsEditor.width - 255) / 4;
+					var maxHeight:Number = (parentApplication.vsEditor.height - 120) / 4;
+					
+					var z:Number = 0;
+					var w:Number = 0;
+					var h:Number = 0;
+					var found:Boolean = false;
+					
+					var sourceWidth:Number;
+					var sourceHeight:Number;
+					
+					if (data.width != 0) {
+						sourceWidth = data.width;
+						sourceHeight = data.height;
+					} else {
+						sourceWidth = data.overlay_width;
+						sourceHeight = data.overlay_height;
+					}
+					
+					while (found == false) 
+					{
+						w = sourceWidth * z;
+						h = sourceHeight * z;
+						if (w >= maxWidth || h >= maxHeight) {
+							z -= 0.01;
+							w = sourceWidth * z;
+							h = sourceHeight * z;
+							found = true;
+						}
+						z += 0.01;
+					}
+					
+					var bmdata:BitmapData;
+					var o:Object;
+					if (img.source) {
+						o = img.source as Object;
+					} else {
+						o = img_overlay.source as Object;
+					}
+					
+					if (o.constructor.toString() == "[class ByteArray]") {
+						if (img.source) {
+							bmdata = img.bitmapData.clone();
+						} else {
+							bmdata = img_overlay.bitmapData.clone();
+						}
+					} else {
+						if (img.source) {
+							bmdata = Bitmap(img.source).bitmapData;
+						} else {
+							bmdata = Bitmap(img_overlay.source).bitmapData;
+						}
+						
+					}
+					
+					var bitmap:Bitmap;
+					
+					if (img.source) {
+						bitmap = new Bitmap(img.source.bitmapData);
+					} else {
+						bitmap = new Bitmap(img_overlay.source.bitmapData);
+					}
+					
+					var clone:Image = new Image();
+					clone.scaleMode = BitmapScaleMode.STRETCH;
+					clone.width = w;
+					clone.height = h;
+					clone.source = bitmap;
+					clone.validateNow();
+					
+					//Start dragging
+					var xOffset:int = -1 * mouseX + (w / 2);
+					var yOffset:int = -1 * mouseY + (h / 2);
+					
+					ds.addData(clone, "snap");
+					
+					var dataClone:Object = new Object();
+					dataClone = singleton.CloneObject(data);
+					ds.addData(dataClone, "data");
+					
+					var sizeObj:Object = new Object();
+					sizeObj.w = w;
+					sizeObj.h = h;
+					ds.addData(sizeObj, "sizes");
+					
+					DragManager.doDrag(event.currentTarget as UIComponent, ds, event, clone, xOffset, yOffset, 0.5, false);
+					
+					event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+					
+					//Call the viewer page to expose the background
+					FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.PHOTOS));
+					
+					if (singleton.selected_spread_editor) {
+						singleton.selected_spread_editor.elementcontainer.mouseEnabled = true;
+					}
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARDISABLED));
+					
+				} catch (err:Error) {
+					
+					//Do nothing for now
+				}
+			}
+			
+			private function dragComplete(event:DragEvent):void {
+				
+				event.currentTarget.removeEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+				
+				if (singleton.selected_spread_editor) {
+					singleton.selected_spread_editor.elementcontainer.mouseEnabled = false;
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+			}
+			
+			protected function img_mouseUpHandler(event:MouseEvent):void
+			{
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+				
+				if (singleton.selected_spread_editor) {
+					singleton.selected_spread_editor.elementcontainer.mouseEnabled = false;
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+			}
+			
+			
+			protected function img_rollOverHandler(event:MouseEvent):void
+			{
+				//Show exploded example
+				var bitmap:Bitmap = new Bitmap(img.bitmapData.clone());
+				var clone:Image = new Image();
+				clone.scaleMode = BitmapScaleMode.LETTERBOX;
+				clone.horizontalCenter = 0;
+				clone.verticalCenter = 0;
+				clone.width = 200;
+				clone.height = 200;
+				clone.source = bitmap;
+				clone.mouseEnabled = false;
+				clone.cacheAsBitmap = true;
+				clone.filters = [FlexGlobals.topLevelApplication.dropShadow];
+				clone.validateNow();
+				
+				FlexGlobals.topLevelApplication.explodedView.removeAllElements();
+				FlexGlobals.topLevelApplication.explodedView.addElement(clone);
+				FlexGlobals.topLevelApplication.explodedView.x = FlexGlobals.topLevelApplication.mouseX;
+				FlexGlobals.topLevelApplication.explodedView.y = FlexGlobals.topLevelApplication.mouseY;
+				
+				if ((FlexGlobals.topLevelApplication.explodedView.y + 200) > FlexGlobals.topLevelApplication.height) {
+					FlexGlobals.topLevelApplication.explodedView.y = FlexGlobals.topLevelApplication.mouseY - 200;
+				}
+				FlexGlobals.topLevelApplication.explodedView.visible = true;
+				FlexGlobals.topLevelApplication.mouseEnabled = false;
+				
+				border.visible = true;
+				
+			}
+			
+			protected function img_rollOutHandler(event:MouseEvent):void
+			{
+				//Hide exploded example
+				FlexGlobals.topLevelApplication.explodedView.removeAllElements();
+				FlexGlobals.topLevelApplication.explodedView.visible = false;
+				
+				border.visible = false;
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer id="border" visible="false" width="55" height="55" borderColor="0xFFFFFF" borderWeight="2" 
+					   borderAlpha="1" backgroundAlpha="0" cornerRadius="0" mouseEnabled="false" />
+		
+	<s:Image id="img" width="55" height="55" scaleMode="letterbox" visible="false" showEffect="{showEff}" 
+			 horizontalCenter="0" verticalCenter="0" clearOnLoad="true"
+			 mouseDown="img_mouseDownHandler(event)" mouseUp="img_mouseUpHandler(event)"
+			 rollOver="img_rollOverHandler(event)" rollOut="img_rollOutHandler(event)" />
+	
+	<s:Image id="img_overlay" width="55" height="55" scaleMode="letterbox" visible="false" 
+			 showEffect="{showEff}" clearOnLoad="true"
+			 horizontalCenter="0" verticalCenter="0"
+			 mouseEnabled="false" enabled="false" />
+	
+</s:ItemRenderer>

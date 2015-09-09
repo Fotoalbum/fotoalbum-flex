@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true"
+				minHeight="25"
+				useHandCursor="true"
+				buttonMode="true"
+				creationComplete="creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import flash.text.engine.FontDescription;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+		
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				if (data) {
+					
+					lab.setStyle("fontFamily", "_e" + data.name);
+					lab.setStyle("color", "#000000");
+					lab.setStyle("fontSize", "16");
+					
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Label id="lab" left="5" fontSize="12" text="{data.name}" verticalCenter="0"/>
+	
+</s:ItemRenderer>

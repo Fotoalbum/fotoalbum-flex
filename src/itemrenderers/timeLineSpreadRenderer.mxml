@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				creationComplete="_creationCompleteHandler(event)"
+				mouseUp="_mouseUpHandler(event)"
+				width="100%">
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.userphotoclass;
+			
+			import events.SelectTimelineSpreadEvent;
+			import events.updateSpreadFromTimelineEvent;
+			import events.updateTimelineEvent;
+			import events.updateTimelineHeightEvent;
+			
+			import flash.utils.setTimeout;
+			
+			import flashx.textLayout.formats.TextAlign;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.core.mx_internal;
+			import mx.events.DragEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.managers.DragManager;
+			import mx.utils.UIDUtil;
+			
+			import spark.components.Image;
+			import spark.components.Label;
+			import spark.components.TextArea;
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var data:Object;
+			protected function _creationCompleteHandler(event:FlexEvent = null):void
+			{
+				
+				FlexGlobals.topLevelApplication.addEventListener(updateTimelineEvent.UPDATETIMELINESPREAD, UpdateTimelineSpread);
+				FlexGlobals.topLevelApplication.addEventListener(SelectTimelineSpreadEvent.SELECTTIMELINESPREAD, SelectTimelineSpread);
+				
+				lstPages.removeAllElements();
+				
+				for (var x:int=0; x < data.pages..page.length(); x++) {
+					
+					var p:timeLinePageRenderer = new timeLinePageRenderer();
+					p.data = data.pages..page[x];
+					if (p.data.@type != "coverspine") {
+						lstPages.addElement(p);
+					}
+					
+					if (p.data.@singlepageFirst == "true" || p.data.@singlepageLast == "true") {
+						spreadBackgroundContainer.visible = false;
+					}
+					
+				}
+				
+				background.removeAllElements();
+				
+				btnBackgroundDelete.visible = false;
+				
+				background.graphics.clear();
+				
+				if (data.@backgroundColor.toString() != "-1") {
+					
+					background.graphics.beginFill(data.@backgroundColor, data.@backgroundAlpha);
+					background.graphics.drawRect(0, 0, background.width, background.height);
+					background.graphics.endFill();
+					
+					btnBackgroundDelete.visible = true;
+					
+					var l:TextArea = new TextArea();
+					background.addElement(l);
+					
+					l.text = "S\nP\nR\nE\nA\nD\nA\nC\nH\nT\nE\nR\nG\nR\nO\nN\nD";
+					l.mouseEnabled = false;
+					l.editable = false;
+					l.selectable = false;
+					l.width = 60;
+					l.percentHeight = 100;
+					l.setStyle("contentBackgroundAlpha", 0);
+					l.setStyle("horizontalScrollPolicy", "off");
+					l.setStyle("verticalScrollPolicy", "off");
+					l.setStyle("borderVisible", false);
+					l.setStyle("fontSize", 8);
+					l.setStyle("color", 0x58595B);
+					l.setStyle("textAlign", TextAlign.CENTER);
+					l.setStyle("verticalAlign", VerticalAlign.MIDDLE);
+					
+				}
+				
+				//Set the spread background if we have one
+				if (data.background.@id.toString() != "") {
+					
+					var src:String = "";
+					
+					//Set the background
+					if (data.background.@status == "new") {
+						
+						background.validateNow();
+						
+						var img:Image = new Image();
+						background.addElement(img);
+						
+						img.source = singleton.GetOriginalBitmapData(data.background.@original_image_id);
+						img.mouseEnabled = false;
+						img.scaleMode = BitmapScaleMode.ZOOM;
+						img.cacheAsBitmap = true;
+						img.horizontalAlign = HorizontalAlign.CENTER;
+						img.verticalAlign = VerticalAlign.MIDDLE;
+						img.width = 60;
+						img.percentHeight = 100;
+						img.validateNow();
+						
+						l = new TextArea();
+						background.addElement(l);
+						
+						l.text = "S\nP\nR\nE\nA\nD\nA\nC\nH\nT\nE\nR\nG\nR\nO\nN\nD";
+						l.mouseEnabled = false;
+						l.editable = false;
+						l.selectable = false;
+						l.width = 60;
+						l.percentHeight = 100;
+						l.setStyle("horizontalScrollPolicy", "off");
+						l.setStyle("verticalScrollPolicy", "off");
+						l.setStyle("borderVisible", false);
+						l.setStyle("contentBackgroundAlpha", 0);
+						l.setStyle("fontSize", 8);
+						l.setStyle("color", 0x58595B);
+						l.setStyle("textAlign", TextAlign.CENTER);
+						l.setStyle("verticalAlign", VerticalAlign.MIDDLE);
+						
+						btnBackgroundDelete.visible = true;
+						
+					} else {
+						
+						if (data.background.@origin == "3rdparty") {
+							src = data.background.@thumb_url;
+						} else {
+							if (data.background.@thumb_url.toString() != "") {
+								src = singleton.assets_url + data.background.@thumb_url;
+							}
+						}
+						
+						var request:URLRequest = new URLRequest(src);
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+						loader.load(request, context);
+					}
+					
+				}
+				 
+			}
+			
+			private function SelectTimelineSpread(event:SelectTimelineSpreadEvent):void {
+			
+				if (event.spreadID == data.@spreadID) {
+					selector.setStyle("backgroundColor", singleton.baseColor);
+				} else {
+					selector.setStyle("backgroundColor", "#D2D2D2");
+				}
+			}
+			
+			private function UpdateTimelineSpread(event:updateTimelineEvent):void {
+			
+				if (event.spreadID == data.@spreadID) {
+					_creationCompleteHandler();
+				}
+			}
+			
+			private function onBackgroundComplete(event:Event):void 
+			{
+				
+				background.validateNow();
+				
+				var img:Image = new Image();
+				background.addElement(img);
+				
+				img.source = event.target.content;
+				img.mouseEnabled = false;
+				img.scaleMode = BitmapScaleMode.ZOOM;
+				img.cacheAsBitmap = true;
+				img.horizontalAlign = HorizontalAlign.CENTER;
+				img.verticalAlign = VerticalAlign.MIDDLE;
+				img.width = 60;
+				img.percentHeight = 100;
+				img.validateNow();
+				
+				var l:TextArea = new TextArea();
+				background.addElement(l);
+				
+				l.text = "S\nP\nR\nE\nA\nD\nA\nC\nH\nT\nE\nR\nG\nR\nO\nN\nD";
+				l.mouseEnabled = false;
+				l.editable = false;
+				l.selectable = false;
+				l.width = 60;
+				l.percentHeight = 100;
+				l.setStyle("contentBackgroundAlpha", 0);
+				l.setStyle("horizontalScrollPolicy", "off");
+				l.setStyle("verticalScrollPolicy", "off");
+				l.setStyle("borderVisible", false);
+				l.setStyle("fontSize", 8);
+				l.setStyle("color", 0x58595B);
+				l.setStyle("textAlign", TextAlign.CENTER);
+				l.setStyle("verticalAlign", VerticalAlign.MIDDLE);
+				
+				btnBackgroundDelete.visible = true;
+				
+			}
+			
+			private function ErrorImageLoad(event:IOErrorEvent):void 
+			{
+				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n " + event.text);
+			}
+				
+			protected function _resizeHandler(event:ResizeEvent):void
+			{
+			
+				this.validateNow();
+				
+				backgroundRollover.verticalCenter = 0;
+				
+				background.graphics.clear();
+				
+				if (data.@backgroundColor.toString() != "-1") {
+					
+					background.removeAllElements();
+					
+					background.graphics.beginFill(data.@backgroundColor, data.@backgroundAlpha);
+					background.graphics.drawRect(0, 0, background.width, background.height);
+					background.graphics.endFill();
+					
+					btnBackgroundDelete.visible = true;
+					
+					var l:TextArea = new TextArea();
+					background.addElement(l);
+					
+					l.text = "S\nP\nR\nE\nA\nD\nA\nC\nH\nT\nE\nR\nG\nR\nO\nN\nD";
+					l.mouseEnabled = false;
+					l.editable = false;
+					l.selectable = false;
+					l.width = 60;
+					l.percentHeight = 100;
+					l.setStyle("contentBackgroundAlpha", 0);
+					l.setStyle("horizontalScrollPolicy", "off");
+					l.setStyle("verticalScrollPolicy", "off");
+					l.setStyle("borderVisible", false);
+					l.setStyle("fontSize", 8);
+					l.setStyle("color", 0x58595B);
+					l.setStyle("textAlign", TextAlign.CENTER);
+					l.setStyle("verticalAlign", VerticalAlign.MIDDLE);
+					
+				}
+				
+				container.invalidateSize();
+				
+				selector.percentHeight = 100;
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateTimelineHeightEvent(updateTimelineHeightEvent.SETNEWTIMELINEHEIGHT, parent.getChildIndex(this), lstPages.height, data.@spreadID, this.width));
+				
+			}
+			
+			protected function spreadBackground_dragEnterHandler(event:DragEvent):void
+			{
+				
+				if (data.@backgroundColor == "-1") {
+					background.graphics.clear();
+					background.graphics.beginFill(0x04880D, .8);
+					background.graphics.drawRect(0, 0, 60, background.height + 1);
+					background.graphics.endFill();
+				} else {
+					background.graphics.clear();
+					background.graphics.beginFill(data.@backgroundColor, .8);
+					background.graphics.drawRect(0, 0, 60, background.height + 1);
+					background.graphics.endFill();
+				}
+				
+				DragManager.acceptDragDrop(event.currentTarget as UIComponent);
+				
+			}
+			
+			protected function spreadBackground_dragDropHandler(event:DragEvent):void
+			{
+				
+				background.graphics.clear();
+				
+				singleton._changesMade = true;
+				singleton.UpdateWindowStatus();
+				
+				var pageWidth:Number = 0;
+				var pageHeight:Number = 0;
+				
+				var pages:XMLList = data..page;
+				
+				if (pages[0].@type == "coverback") {
+					pageWidth = ((singleton._defaultCoverWidth + singleton._defaultCoverWrap + singleton._defaultCoverBleed) * 2) + singleton._defaultCoverSpine;
+					pageHeight = singleton._defaultCoverHeight + (2 * (singleton._defaultCoverWrap + singleton._defaultCoverBleed));
+				} else {
+					pageWidth = 2 * (singleton._defaultPageWidth + singleton._defaultPageBleed);
+					pageHeight = singleton._defaultPageHeight + (2 * singleton._defaultPageBleed);
+				}
+				
+				//Delete the background photos from the pages
+				for each (var p:XML in pages) {
+					p.background = <background/>;
+				}
+				
+				if (event.dragSource.dataForFormat("type").toString() == "BACKGROUNDCOLOR") {
+					
+					data.@backgroundColor = event.dragSource.dataForFormat("color");
+					data.@backgroundAlpha = 1;
+					
+					//UPDATE THE RGB/CMYK VALUES AS WELL!!
+					var newcolor:Object = new Object();
+					newcolor.id = event.dragSource.dataForFormat("color");
+					newcolor.rgb = singleton.GetRgb(newcolor.id);
+					newcolor.cmyk = singleton.GetCMYK(newcolor.id);
+					singleton.colorcollection.addItem(newcolor);
+					
+					if (data.background.toXMLString() != "") {
+						delete data.background;
+					}
+					
+					//Remove the pages backgroundcolors
+					for each (var page:XML in data.pages..page) {
+						page.@backgroundColor = "-1";
+						page.@backgroundAlpha = "1";
+						if (page.background.toXMLString() != "") {
+							delete page.background;
+						}
+					}
+					
+				}
+				
+				if (event.dragSource.dataForFormat("type").toString() == "BACKGROUND") {
+					
+					//Create a new background object
+					data.background = <background/>;
+					data.background.@bytesize = event.dragSource.dataForFormat("data").bytesize;
+					data.background.@dateCreated = event.dragSource.dataForFormat("data").created;
+					data.background.@fliphorizontal = "0";
+					data.background.@folderID = "";
+					data.background.@folderName = "";
+					data.background.@fullPath = "";
+					data.background.@hires = event.dragSource.dataForFormat("data").hires;
+					data.background.@hires_url = event.dragSource.dataForFormat("data").hires_url;
+					data.background.@id = event.dragSource.dataForFormat("data").id;
+					data.background.@imageFilter = "";
+					data.background.@imageRotation = 0;
+					data.background.@lowres = event.dragSource.dataForFormat("data").lowres;
+					data.background.@lowres_url = event.dragSource.dataForFormat("data").lowres_url;
+					//data.background.@name = event.dragSource.dataForFormat("data").name;
+					data.background.@origin = event.dragSource.dataForFormat("data").origin || "cms";
+					data.background.@originalHeight = event.dragSource.dataForFormat("data").height;
+					data.background.@originalWidth = event.dragSource.dataForFormat("data").width;
+					data.background.@origin_type = event.dragSource.dataForFormat("data").origin_type || "cms";
+					data.background.@path = event.dragSource.dataForFormat("data").path;
+					data.background.@preview = "";
+					data.background.@status = "done";
+					data.background.@thumb = event.dragSource.dataForFormat("data").thumb;
+					data.background.@thumb_url = event.dragSource.dataForFormat("data").thumb_url;
+					data.background.@timeCreated = "";
+					data.background.@userID = "";
+					
+					//Set the dimension and position
+					singleton.CalculateBackgroundPositionAndDimension(pageWidth, pageHeight, data.background);
+					
+					//Remove the pages backgroundcolors
+					for each (page in data.pages..page) {
+						page.@backgroundColor = "-1";
+						page.@backgroundAlpha = "1";
+						if (page.background.toXMLString() != "") {
+							delete page.background;
+						}
+					}
+					
+				}
+				
+				if (event.dragSource.dataForFormat("type").toString() == "PHOTO") {
+					
+					//Create a new background object
+					data.background = <background/>;
+					
+					if (event.dragSource.dataForFormat("data").id.toString() != "") {
+						
+						data.background.exif = event.dragSource.dataForFormat("data").exif.copy();
+						data.background.@bytesize = event.dragSource.dataForFormat("data").bytesize;
+						data.background.@dateCreated = event.dragSource.dataForFormat("data").dateCreated;
+						data.background.@fliphorizontal = "0";
+						data.background.@folderID = event.dragSource.dataForFormat("data").folderID;
+						data.background.@folderName = event.dragSource.dataForFormat("data").folderName;
+						data.background.@fullPath = event.dragSource.dataForFormat("data").fullPath;
+						data.background.@hires = event.dragSource.dataForFormat("data").hires;
+						data.background.@hires_url = event.dragSource.dataForFormat("data").hires_url;
+						data.background.@id = UIDUtil.createUID();
+						data.background.@original_image_id = event.dragSource.dataForFormat("data").id;
+						data.background.@imageFilter = "";
+						data.background.@imageRotation = 0;
+						data.background.@lowres = event.dragSource.dataForFormat("data").lowres;
+						data.background.@lowres_url = event.dragSource.dataForFormat("data").lowres_url;
+						//data.background.@name = event.dragSource.dataForFormat("data").name;
+						data.background.@origin = event.dragSource.dataForFormat("data").origin;
+						data.background.@originalHeight = event.dragSource.dataForFormat("data").originalHeight;
+						data.background.@originalWidth = event.dragSource.dataForFormat("data").originalWidth;
+						data.background.@origin_type = event.dragSource.dataForFormat("data").origin_type;
+						data.background.@path = event.dragSource.dataForFormat("data").path;
+						data.background.@preview = event.dragSource.dataForFormat("data").preview;
+						data.background.@status = event.dragSource.dataForFormat("data").status;
+						data.background.@thumb = event.dragSource.dataForFormat("data").thumb;
+						data.background.@thumb_url = event.dragSource.dataForFormat("data").thumb_url;
+						data.background.@timeCreated = event.dragSource.dataForFormat("data").timeCreated;
+						data.background.@userID = event.dragSource.dataForFormat("data").userID;
+						
+					} else { //XML, Source is existing photo
+						
+						data.background.exif = event.dragSource.dataForFormat("data").exif.copy();
+						data.background.@bytesize = event.dragSource.dataForFormat("data").@bytesize;
+						data.background.@dateCreated = event.dragSource.dataForFormat("data").@dateCreated;
+						data.background.@fliphorizontal = event.dragSource.dataForFormat("data").@flipHorizontal;
+						data.background.@folderID = event.dragSource.dataForFormat("data").@folderID;
+						data.background.@folderName = event.dragSource.dataForFormat("data").@folderName;
+						data.background.@fullPath = event.dragSource.dataForFormat("data").@fullPath;
+						data.background.@hires = event.dragSource.dataForFormat("data").@hires;
+						data.background.@hires_url = event.dragSource.dataForFormat("data").@hires_url;
+						data.background.@id = UIDUtil.createUID();
+						data.background.@original_image_id = event.dragSource.dataForFormat("data").@original_image_id;
+						data.background.@imageFilter = event.dragSource.dataForFormat("data").@imageFilter;
+						data.background.@imageRotation = event.dragSource.dataForFormat("data").@imageRotation;
+						data.background.@lowres = event.dragSource.dataForFormat("data").@lowres;
+						data.background.@lowres_url = event.dragSource.dataForFormat("data").@lowres_url;
+						//data.background.@name = event.dragSource.dataForFormat("data").@name;
+						data.background.@origin = event.dragSource.dataForFormat("data").@origin;
+						data.background.@originalHeight = event.dragSource.dataForFormat("data").@originalHeight;
+						data.background.@originalWidth = event.dragSource.dataForFormat("data").@originalWidth;
+						data.background.@origin_type = event.dragSource.dataForFormat("data").@origin_type;
+						data.background.@path = event.dragSource.dataForFormat("data").@path;
+						data.background.@preview = event.dragSource.dataForFormat("data").@preview;
+						data.background.@status = event.dragSource.dataForFormat("data").@status;
+						data.background.@thumb = event.dragSource.dataForFormat("data").@thumb;
+						data.background.@thumb_url = event.dragSource.dataForFormat("data").@thumb_url;
+						data.background.@timeCreated = event.dragSource.dataForFormat("data").@timeCreated;
+						data.background.@userID = event.dragSource.dataForFormat("data").@userID;
+						
+						//Remove the dragged item
+						/*
+						var elements:XMLList = data..element;
+						for (var e:int=0; e < elements.length(); e++) {
+							if (elements[e].@id == event.dragSource.dataForFormat("data").@id) {
+								//Remove this element
+								delete elements[e];
+								FlexGlobals.topLevelApplication.dispatchEvent(new updateTimelineEvent(updateTimelineEvent.UPDATETIMELINEPAGE, null, data.@spreadID, data)); 
+								break;
+							}
+						}
+						*/
+					}
+					
+					//Set the dimension and position
+					singleton.CalculateBackgroundPositionAndDimension(pageWidth, pageHeight, data.background);
+					
+					//Remove the pages backgroundcolors
+					for each (page in data.pages..page) {
+						page.@backgroundColor = "-1";
+						page.@backgroundAlpha = "1";
+						if (page.background.toXMLString() != "") {
+							delete page.background;
+						}
+					}
+					
+				}
+				
+				singleton.selectedPhotoDataForDrag = null;
+				
+				_creationCompleteHandler();
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateTimelineEvent(updateTimelineEvent.UPDATETIMELINEPAGE, null, null, pages[0]));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateTimelineEvent(updateTimelineEvent.UPDATETIMELINEPAGE, null, null, pages[1]));
+				
+				//Update the preview
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateTimelineEvent(updateTimelineEvent.UPDATETIMELINEPREVIEW, null, data.@spreadID, data));
+				
+			}
+			
+			protected function spreadBackgroundContainer_dragExitHandler(event:DragEvent):void
+			{
+				if (data.@backgroundColor == "-1") {
+					background.graphics.clear();
+				} else {
+					background.graphics.clear();
+					background.graphics.beginFill(data.@backgroundColor, data.@backgroundAlpha);
+					background.graphics.drawRect(0, 0, 60, background.height + 1);
+					background.graphics.endFill();
+				}
+			}
+			
+			protected function btnBackgroundDelete_rollOverHandler(event:MouseEvent):void
+			{
+				backgroundRollover.visible = true;
+				
+			}
+			
+			protected function btnBackgroundDelete_rollOutHandler(event:MouseEvent):void
+			{
+				backgroundRollover.visible = false;
+				
+			}
+			
+			protected function btnBackgroundDelete_clickHandler(event:MouseEvent):void
+			{
+				
+				data.@backgroundColor = "-1";
+				data.@backgroundAlpha = "1";
+				
+				if (data.background.toXMLString() != "") {
+					
+					delete data.background;
+					
+					singleton._changesMade = true;
+					singleton.UpdateWindowStatus();
+					
+					_creationCompleteHandler();
+					
+					//Update the pages
+					FlexGlobals.topLevelApplication.dispatchEvent(new updateTimelineEvent(updateTimelineEvent.UPDATETIMELINEPREVIEW, null, data..page[0].@spreadID, data..page[0]));
+					
+					if (data..page.length() > 1) {
+						FlexGlobals.topLevelApplication.dispatchEvent(new updateTimelineEvent(updateTimelineEvent.UPDATETIMELINEPREVIEW, null, data..page[1].@spreadID, data..page[1]));
+					}
+					
+				}
+				
+				background.removeAllElements();
+				
+				btnBackgroundDelete.visible = false;
+				
+				background.graphics.clear();
+				
+				//Update the preview
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateTimelineEvent(updateTimelineEvent.UPDATETIMELINEPREVIEW, null, data.@spreadID, data));
+				
+			}
+			
+			protected function _mouseUpHandler(event:MouseEvent):void
+			{
+			
+				singleton.selected_timeline_spread = data;
+				singleton.selected_timeline_index = this.parent.getChildIndex(this);
+				FlexGlobals.topLevelApplication.dispatchEvent(new SelectTimelineSpreadEvent(SelectTimelineSpreadEvent.SELECTTIMELINESPREAD, data.@spreadID));
+			
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer id="selector" left="-9" top="0" bottom="0" right="0" backgroundColor="0xD2D2D2"
+					   borderVisible="false"/>
+	
+	<s:BorderContainer id="container" left="0" right="1" top="1" bottom="1"
+					   backgroundColor="#D2D2D2" dropShadowVisible="false"
+					   borderColor="0xD2D2D2" borderVisible="false">
+		<s:layout>
+			<s:BasicLayout clipAndEnableScrolling="true" />
+		</s:layout>
+	
+		<s:VGroup id="lstPages" width="100%" gap="0"
+				  resize="_resizeHandler(event)"
+				  contentBackgroundAlpha="0"
+			      mouseEnabledWhereTransparent="true"
+				  paddingLeft="0" paddingRight="0" />
+		
+		<s:Group id="background" width="60" height="{lstPages.height}" mouseEnabled="false"
+				 clipAndEnableScrolling="true"/>
+		
+		<s:BorderContainer id="spreadBackgroundContainer" width="60" left="1" 
+						   height="80" verticalCenter="0" mouseChildren="true" 
+						   backgroundAlpha="0" borderVisible="false"
+						   dragExit="spreadBackgroundContainer_dragExitHandler(event)"
+						   dragEnter="spreadBackground_dragEnterHandler(event)"
+						   dragDrop="spreadBackground_dragDropHandler(event)"/>
+		
+		<s:Ellipse id="backgroundRollover" width="20" height="20" 
+				   left="2" verticalCenter="0" visible="false">
+			<s:fill>
+				<s:SolidColor color="0xFFFFFF" alpha="1" />
+			</s:fill>
+		</s:Ellipse>
+		
+		<s:Image id="btnBackgroundDelete" left="5"
+				 source="@Embed('assets/iconset/verwijderen.png')" 
+				 visible="false" verticalCenter="0"
+				 buttonMode="true" mouseEnabled="true" useHandCursor="true" 
+				 rollOver="btnBackgroundDelete_rollOverHandler(event)"
+				 rollOut="btnBackgroundDelete_rollOutHandler(event)"
+				 click="btnBackgroundDelete_clickHandler(event)"/>
+		
+	</s:BorderContainer>
+	
+</s:Group>

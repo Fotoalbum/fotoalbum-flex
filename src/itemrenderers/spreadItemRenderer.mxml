@@ -1,0 +1,2783 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   height="120" 
+				   clipAndEnableScrolling="true">
+	 
+	<fx:Declarations>
+		<s:Fade id="showEff" alphaFrom="0.0" alphaTo="1.0" />
+		<s:DropShadowFilter id="leftShadowFilter" distance="3" color="0" alpha=".6" angle="135" blurX="8" blurY="8" />
+		<s:DropShadowFilter id="rightShadowFilter" distance="3" color="0" alpha=".6" angle="45" blurX="8" blurY="8" />
+		<s:DropShadowFilter id="bottomShadowFilter" distance="3" color="0" alpha=".6" angle="90" blurX="8" blurY="8" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.circleobject;
+			import classes.lineobject;
+			import classes.pageclass;
+			import classes.pageobject;
+			import classes.rectangleobject;
+			import classes.snapshot;
+			import classes.spreadclass;
+			import classes.spreadobject;
+			import classes.textflowclass;
+			import classes.textsprite;
+			import classes.undoActions;
+			import classes.undoredo.undoitemclass;
+			import classes.undoredoClass;
+			import classes.usercircle;
+			import classes.userclipartclass;
+			import classes.userline;
+			import classes.userphotoclass;
+			import classes.userrectangle;
+			import classes.usertextclass;
+			
+			import components.clipartcomponent;
+			import components.photocomponent;
+			import components.spreadcomponent;
+			import components.textcomponent;
+			
+			import events.clearObjectHandlesEvent;
+			import events.countUsedPhotosEvent;
+			import events.selectSpreadEvent;
+			import events.textFlowEvent;
+			import events.undoredoResetEvent;
+			import events.updateBackgroundEvent;
+			import events.updateElementsEvent;
+			import events.updatePagenumberTimelineEvent;
+			import events.updateSpreadFromTimelineEvent;
+			
+			import flash.utils.setTimeout;
+			
+			import flashx.textLayout.container.ContainerController;
+			import flashx.textLayout.conversion.ConversionType;
+			import flashx.textLayout.conversion.TextConverter;
+			import flashx.textLayout.edit.EditManager;
+			import flashx.textLayout.elements.Configuration;
+			import flashx.textLayout.elements.TextFlow;
+			import flashx.textLayout.formats.TextAlign;
+			import flashx.textLayout.formats.TextLayoutFormat;
+			import flashx.undo.UndoManager;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.core.IVisualElement;
+			import mx.events.CollectionEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.utils.ObjectUtil;
+			import mx.utils.UIDUtil;
+			
+			import spark.components.BorderContainer;
+			import spark.components.Image;
+			import spark.components.Label;
+			import spark.core.SpriteVisualElement;
+	
+			[Bindable] public var spreadIndex:int;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var currentZoom:Number;
+			[Bindable] public var spreadData:Object;
+			[Bindable] public var spreadbackgroundcontainer:spreadobject;
+			[Bindable] public var elementcontainer:Group;
+			[Bindable] public var ontopelementcontainer:Group;
+			[Bindable] public var spreadcomp:spreadcomponent;
+			[Bindable] public var undoredo:undoredoClass;
+			[Bindable] public var isCover:Boolean = false;
+			[Bindable] public var centerlayer:SpriteVisualElement;
+			public function CreateSpread(index:int = -1, forceRefresh:Boolean = false):void
+			{
+				
+				spreadIndex = index;
+				
+				container.removeAllElements();
+				selectionContainer.setStyle("borderVisible", false);
+				
+				pagenumbers.removeAllElements();
+				
+				FlexGlobals.topLevelApplication.addEventListener(undoredoResetEvent.RESET_UNDOREDO, ResetUndoRedo);
+				FlexGlobals.topLevelApplication.dispatchEvent(new undoredoResetEvent(undoredoResetEvent.RESET_UNDOREDO));
+				
+				FlexGlobals.topLevelApplication.addEventListener(updateSpreadFromTimelineEvent.UPDATE_SPREAD_ITEMS, UpdateSpreadFromTimeline);
+				FlexGlobals.topLevelApplication.addEventListener(updatePagenumberTimelineEvent.UPDATEPAGENUMBERTIMELINE, UpdatePagenumber);
+				
+				if (spreadData) {
+					
+					//Set the container width based on the height of the content
+					var optW:Number = ((80 / spreadData.totalHeight) * spreadData.totalWidth);
+					this.width = optW;
+				
+					//Zet zoom for this itemrenderer
+					var zoom:Number = 0;
+					var found:Boolean = false;
+					while (!found) {
+						var w:Number = zoom * spreadData.totalWidth;
+						var h:Number = zoom * spreadData.totalHeight;
+						if (w >= this.width || h >= 80) {
+							zoom -= .04;
+							found = true;
+						}
+						zoom += .01;
+					}
+					
+					currentZoom = zoom;
+					
+					spreadcomp = new spreadcomponent();
+					spreadcomp.totalWidth = spreadData.totalWidth;
+					spreadcomp.totalHeight = spreadData.totalHeight;
+					spreadcomp.singlepage = spreadData.singlepage;
+					spreadcomp.width = spreadData.width;
+					spreadcomp.height = spreadData.height;
+					spreadcomp.horizontalCenter = 0;
+					spreadcomp.verticalCenter = 0;
+					spreadcomp.validateNow();
+					
+					container.addElement(spreadcomp);
+					
+					spreadbackgroundcontainer = new spreadobject();
+					spreadbackgroundcontainer.mouseEnabled = false;
+					spreadbackgroundcontainer.clipAndEnableScrolling = true;
+					spreadbackgroundcontainer.width = spreadcomp.width;
+					spreadbackgroundcontainer.height = spreadcomp.height;
+					spreadbackgroundcontainer.horizontalCenter = 0;
+					spreadbackgroundcontainer.verticalCenter = 0;
+					
+					container.addElement(spreadbackgroundcontainer);
+					
+					if (spreadData.backgroundData) {
+						if (spreadData.backgroundData.fliphorizontal.toString() == "1") {
+							spreadbackgroundcontainer.scaleX = -1;
+						} else {
+							spreadbackgroundcontainer.scaleX = 1;
+						}
+					}
+					
+					if (spreadData.backgroundColor != -1) {
+						spreadcomp.setStyle("backgroundColor", spreadData.backgroundColor);
+						spreadcomp.setStyle("backgroundAlpha", spreadData.backgroundAlpha);
+					} else {
+						spreadcomp.setStyle("backgroundColor", 0xFFFFFF);
+						spreadcomp.setStyle("backgroundAlpha", 1);
+					}
+					
+					FlexGlobals.topLevelApplication.addEventListener(updateBackgroundEvent.SETBACKGROUNDSPREAD, SetBackgroundSpread);
+					FlexGlobals.topLevelApplication.addEventListener(updateBackgroundEvent.DELETEBACKGROUNDSPREAD, DeleteBackgroundSpread);
+					FlexGlobals.topLevelApplication.addEventListener(updateBackgroundEvent.UPDATE, UpdateSpreadBackgroundAfterEdit);
+					
+					for (var x:int=0; x < spreadData.pages.length; x++) {
+						
+						var p:Object = spreadData.pages[x] as Object;
+						p.pageZoom = zoom;
+						var page:pageobject = new pageobject();
+						page.data = p;
+						page.pageID = p.pageID;
+						page.spreadID = p.spreadID;
+						page.pageType = p.pageType;
+						page.pageWidth = p.pageWidth;
+						page.pageHeight = p.pageHeight;
+						page.pageNumber = p.pageNumber;
+						page.pageZoom = p.pageZoom;
+						page.horizontalBleed = p.horizontalBleed;
+						page.verticalBleed = p.verticalBleed;
+						page.horizontalWrap = p.horizontalWrap;
+						page.verticalWrap = p.verticalWrap;
+						page.singlepage = p.singlepage;
+						page.backgroundData = p.backgroundData;
+						page.width = p.width;
+						page.height = p.height;
+						
+						spreadcomp.addElement(page);
+						
+						page.DrawPage();
+						
+						page.DrawBackground(true);
+						
+						if (page.pageType.toString() != "normal") {
+							isCover = true;
+						}
+						
+						DrawPageNumber(page.pageNumber, page.width * zoom);
+					}
+					
+					if (spreadData.backgroundData) {
+						UpdateSpreadBackground();
+					}
+					
+					elementcontainer = new Group();
+					elementcontainer.clipAndEnableScrolling = true;
+					elementcontainer.mouseEnabled = false;
+					elementcontainer.width = spreadcomp.width;
+					elementcontainer.height = spreadcomp.height;
+					elementcontainer.horizontalCenter = 0;
+					elementcontainer.verticalCenter = 0;
+					
+					container.addElement(elementcontainer);
+					
+					ontopelementcontainer = new Group();
+					ontopelementcontainer.clipAndEnableScrolling = true;
+					ontopelementcontainer.mouseEnabled = false;
+					ontopelementcontainer.width = spreadcomp.width;
+					ontopelementcontainer.height = spreadcomp.height;
+					ontopelementcontainer.horizontalCenter = 0;
+					ontopelementcontainer.verticalCenter = 0;
+					
+					container.addElement(ontopelementcontainer);
+					
+					if (spreadData.elements.length > 0) {
+						
+						for (var e:int; e < spreadData.elements.length; e++) {
+							
+							var obj:Object = spreadData.elements[e] as Object;
+							
+							if (obj.classtype.toString() == "[class userphotoclass]") {
+								
+								var photo_class:Object = obj as Object;
+								var photo:photocomponent = new photocomponent();
+								var photodata:Object = new Object();
+								photo.id = photo_class.id;
+								//trace(photo_class.original_image_id);
+								
+								photo.x = photo_class.objectX;
+								photo.y = photo_class.objectY;
+								photo.width = photo_class.objectWidth;
+								photo.height = photo_class.objectHeight;
+								photo.rotation = photo_class.rotation;
+								photo.mouseEnabled = false;
+								photo.isNav = true;
+								photo.data = photo_class;
+								
+								photo.objectWidth = photo.width;
+								photo.objectHeight = photo.height;
+								
+								if (photo_class.allwaysontop) {
+									ontopelementcontainer.addElement(photo);
+								} else {
+									elementcontainer.addElement(photo);
+								}
+								
+								photo.RemoveImage(true);
+								
+								if (photo_class.status != "empty") {
+									if (!photo.tempImage) {
+										if (photo_class.status != "done") {
+											
+											//First check if this is an error
+											var objectExcist:Object = singleton.GetObjectFromAlbums(photo_class.original_image_id);
+											
+											if (objectExcist) {
+												
+												//Update this object and continue
+												photo_class.status = "done";
+												photo_class.bytesize = objectExcist.bytesize;
+												photo_class.exif = objectExcist.exif.copy();
+												photo_class.guid = objectExcist.guid;
+												photo_class.hires = objectExcist.hires;
+												photo_class.hires_url = objectExcist.hires_url;
+												photo_class.lowres = objectExcist.lowres;
+												photo_class.lowres_url = objectExcist.lowres_url;
+												photo_class.thumb = objectExcist.thumb;
+												photo_class.thumb_url = objectExcist.thumb_url;
+												
+												singleton._changesMade = true;
+												singleton.UpdateWindowStatus();
+												
+												//Add this photo to the photo_xml
+												if (singleton.userphotos.getItemIndex(objectExcist) == -1) {
+													if (singleton.userphotoshidden.getItemIndex(objectExcist) == -1) {
+														//singleton.userphotos.addItem(objectExcist);
+													} else {
+														//singleton.userphotoshidden.addItem(objectExcist);
+													}
+												}
+												
+											} else {
+												
+												photo.tempImage = new Image();
+												var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id));
+												if (bitmap.bitmapData) {
+													photo.tempImage.source = bitmap;
+												} else {
+													//Get the image from loading it
+													var bobj:Object = singleton.GetOriginalImageData(photo_class.original_image_id);
+													
+													if (bobj) {
+														
+														//Update this object and continue
+														photo_class.status = "done";
+														photo_class.bytesize = bobj.bytesize;
+														photo_class.exif = bobj.exif.copy();
+														photo_class.guid = bobj.guid;
+														photo_class.hires = bobj.hires;
+														photo_class.hires_url = bobj.hires_url;
+														photo_class.lowres = bobj.lowres;
+														photo_class.lowres_url = bobj.lowres_url;
+														photo_class.thumb = bobj.thumb;
+														photo_class.thumb_url = bobj.thumb_url;
+														
+														singleton._changesMade = true;
+														singleton.UpdateWindowStatus();
+														
+														photo.tempImage = null;
+														
+													} else {
+														
+														//Object can really NOT be found, so empty it!
+														//Update this object and continue
+														photo_class.status = "empty";
+														photo_class.original_image_id = "";
+														photo_class.hires = "";
+														photo_class.hires_url = "";
+														photo_class.lowres = "";
+														photo_class.lowres_url = "";
+														photo_class.thumb = "";
+														photo_class.thumb_url = "";
+														
+														singleton._changesMade = true;
+														singleton.UpdateWindowStatus();
+														
+														photo.tempImage = null;
+														
+													}
+												}
+											}
+										}
+										photo.CreateImage(true);
+									} else {
+										photo.CreateImage(true);
+									}
+									
+								}
+								
+								photo.DrawBorder();
+								
+							}
+							
+							if (obj.classtype.toString() == "[class userclipartclass]") {
+								
+								var clipart_class:Object = obj as Object;
+								var clipart:clipartcomponent = new clipartcomponent();
+								var clipartdata:Object = new Object();
+								clipart.id = clipart_class.id;
+								clipart.x = clipart_class.objectX;
+								clipart.y = clipart_class.objectY;
+								clipart.width = clipart_class.objectWidth;
+								clipart.height = clipart_class.objectHeight;
+								clipart.rotation = clipart_class.rotation;
+								clipart.mouseEnabled = false;
+								
+								clipart.data = clipart_class;
+								
+								if (clipart_class.allwaysontop) {
+									ontopelementcontainer.addElement(clipart);
+								} else {
+									elementcontainer.addElement(clipart);
+								}
+								
+								clipart.CreateImage(true);
+								
+								clipart.DrawBorder();
+								
+							}
+							
+							if (obj.classtype.toString() == "[class userrectangle]")
+							{
+								
+								var rectangle_class:Object = obj as Object;
+								var rectangle:rectangleobject = new rectangleobject();
+								rectangle.id = rectangle_class.id;
+								rectangle.x = rectangle_class.objectX;
+								rectangle.y = rectangle_class.objectY;
+								rectangle.width = rectangle_class.objectWidth;
+								rectangle.height = rectangle_class.objectHeight;
+								rectangle.rotation = rectangle_class.rotation;
+								rectangle.mouseEnabled = false;
+								
+								rectangle.data = rectangle_class;
+								
+								if (rectangle_class.allwaysontop) {
+									ontopelementcontainer.addElement(rectangle);
+								} else {
+									elementcontainer.addElement(rectangle);
+								}
+								
+								rectangle.DrawRect();
+								
+							}
+							
+							if (obj.classtype.toString() == "[class usercircle]") 
+							{
+								
+								var circle_class:Object = obj as Object;
+								var circle:circleobject = new circleobject();
+								circle.id = circle_class.id;
+								circle.x = circle_class.objectX;
+								circle.y = circle_class.objectY;
+								circle.width = circle_class.objectWidth;
+								circle.height = circle_class.objectHeight;
+								circle.rotation = circle_class.rotation;
+								circle.data = circle_class;
+								
+								if (circle_class.allwaysontop) {
+									ontopelementcontainer.addElement(circle);
+								} else {
+									elementcontainer.addElement(circle);
+								}
+								
+								circle.DrawCircle();
+								
+							}
+							
+							if (obj.classtype.toString() == "[class userline]") 
+							{
+								
+								var line_class:Object = obj as Object;
+								var line:lineobject = new lineobject();
+								line.id = line_class.id;
+								line.x = line_class.objectX;
+								line.y = line_class.objectY;
+								line.width = line_class.objectWidth;
+								line.height = line_class.objectHeight;
+								line.rotation = line_class.rotation;
+								line.data = line_class;
+								
+								if (line_class.allwaysontop) {
+									ontopelementcontainer.addElement(line);
+								} else {
+									elementcontainer.addElement(line);
+								}
+								
+								line.DrawRect();
+								
+							}
+							
+							if (obj.classtype.toString() == "[class usertextclass]") {
+								
+								var text_class:Object = obj as Object;
+								var text:textcomponent = new textcomponent();
+								text.data = text_class;
+								text.id = text_class.id;
+								text.x = text_class.objectX;
+								text.y = text_class.objectY;
+								text.width = text_class.objectWidth;
+								text.height = text_class.objectHeight;
+								text.rotation = text_class.rotation;
+								
+								var tfclass:Object = singleton.GetTextFlowClassByID(text_class.tfID);
+								var content:String = TextConverter.export(tfclass.tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.STRING_TYPE).toString();
+								var tf:TextFlow = new TextFlow();
+							
+								tf = TextConverter.importToFlow(content, TextConverter.TEXT_LAYOUT_FORMAT);
+								tf.invalidateAllFormats();
+								text.sprite = new textsprite;
+								text.container.addElement(text.sprite);
+								
+								var cc:ContainerController = new ContainerController(text.sprite, text.width, text.height);
+								text.sprite.cc = cc;
+								tf.flowComposer.addController(text.sprite.cc);
+								tf.flowComposer.updateAllControllers();
+								
+								ontopelementcontainer.addElement(text);
+								FlexGlobals.topLevelApplication.addEventListener(textFlowEvent.UPDATETEXTFLOW, UpdateTextFlowNav);
+								
+								text.CheckTextPresent();
+								
+								text.DrawBorder();
+								
+								text.SetShadow();
+								
+							}
+						}
+					}
+					
+					if (spreadIndex==0 && singleton._startupSpread==true) {
+					
+						singleton._startupSpread = false;
+						singleton.UpdateWindowStatus();
+						setTimeout(SelectSpread, 1000);
+						
+					} else {
+						
+						if (forceRefresh) {
+							singleton._startupSpread = false;
+							//singleton._changesMade = false; 
+							singleton.UpdateWindowStatus();
+							setTimeout(SelectSpread, 1000);
+						}
+					}
+					
+					if (spreadIndex == singleton.spreadcollection.length - 1) {
+						singleton.CloseAlertWaitWindow();
+					}
+					
+					selectionContainer.scaleX = zoom;
+					selectionContainer.scaleY = zoom;
+					selectionContainer.verticalCenter = -10;
+					
+					var bleed:Number = 0;
+					
+					if (isCover == true) {
+						bleed = singleton._defaultCoverBleed + singleton._defaultCoverWrap;
+					} else {
+						bleed = singleton._defaultPageBleed;
+					}
+					
+					var bleedlayer:SpriteVisualElement = new SpriteVisualElement();
+					bleedlayer.mouseEnabled = false;
+					bleedlayer.width = spreadcomp.width;
+					bleedlayer.height = spreadcomp.height;
+					bleedlayer.horizontalCenter = 0;
+					bleedlayer.verticalCenter = 0;
+					
+					bleedlayer.graphics.clear();
+					
+					if (!singleton.previewMode) {
+						container.addElement(bleedlayer);
+					}
+					
+					if (isCover) {
+						bleedlayer.graphics.lineStyle(.5, 0, .5);
+						bleedlayer.graphics.moveTo(spreadcomp.getElementAt(0).width, 0);
+						bleedlayer.graphics.lineTo(spreadcomp.getElementAt(0).width, spreadcomp.height);
+						bleedlayer.graphics.moveTo(spreadcomp.getElementAt(0).width + spreadcomp.getElementAt(1).width, 0);
+						bleedlayer.graphics.lineTo(spreadcomp.getElementAt(0).width + spreadcomp.getElementAt(1).width, spreadcomp.height);
+					}
+					
+					if (!isCover && spreadcomp.numElements > 1) {
+						
+						centerlayer = new SpriteVisualElement();
+						centerlayer.width = spreadcomp.width;
+						centerlayer.height = spreadcomp.height;
+						centerlayer.mouseEnabled = false;
+						centerlayer.horizontalCenter = 0;
+						centerlayer.verticalCenter = 0;
+						centerlayer.graphics.clear();
+						
+						container.addElement(centerlayer);
+						
+						centerlayer.graphics.lineStyle();
+						var gradientBoxMatrix:Matrix = new Matrix();
+						gradientBoxMatrix.createGradientBox(spreadcomp.width, spreadcomp.height, 0/180*Math.PI);
+						centerlayer.graphics.beginGradientFill(GradientType.LINEAR, [0xFFFFFF, 0x000000, 0xFFFFFF], [0, 0.2, 0], [118, 128, 138], gradientBoxMatrix);
+						centerlayer.graphics.drawRect(0, 0, spreadcomp.width, spreadcomp.height);
+						centerlayer.graphics.endFill();
+					}
+					
+				}
+					
+				FlexGlobals.topLevelApplication.addEventListener(updateElementsEvent.ADD, addNewElement);
+				FlexGlobals.topLevelApplication.addEventListener(updateElementsEvent.ADDFROMPAGELAYOUT, addNewElementFromPagelayout);
+				FlexGlobals.topLevelApplication.addEventListener(updateElementsEvent.UPDATE, updateElement);
+				FlexGlobals.topLevelApplication.addEventListener(updateElementsEvent.DELETE, deleteElement);
+				FlexGlobals.topLevelApplication.addEventListener(updateElementsEvent.DELETEIMG, deleteElementImage);
+				FlexGlobals.topLevelApplication.addEventListener(selectSpreadEvent.SELECT, ShowSelectedSpreadInNavigation);
+				
+			}
+			
+			private function UpdatePagenumber(event:updatePagenumberTimelineEvent):void {
+				
+				if (spreadData) {
+					
+					pagenumbers.removeAllElements();
+					
+					for (var x:int=0; x < spreadData.pages.length; x++) {
+						
+						var p:Object = spreadData.pages[x] as Object;
+						DrawPageNumber(p.pageNumber, p.width * currentZoom);
+					}
+					
+				}
+			}
+				
+			public function UpdateSpreadFromTimeline(event:updateSpreadFromTimelineEvent):void {
+				
+				//page ID
+				for (var x:int=0; x < spreadData.pages.length; x++) {
+					if (spreadData.pages[x].pageType.toString() != "empty") {
+						if (spreadData.pages[x].hasOwnProperty("timelineID")) {
+							if (spreadData.pages[x].timelineID) {
+								if (event.data.timelineID.toString() == spreadData.pages[x].timelineID.toString()) {
+									
+									//Update this page!
+									trace(event.data);
+									/*
+									var photo:userphotoclass = new userphotoclass();
+									photo.id = currentPhotoData.id;
+									photo.status = currentPhotoData.status;
+									photo.original_image_id = currentPhotoData.original_image_id;
+									photo.fullPath = currentPhotoData.fullPath;
+									photo.bytesize = currentPhotoData.bytesize;
+									photo.hires = currentPhotoData.hires;
+									photo.hires_url = currentPhotoData.hires_url;
+									photo.lowres = currentPhotoData.lowres;
+									photo.lowres_url = currentPhotoData.lowres_url;
+									photo.origin = currentPhotoData.origin;
+									photo.originalWidth = currentPhotoData.originalWidth;
+									photo.originalHeight = currentPhotoData.originalHeight;
+									photo.path = currentPhotoData.path;
+									photo.thumb = currentPhotoData.thumb;
+									photo.thumb_url = currentPhotoData.thumb_url;
+									photo.userID = currentPhotoData.userID;
+									photo.index = singleton.selected_spread.elements.length;
+									photo.objectX = xpos + (parseFloat(item.@left.toString()) / 100) * pagewidth;
+									photo.objectY = (parseFloat(item.@top.toString()) / 100) * pageheight; 
+									photo.objectWidth = xpos + pagewidth - ((parseFloat(item.@right.toString()) / 100) * pagewidth) - photo.objectX;
+									photo.objectHeight = pageheight - ((parseFloat(item.@bottom.toString()) / 100) * pageheight) - photo.objectY;
+									photo.rotation = parseFloat(item.@r.toString());
+									photo.refOffsetX = 0;
+									photo.refOffsetY = 0;
+									photo.refWidth = 0;
+									photo.refHeight = 0;
+									photo.refScale = 1;
+									photo.imageWidth = 0;
+									photo.imageHeight = 0;
+									photo.offsetX = 0;
+									photo.offsetY = 0;
+									photo.imageRotation = currentPhotoData.imageRotation;
+									photo.scaling = 0;
+									photo.imageAlpha = currentPhotoData.imageAlpha;
+									photo.imageFilter = currentPhotoData.imageFilter;
+									photo.shadow = currentPhotoData.shadow;
+									photo.borderalpha = currentPhotoData.borderalpha;
+									photo.bordercolor = currentPhotoData.bordercolor;
+									photo.borderweight = currentPhotoData.borderweight;
+									photo.mask_hires = currentPhotoData.mask_hires;
+									photo.mask_hires_url = currentPhotoData.mask_hires_url;
+									photo.mask_lowres = currentPhotoData.mask_lowres;
+									photo.mask_lowres_url = currentPhotoData.mask_lowres_url;
+									photo.mask_thumb = currentPhotoData.mask_thumb;
+									photo.mask_thumb_url = currentPhotoData.mask_thumb_url;
+									photo.mask_original_height = currentPhotoData.mask_original_height;
+									photo.mask_original_width = currentPhotoData.mask_original_width;
+									photo.mask_original_id = currentPhotoData.mask_original_id;
+									photo.mask_path = currentPhotoData.mask_path;
+									photo.overlay_hires = currentPhotoData.overlay_hires;
+									photo.overlay_hires_url = currentPhotoData.overlay_hires_url;
+									photo.overlay_lowres = currentPhotoData.overlay_lowres;
+									photo.overlay_lowres_url = currentPhotoData.overlay_lowres_url;
+									photo.overlay_thumb = currentPhotoData.overlay_thumb;
+									photo.overlay_thumb_url = currentPhotoData.overlay_thumb_url;
+									photo.overlay_original_height = currentPhotoData.overlay_original_height;
+									photo.overlay_original_width = currentPhotoData.overlay_original_width;
+									
+									singleton.selected_spread.elements.addItem(photo);
+									*/
+									
+									break;
+								}
+							}
+						}
+					}
+				}
+				
+			}
+			
+			private function ResetUndoRedo(event:Event):void {
+			
+				//Create own undo redo class
+				
+				//undoredo = new undoredoClass();
+				
+			}
+			
+			[Bindable] public var updateEvent:updateBackgroundEvent;
+			public function SetBackgroundSpread(event:updateBackgroundEvent):void {
+				
+				updateEvent = event;
+				
+				if (singleton.applyBackgroundToAllPages == true) {
+					
+					if (!event.backgroundData.hasOwnProperty("id")) {
+						//This is a color!
+						spreadData.backgroundColor = event.backgroundData;
+						spreadData.backgroundData = null;
+					} else {
+						spreadData.backgroundColor = -1;
+					}
+					
+					//Set the backgroundColor
+					if (spreadData.backgroundColor != -1) {
+						spreadcomp.setStyle("backgroundColor", spreadData.backgroundColor);
+						spreadcomp.setStyle("backgroundAlpha", spreadData.backgroundAlpha);
+					} else {
+						spreadcomp.setStyle("backgroundColor", 0xFFFFFF);
+						spreadcomp.setStyle("backgroundAlpha", 1);
+					}
+					
+					var obj:Object = event.backgroundData;
+					if (obj.hasOwnProperty("id")) {
+						spreadData.backgroundData = singleton.CreateBackgroundFromPhoto(event.backgroundData);
+					}
+					
+					spreadData.backgroundAlpha = event.backgroundAlpha;
+					
+					//Remove the page backgrounds from the selected spread!!
+					for (var p:int=0; p < spreadData.pages.length; p++) {
+						spreadData.pages.getItemAt(p).backgroundData = null;
+						spreadData.pages.getItemAt(p).backgroundColor = -1;
+					}
+					
+					UpdateSpreadBackground(true);
+					
+				} else {
+				
+					if (event.pageID == spreadData.spreadID) {
+					
+						if (!event.backgroundData.hasOwnProperty("id")) {
+							//This is a color!
+							spreadData.backgroundColor = event.backgroundData;
+							spreadData.backgroundData = null;
+						}
+						
+						if (spreadData.backgroundColor != -1) {
+							spreadcomp.setStyle("backgroundColor", spreadData.backgroundColor);
+							spreadcomp.setStyle("backgroundAlpha", spreadData.backgroundAlpha);
+						} else {
+							spreadcomp.setStyle("backgroundColor", 0xFFFFFF);
+							spreadcomp.setStyle("backgroundAlpha", 1);
+						}
+						
+						var bObj:Object = event.backgroundData;
+						if (bObj.hasOwnProperty("id")) {
+							spreadData.backgroundData = singleton.CreateBackgroundFromPhoto(event.backgroundData);
+						}
+						
+						//Remove the page backgrounds from the selected spread!!
+						for (p=0; p < spreadData.pages.length; p++) {
+							spreadData.pages.getItemAt(p).backgroundData = null;
+							spreadData.pages.getItemAt(p).backgroundColor = -1;
+						}
+						
+						if (spreadData.backgroundColor == -1) {
+							UpdateSpreadBackgroundFromPhoto();
+						} else {
+							spreadbackgroundcontainer.removeAllElements();
+						}
+					}
+				}
+				
+			}
+			
+			[Bindable] private var newbackground:Boolean = false;
+			private function UpdateSpreadBackgroundFromPhoto():void {
+				
+				//Remove previous backgrounds count
+				if (spreadData.backgroundData) {
+					FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT, spreadData.backgroundData.id));
+				}
+				
+				UpdateSpreadBackground();
+				
+			}
+			
+			private function GetLowResBackgroundImage():void {
+				
+				if (ExternalInterface.available) {
+					var wrapperFunction:String = "getoriginalphoto";
+					ExternalInterface.call(wrapperFunction, spreadData.backgroundData.id);
+				}
+				
+			}
+			
+			private function UpdateSpreadBackgroundAfterEdit(event:updateBackgroundEvent):void {
+				
+				if (event.pageID == spreadData.spreadID) {
+					
+					UpdateSpreadBackground(false);
+					
+				}
+			}
+			
+			private function UpdateSpreadBackground(newimg:Boolean = false):void {
+				
+				//FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
+				
+				var loadspreadbackground:Boolean = false;
+				
+				if (spreadData.hasOwnProperty("backgroundData")) {
+					if (spreadData.backgroundData) {
+						loadspreadbackground = true;
+					}
+				} 
+				
+				spreadbackgroundcontainer.removeAllElements();
+				spreadbackgroundcontainer.alpha = spreadData.backgroundAlpha;
+				
+				if (loadspreadbackground) {
+				
+					if (spreadData.backgroundData.fliphorizontal.toString() == "1") {
+						spreadbackgroundcontainer.scaleX = -1;
+					} else {
+						spreadbackgroundcontainer.scaleX = 1;
+					}
+					
+					for (var p:int=0; p < spreadData.pages.length; p++) {
+						var page:pageobject = spreadcomp.getElementAt(p) as pageobject;
+						page.background.removeAllElements();
+						page.backgroundData = null;
+						page.background.setStyle("backgroundColor", 0xFFFFFF);
+					}
+					
+					var loadspreadfromcache:Boolean = true;
+					if (spreadData.backgroundData.thumb_url) {
+						if (spreadData.backgroundData.thumb_url.toString() != "" && spreadData.backgroundData.thumb_url.toString() != "null") {
+							loadspreadfromcache = false;
+						}
+					}
+					
+					spreadbackgroundcontainer.rotation = spreadData.backgroundData.imageRotation;
+					if (spreadbackgroundcontainer.rotation == 90 || spreadbackgroundcontainer.rotation == 270 || spreadbackgroundcontainer.rotation == -90) {
+						spreadbackgroundcontainer.height = spreadcomp.width;
+						spreadbackgroundcontainer.width = spreadcomp.height;
+					} else {
+						spreadbackgroundcontainer.height = spreadcomp.height;
+						spreadbackgroundcontainer.width = spreadcomp.width;
+					}
+					
+					//Get optimum width and height
+					if (newimg) {
+						singleton.CalculateBackgroundDimensions(spreadbackgroundcontainer, spreadData.backgroundData, spreadData);
+					}
+					
+					spreadbackgroundcontainer.horizontalCenter = 0;
+					spreadbackgroundcontainer.verticalCenter = 0;
+					
+					if (loadspreadfromcache) {
+						
+						//Set background color - if available
+						spreadbackgroundcontainer.graphics.clear();
+						spreadbackgroundcontainer.graphics.beginFill(0xFFFFFF, 0);
+						spreadbackgroundcontainer.graphics.drawRect(0, 0, spreadData.totalWidth, spreadData.totalHeight);
+						spreadbackgroundcontainer.graphics.endFill();
+						
+						var img:Image = new Image();
+						var bmp:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(spreadData.backgroundData.id), "auto", true);
+						img.source = bmp;
+						img.scaleMode = BitmapScaleMode.STRETCH;
+						img.cacheAsBitmap = true;
+						
+						img.filters = null;
+						if (spreadData.backgroundData.imageFilter == "bw") {
+							img.filters = [singleton.bwfilter];
+						}
+						if (spreadData.backgroundData.imageFilter == "sepia") {
+							img.filters = [singleton.sepiafilter];
+						}
+						
+						img.x = spreadData.backgroundData.x;
+						img.y = spreadData.backgroundData.y;
+						img.width = spreadData.backgroundData.width;
+						img.height = spreadData.backgroundData.height;						
+						
+						spreadbackgroundcontainer.addElement(img);
+						img.validateNow();
+						
+					} else {
+						
+						if (spreadData.backgroundData.thumb_url) {
+							
+							if (spreadData.backgroundData.thumb_url.toString() != "" && spreadData.backgroundData.thumb_url.toString() != "null") {
+					
+								var src:String = "";
+								if (spreadData.backgroundData.origin == "3rdparty") {
+									src = spreadData.backgroundData.lowres_url;
+								} else {
+									src = singleton.assets_url + spreadData.backgroundData.lowres_url;
+								}
+							
+								var request:URLRequest = new URLRequest(encodeURI(src));
+								var context:LoaderContext = new LoaderContext();
+								context.checkPolicyFile = true;
+								if (Capabilities.isDebugger == false) {
+									context.securityDomain = SecurityDomain.currentDomain;
+									context.applicationDomain = ApplicationDomain.currentDomain;
+								}
+								
+								var loader:Loader = new Loader();
+								loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundComplete);
+								loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+								loader.load(request, context);
+							
+							} else {
+							
+								spreadData.backgroundData = null;
+							}
+								
+						} else {
+					
+							spreadData.backgroundData = null;
+							
+						}
+							
+					}
+					
+				} else {
+					
+					spreadbackgroundcontainer.removeAllElements();
+					spreadbackgroundcontainer.graphics.clear();
+					spreadbackgroundcontainer.graphics.beginFill(0xFFFFFF, 0);
+					spreadbackgroundcontainer.graphics.drawRect(0, 0, spreadData.totalWidth, spreadData.totalHeight);
+					spreadbackgroundcontainer.graphics.endFill();
+					
+					//See if we need to restore the pages backgrounds?
+					for (p=0; p < spreadData.pages.length; p++) {
+						
+						page = spreadcomp.getElementAt(p) as pageobject;
+						
+						if (spreadData.pages.getItemAt(p).backgroundData) {
+							page.backgroundData = singleton.deepcloneBackground(spreadData.pages.getItemAt(p).backgroundData);
+						} else {
+							page.backgroundData = null;
+						}
+						
+						page.DrawBackground(true);
+					}
+				}
+				
+			}
+			
+			private function ErrorImageLoad(event:IOErrorEvent):void 
+			{
+				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n spreadItemRenderer|ErrorImageLoad|" + event.text, true);
+			}
+			
+			private function onBackgroundComplete(event:Event):void 
+			{
+				
+				//Set background color - if available
+				spreadbackgroundcontainer.graphics.clear();
+				spreadbackgroundcontainer.graphics.beginFill(0xFFFFFF, 0);
+				spreadbackgroundcontainer.graphics.drawRect(0, 0, spreadData.totalWidth, spreadData.totalHeight);
+				spreadbackgroundcontainer.graphics.endFill();
+				
+				spreadbackgroundcontainer.removeAllElements();
+				
+				var img:Image = new Image();
+				img.source = event.target.content;
+				img.scaleMode = BitmapScaleMode.STRETCH;
+				img.cacheAsBitmap = true;
+				
+				img.filters = null;
+				if (spreadData.backgroundData.imageFilter == "bw") {
+					img.filters = [singleton.bwfilter];
+				}
+				if (spreadData.backgroundData.imageFilter == "sepia") {
+					img.filters = [singleton.sepiafilter];
+				}
+				
+				if (newbackground == true) {
+					singleton.CalculateBackgroundDimensions(spreadbackgroundcontainer, spreadData.backgroundData, spreadData);
+				}
+				
+				img.x = spreadData.backgroundData.x;
+				img.y = spreadData.backgroundData.y;
+				img.width = spreadData.backgroundData.width;
+				img.height = spreadData.backgroundData.height;						
+				img.validateNow();
+				
+				spreadbackgroundcontainer.addElement(img);
+				
+				//Add an undo event
+				if (newbackground == true) {
+					
+					newbackground = false;
+					if (updateEvent.pageID == spreadData.spreadID) {
+						singleton.selected_undoredomanager.AddUndo(singleton.oldbackgrounddata, spreadData, singleton.selectedspreadindex, undoActions.ACTION_BACKGROUND_CHANGE, -1);
+					}
+				}
+				
+			}
+			
+			public function DeleteBackgroundSpread(event:updateBackgroundEvent):void {
+				
+				if (singleton.applyBackgroundToAllPages == true) {
+					
+					//Remove the background image and color
+					spreadbackgroundcontainer.graphics.clear();
+					spreadbackgroundcontainer.graphics.beginFill(0xFFFFFF, 0);
+					spreadbackgroundcontainer.graphics.drawRect(0, 0, spreadData.totalWidth, spreadData.totalHeight);
+					spreadbackgroundcontainer.graphics.endFill();
+					
+					spreadbackgroundcontainer.removeAllElements();
+					spreadData.backgroundColor = -1;
+					
+					if (spreadData.backgroundData) {
+						spreadData.backgroundData = null;
+					}
+					
+					if (spreadData.backgroundColor != -1) {
+						spreadcomp.setStyle("backgroundColor", spreadData.backgroundColor);
+						spreadcomp.setStyle("backgroundAlpha", spreadData.backgroundAlpha);
+					} else {
+						spreadcomp.setStyle("backgroundColor", 0xFFFFFF);
+						spreadcomp.setStyle("backgroundAlpha", 1);
+					}
+					
+					if (singleton.deletingbackground) {
+						singleton.selected_undoredomanager.AddUndo(singleton.oldbackgrounddata, spreadData, singleton.selectedspreadindex, undoActions.ACTION_BACKGROUND_CHANGE, -1);
+					}
+					
+				} else {
+					
+					if (spreadData.spreadID == event.pageID) {
+						
+						//Remove the background image and color
+						spreadbackgroundcontainer.graphics.clear();
+						spreadbackgroundcontainer.graphics.beginFill(0xFFFFFF, 0);
+						spreadbackgroundcontainer.graphics.drawRect(0, 0, spreadData.totalWidth, spreadData.totalHeight);
+						spreadbackgroundcontainer.graphics.endFill();
+						
+						spreadbackgroundcontainer.removeAllElements();
+						spreadData.backgroundColor = -1;
+						
+						if (spreadData.backgroundData) {
+							spreadData.backgroundData = null;
+						}
+						
+						if (spreadData.backgroundColor != -1) {
+							spreadcomp.setStyle("backgroundColor", spreadData.backgroundColor);
+							spreadcomp.setStyle("backgroundAlpha", spreadData.backgroundAlpha);
+						} else {
+							spreadcomp.setStyle("backgroundColor", 0xFFFFFF);
+							spreadcomp.setStyle("backgroundAlpha", 1);
+						}
+						
+						if (singleton.deletingbackground) {
+							singleton.selected_undoredomanager.AddUndo(singleton.oldbackgrounddata, spreadData, singleton.selectedspreadindex, undoActions.ACTION_BACKGROUND_CHANGE, -1);
+						}
+					}
+				}
+			}
+			
+			private function addNewElement(event:updateElementsEvent):void
+			{
+				
+				if (event.spreadID == spreadData.spreadID) 
+				{
+					
+					elementcontainer.removeAllElements();
+					ontopelementcontainer.removeAllElements();
+					
+					if (spreadData.elements.length > 0) {
+						
+						for (var e:int; e < spreadData.elements.length; e++) {
+							
+							var obj:Object = spreadData.elements[e] as Object;
+							
+							if (obj.classtype.toString() == "[class userphotoclass]") {
+								
+								var photo_class:Object = obj;
+								var photo:photocomponent = new photocomponent();
+								var photodata:Object = new Object();
+								photo.id = photo_class.id;
+								photo.x = photo_class.objectX;
+								photo.y = photo_class.objectY;
+								photo.width = photo_class.objectWidth;
+								photo.height = photo_class.objectHeight;
+								photo.rotation = photo_class.rotation;
+								photo.mouseEnabled = false;
+								photo.isNav = true;
+								photo.data = photo_class;
+								
+								photo.objectWidth = photo.width;
+								photo.objectHeight = photo.height;
+								
+								if (photo_class.allwaysontop) {
+									ontopelementcontainer.addElement(photo);
+								} else {
+									elementcontainer.addElement(photo);
+								}
+								
+								photo.RemoveImage(true);
+								
+								if (photo_class.status != "empty") {
+									
+									if (!photo.tempImage) {
+										if (photo_class.status != "done") {
+											photo.tempImage = new Image();
+											var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id));
+											photo.tempImage.source = bitmap;
+										}
+										photo.CreateImage(true);
+									} else {
+										photo.CreateImage(true);
+									}
+									
+								}
+								
+								photo.DrawBorder();
+								
+							}
+							
+							if (obj.classtype.toString() == "[class userclipartclass]") {
+								
+								var clipart_class:Object = obj;
+								var clipart:clipartcomponent = new clipartcomponent();
+								var clipartdata:Object = new Object();
+								clipart.id = clipart_class.id;
+								clipart.x = clipart_class.objectX;
+								clipart.y = clipart_class.objectY;
+								clipart.width = clipart_class.objectWidth;
+								clipart.height = clipart_class.objectHeight;
+								clipart.rotation = clipart_class.rotation;
+								clipart.mouseEnabled = false;
+								
+								clipart.data = clipart_class;
+								
+								if (clipart_class.allwaysontop) {
+									ontopelementcontainer.addElement(clipart);
+								} else {
+									elementcontainer.addElement(clipart);
+								}
+								
+								clipart.CreateImage(true);
+								
+								clipart.DrawBorder();
+								
+							}
+							
+							if (obj.classtype.toString() == "[class userrectangle]")
+							{
+								
+								var rectangle_class:Object = obj;
+								var rectangle:rectangleobject = new rectangleobject();
+								rectangle.id = rectangle_class.id;
+								rectangle.x = rectangle_class.objectX;
+								rectangle.y = rectangle_class.objectY;
+								rectangle.width = rectangle_class.objectWidth;
+								rectangle.height = rectangle_class.objectHeight;
+								rectangle.mouseEnabled = false;
+								
+								rectangle.data = rectangle_class;
+								
+								if (rectangle_class.allwaysontop) {
+									ontopelementcontainer.addElement(rectangle);
+								} else {
+									elementcontainer.addElement(rectangle);
+								}
+								
+								rectangle.DrawRect();
+								
+							}
+							
+							if (obj.classtype.toString() == "[class usercircle]") 
+							{
+								
+								var circle_class:Object = obj;
+								var circle:circleobject = new circleobject();
+								circle.id = circle_class.id;
+								circle.x = circle_class.objectX;
+								circle.y = circle_class.objectY;
+								circle.width = circle_class.objectWidth;
+								circle.height = circle_class.objectHeight;
+								
+								circle.data = circle_class;
+								
+								if (circle_class.allwaysontop) {
+									ontopelementcontainer.addElement(circle);
+								} else {
+									elementcontainer.addElement(circle);
+								}
+								
+								circle.DrawCircle();
+								
+							}
+							
+							if (obj.classtype.toString() == "[class userline]") 
+							{
+								
+								var line_class:Object = obj;
+								var line:lineobject = new lineobject();
+								line.id = line_class.id;
+								line.x = line_class.objectX;
+								line.y = line_class.objectY;
+								line.width = line_class.objectWidth;
+								line.height = line_class.objectHeight;
+								
+								line.data = line_class;
+								
+								if (line_class.allwaysontop) {
+									ontopelementcontainer.addElement(line);
+								} else {
+									elementcontainer.addElement(line);
+								}
+								
+								line.DrawRect();
+								
+							}
+							
+							if (obj.classtype.toString() == "[class usertextclass]") {
+								
+								var text_class:Object = obj;
+								var text:textcomponent = new textcomponent();
+								text.data = text_class;
+								text.id = text_class.id;
+								text.x = text_class.objectX;
+								text.y = text_class.objectY;
+								text.width = text_class.objectWidth;
+								text.height = text_class.objectHeight;
+								text.rotation = text_class.rotation;
+								
+								var tfclass:Object = singleton.GetTextFlowClassByID(text_class.tfID);
+								var content:String = TextConverter.export(tfclass.tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.STRING_TYPE).toString();
+								var tf:TextFlow = new TextFlow();
+								
+								tf = TextConverter.importToFlow(content, TextConverter.TEXT_LAYOUT_FORMAT);
+								tf.invalidateAllFormats();
+								text.sprite = new textsprite;
+								text.container.addElement(text.sprite);
+								
+								var cc:ContainerController = new ContainerController(text.sprite, text.width, text.height);
+								text.sprite.cc = cc;
+								tf.flowComposer.addController(text.sprite.cc);
+								tf.flowComposer.updateAllControllers();
+								
+								ontopelementcontainer.addElement(text);
+								FlexGlobals.topLevelApplication.addEventListener(textFlowEvent.UPDATETEXTFLOW, UpdateTextFlowNav);
+								
+								text.CheckTextPresent();
+								
+								text.DrawBorder();
+								
+								text.SetShadow();
+								
+							}
+						}
+					}
+				
+					singleton._changesMade = true;
+					singleton.UpdateWindowStatus();
+					
+				}
+			}
+			
+			private function addNewElementFromPagelayout(event:updateElementsEvent):void
+			{
+				if (event.spreadID == spreadData.spreadID) 
+				{
+					
+					if (event.element) 
+					{
+						
+						if (event.element.classtype.toString() == "[class usertextclass]") 
+						{
+							
+							var text_class:Object = event.element as Object;
+							var text:textcomponent = new textcomponent();
+							text.data = text_class;
+							text.id = text_class.id;
+							text.x = text_class.objectX;
+							text.y = text_class.objectY;
+							text.width = text_class.objectWidth;
+							text.height = text_class.objectHeight;
+							text.rotation = text_class.rotation;
+							
+							var tfclass:Object = singleton.GetTextFlowClassByID(text_class.tfID);
+							var content:Object = TextConverter.export(tfclass.tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.XML_TYPE);
+							var tf:TextFlow = new TextFlow();
+							tf = TextConverter.importToFlow(content, TextConverter.TEXT_LAYOUT_FORMAT);
+							tf.invalidateAllFormats();
+							text.sprite = new textsprite;
+							text.container.addElement(text.sprite);
+							var cc:ContainerController = new ContainerController(text.sprite, text.width, text.height);
+							text.sprite.cc = cc;
+							tf.flowComposer.addController(text.sprite.cc);
+							tf.flowComposer.updateAllControllers();
+							
+							ontopelementcontainer.addElement(text);
+							
+							FlexGlobals.topLevelApplication.addEventListener(textFlowEvent.UPDATETEXTFLOW, UpdateTextFlowNav);
+							
+							text.CheckTextPresent();
+							
+							text.SetShadow();
+							
+							text.DrawBorder();
+							
+						}
+						
+						if (event.element.classtype.toString() == "[class userphotoclass]") 
+						{
+							
+							var photo_class:Object = event.element as Object;
+							
+							var photo:photocomponent = new photocomponent();
+							
+							var photodata:Object = new Object();
+							photo.id = photo_class.id;
+							photo.x = photo_class.objectX;
+							photo.y = photo_class.objectY;
+							photo.width = photo_class.objectWidth;
+							photo.height = photo_class.objectHeight;
+							photo.rotation = photo_class.rotation;
+							
+							photo.mouseEnabled = false;
+							
+							photo.data = photo_class;
+							
+							if (photo_class.status == "empty") 
+							{
+								photo.RemoveImage(true);
+							} else 
+							{
+								if (photo_class.status != "done") {
+									var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id), "auto", true);
+									photo.tempImage = new Image();
+									photo.tempImage.source = bitmap;
+								} else {
+									//Load the lowres image
+									photo.tempImage = null;
+								}
+							}
+							
+							elementcontainer.addElement(photo);
+							
+							if (photo_class.status != "empty") 
+							{
+								photo.CreateImage(true);
+							}
+							
+							photo.DrawBorder();
+							
+						}
+					}
+					
+					singleton._changesMade = true;
+					singleton.UpdateWindowStatus();
+					
+				}
+			}
+			
+			private function UpdateTextFlowNav(event:textFlowEvent):void {
+				
+				for (var x:int=0; x < ontopelementcontainer.numElements; x++) {
+					var obj:Object = ontopelementcontainer.getElementAt(x) as Object;
+					if (obj.constructor.toString() == "[class textcomponent]") {
+						if (obj.data.tfID.toString() == event.tfID.toString()) {
+							var tc:textcomponent = obj as textcomponent;
+							var tf:TextFlow = new TextFlow();
+							var tfref:Object = TextConverter.export(singleton.GetTextFlowClassByID(tc.data.tfID).tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.XML_TYPE);
+							tf = TextConverter.importToFlow(tfref, TextConverter.TEXT_LAYOUT_FORMAT);
+							tf.flowComposer.addController(tc.sprite.cc);
+							tf.flowComposer.updateAllControllers();
+							tc.CheckTextPresent();
+							break;
+						}
+					}
+				}
+			}
+			
+			private function updateElement(event:updateElementsEvent):void
+			{
+				if (event.spreadID == spreadData.spreadID) 
+				{
+					
+					var found:Boolean = false;
+					
+					if (elementcontainer) {
+						
+						for (var x:int=0; x < elementcontainer.numElements; x++) 
+						{
+							var obj:Object = elementcontainer.getElementAt(x) as Object;
+							if (obj.id == event.element.id.toString()) {
+								found = true;
+								break;
+							}
+						}
+					}
+					
+					if (!found && ontopelementcontainer) {
+						for (x=0; x < ontopelementcontainer.numElements; x++) 
+						{
+							obj = ontopelementcontainer.getElementAt(x) as Object;
+							if (obj.id == event.element.id.toString()) {
+								found = true;
+								break;
+							}
+						}
+					}
+					
+					obj.x = event.element.objectX;
+					obj.y = event.element.objectY;
+					obj.width = event.element.objectWidth;
+					obj.height = event.element.objectHeight;
+					obj.rotation = event.element.rotation;
+					
+					switch (obj.data.classtype.toString()) 
+					{
+						case "[class userphotoclass]":
+							
+							var photo:Object = obj;
+							
+							if (!photo.img) 
+							{
+								photo.CreateImage(true, true);
+								
+							} else
+							{
+								photo.img.x = event.element.offsetX;
+								photo.img.y = event.element.offsetY;
+								photo.img.width = event.element.imageWidth;
+								photo.img.height = event.element.imageHeight;
+								photo.rotation = event.element.rotation;
+								photo.SetImageRotation();
+								
+								photo.img.alpha = event.element.imageAlpha;
+								photo.img.filters = null;
+								
+								if (!event.updateMask && !event.updateOverlay) {
+									if (photo.imageMask) {
+										photo.imageMask.width = obj.width;
+										photo.imageMask.height = obj.height;
+									}
+									if (photo.imageOverlay) {
+										photo.overlayGroup.width = obj.width;
+										photo.overlayGroup.height = obj.height;
+										photo.imageOverlay.width = obj.width;
+										photo.imageOverlay.height = obj.height;
+									}
+								} else {
+									photo.overlayGroup.removeAllElements();
+									if (photo.imageMask) {
+										photo.removeElement(photo.imageMask);
+										photo.imageMask = null;
+									}
+									photo.CreateImage(true, false);
+								}
+								
+								photo.DrawBorder();
+								
+								if (!event.element.shadow) {
+									event.element.shadow = "";
+								}
+								
+								//Check for shadow
+								if (event.element.shadow.toString() == "") {
+									photo.filters = null;
+								}
+								if (event.element.shadow.toString() == "left") {
+									photo.filters = [leftShadowFilter];
+								}
+								if (event.element.shadow.toString() == "right") {
+									photo.filters = [rightShadowFilter];
+								}
+								if (event.element.shadow.toString() == "bottom") {
+									photo.filters = [bottomShadowFilter];
+								}
+								
+								if (event.element.imageFilter == "bw") {
+									photo.img.filters = [singleton.bwfilter];
+								}
+								if (event.element.imageFilter == "sepia") {
+									photo.img.filters = [singleton.sepiafilter];
+								}
+								
+								//Flip the image
+								if (event.element.fliphorizontal == 1) {
+									photo.imagecontainer.scaleX = -1;
+								} else {
+									photo.imagecontainer.scaleX = 1;
+								}
+								
+							}
+							break;
+						
+						case "[class userclipartclass]":
+							var clipart:Object = obj;
+							if (clipart.img) 
+							{
+								clipart.img.x = 0;
+								clipart.img.y = 0;
+								clipart.img.width = event.element.objectWidth;
+								clipart.img.height = event.element.objectHeight;
+								clipart.img.alpha = event.element.imageAlpha;
+								
+								//Check for shadow
+								if (!event.element.shadow) {
+									event.element.shadow = "";
+								}
+								
+								//Flip the image
+								if (event.element.fliphorizontal == 1) {
+									clipart.container.scaleX = -1;
+								} else {
+									clipart.container.scaleX = 1;
+								}
+								
+								clipart.container.horizontalCenter = 0;
+								clipart.container.verticalCenter = 0;
+								
+								if (event.element.shadow.toString() == "") {
+									clipart.filters = null;
+								}
+								if (event.element.shadow.toString() == "left") {
+									clipart.filters = [leftShadowFilter];
+								}
+								if (event.element.shadow.toString() == "right") {
+									clipart.filters = [rightShadowFilter];
+								}
+								if (event.element.shadow.toString() == "bottom") {
+									clipart.filters = [bottomShadowFilter];
+								}
+								
+								clipart.DrawBorder();
+							
+							}
+							
+							break;
+						
+						case "[class userrectangle]":
+							
+							var rectangle:Object = obj;
+							
+							//Check for shadow
+							if (!event.element.shadow) {
+								event.element.shadow = "";
+							}
+							
+							if (event.element.shadow.toString() == "") {
+								rectangle.filters = null;
+							}
+							if (event.element.shadow.toString() == "left") {
+								rectangle.filters = [leftShadowFilter];
+							}
+							if (event.element.shadow.toString() == "right") {
+								rectangle.filters = [rightShadowFilter];
+							}
+							if (event.element.shadow.toString() == "bottom") {
+								rectangle.filters = [bottomShadowFilter];
+							}
+							
+							rectangle.DrawRect();
+							
+							break;
+						
+						case "[class usercircle]":
+							
+							var circle:Object = obj;
+							
+							//Check for shadow
+							if (!event.element.shadow) {
+								event.element.shadow = "";
+							}
+							
+							if (event.element.shadow.toString() == "") {
+								circle.filters = null;
+							}
+							if (event.element.shadow.toString() == "left") {
+								circle.filters = [leftShadowFilter];
+							}
+							if (event.element.shadow.toString() == "right") {
+								circle.filters = [rightShadowFilter];
+							}
+							if (event.element.shadow.toString() == "bottom") {
+								circle.filters = [bottomShadowFilter];
+							}
+							
+							circle.DrawCircle();
+							
+							break;
+						
+						case "[class userline]":
+							var line:Object = obj;
+							
+							//Check for shadow
+							if (!event.element.shadow) {
+								event.element.shadow = "";
+							}
+							
+							if (event.element.shadow.toString() == "") {
+								line.filters = null;
+							}
+							if (event.element.shadow.toString() == "left") {
+								line.filters = [leftShadowFilter];
+							}
+							if (event.element.shadow.toString() == "right") {
+								line.filters = [rightShadowFilter];
+							}
+							if (event.element.shadow.toString() == "bottom") {
+								line.filters = [bottomShadowFilter];
+							}
+							
+							line.DrawRect();
+							
+							break;
+						
+						case "[class usertextclass]":
+							
+							var text:Object = obj;
+							//Update the textflow
+							text.CheckTextPresent();
+							
+							//Check for shadow
+							if (!event.element.shadow) {
+								event.element.shadow = "";
+							}
+								
+							if (event.element.shadow.toString() == "") {
+								text.filters = null;
+							}
+							if (event.element.shadow.toString() == "left") {
+								text.filters = [leftShadowFilter];
+							}
+							if (event.element.shadow.toString() == "right") {
+								text.filters = [rightShadowFilter];
+							}
+							if (event.element.shadow.toString() == "bottom") {
+								text.filters = [bottomShadowFilter];
+							}
+							
+							text.DrawBorder();
+							
+							text.SetShadow();
+							
+							break;
+						
+					}
+					
+					if (event.new_source == true) {
+					
+						//Update the image
+						if (event.temp_Image) {
+							photo.tempImage = event.temp_Image;
+							photo.CreateImage(true, false);
+							FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
+							
+							singleton.UpdatePhotosHideUsed();
+						}
+					}
+			
+					singleton._changesMade = true;
+					singleton.UpdateWindowStatus();
+				}
+			}
+			
+			private function deleteElement(event:updateElementsEvent):void
+			{
+				if (event.spreadID == spreadData.spreadID) 
+				{
+					var found:Boolean = false;
+					if (elementcontainer) {
+						for (var x:int=0; x < elementcontainer.numElements; x++) 
+						{
+							var obj:Object = elementcontainer.getElementAt(x) as Object;
+							
+							if (obj.id == event.element.id.toString()) {
+								found = true;
+								elementcontainer.removeElement(obj as IVisualElement);
+								break;
+							}
+						}
+					}
+					
+					if (!found && ontopelementcontainer) {
+						for (x=0; x < ontopelementcontainer.numElements; x++) 
+						{
+							obj = ontopelementcontainer.getElementAt(x) as Object;
+							
+							if (obj.id == event.element.id.toString()) {
+								found = true;
+								ontopelementcontainer.removeElement(obj as IVisualElement);
+								break;
+							}
+						}
+					}
+					
+					//Remove the data
+					singleton.selected_spread.elements.refresh();
+					for (var e:int=0; e < singleton.selected_spread.elements.length; e++)
+					{
+						if (singleton.selected_spread.elements.getItemAt(e).id == event.element.id) 
+						{
+							singleton.selected_spread.elements.removeItemAt(e);
+							if (obj.constructor.toString() == "[class photocomponent]") {
+								FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT, singleton.selected_element.data.original_image_id));
+							}
+							break;
+						}
+					}
+					
+					singleton._changesMade = true;
+					singleton.UpdateWindowStatus();
+					
+				}
+			}
+			
+			
+			private function deleteElementImage(event:updateElementsEvent):void
+			{
+				if (event.spreadID == spreadData.spreadID) 
+				{
+					if (elementcontainer) {
+						
+						for (var x:int=0; x < elementcontainer.numElements; x++) 
+						{
+							var obj:Object = elementcontainer.getElementAt(x) as Object;
+							if (obj.id == event.element.id.toString()) {
+								
+								var orig_image_id:String = obj.data.original_image_id;
+								
+								//Remove the image from the container
+								obj.data.hires = "";
+								obj.data.hires_url = "";
+								obj.data.fullPath = "";
+								obj.data.bytesize = "0";
+								obj.data.imageWidth = "";
+								obj.data.imageHeight = "";
+								obj.data.imageRotation = "0";
+								obj.data.lowres = "";
+								obj.data.lowres_url = "";
+								obj.data.origin = "";
+								obj.data.originalHeight = "";
+								obj.data.originalWidth = "";
+								obj.data.original_image_id = "";
+								obj.data.path = "";
+								obj.data.refHeight = "";
+								obj.data.refWidth = "";
+								obj.data.refOffsetX = "";
+								obj.data.refOffsetY = "";
+								obj.data.refScale = "";
+								obj.data.status = "empty";
+								obj.data.thumb = "";
+								obj.data.thumb_url = "";
+								
+								obj.RemoveImage(true);
+								
+								FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT, orig_image_id));
+							
+								singleton.UpdatePhotosHideUsed();
+							}
+						}
+					}
+					
+					singleton._changesMade = true;
+					singleton.UpdateWindowStatus();
+					
+				}
+			}
+			
+			public function DrawPageNumber(pagenum:String, pageW:Number):void 
+			{
+				var pagenumberLabel:Label = new Label();
+				pagenumberLabel.width = pageW;
+				pagenumberLabel.setStyle("textAlign", TextAlign.CENTER);
+				pagenumberLabel.setStyle("color", 0xFFFFFF);
+				pagenumberLabel.setStyle("fontFamily", "_AppFontRegular");
+				pagenumberLabel.setStyle("fontSize", 12);
+				pagenumberLabel.text = pagenum;
+				pagenumbers.addElement(pagenumberLabel);
+			}
+			
+			public function SelectSpread():void {
+				
+				if (singleton.textchanged) {
+					//Set the current textflow for this item
+					singleton.textchanged = false;
+					if (singleton.selected_element) {
+						var newtextflow:Object = new Object;
+						newtextflow.id = singleton.selected_element.sprite.tfID;
+						newtextflow.textflow = TextConverter.export(singleton.selected_element.sprite.cc.textFlow, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.XML_TYPE);
+						singleton.selected_undoredomanager.AddUndo(singleton.oldtextflow, newtextflow, singleton.selectedspreadindex, undoActions.ACTION_TEXT_CHANGED, singleton.GetRealObjectIndex(singleton.selected_element));
+					}
+				}
+				
+				singleton.selected_spread_item = this;
+				
+				singleton.selectedspreadindex = FlexGlobals.topLevelApplication.lstSpreads.getElementIndex(this);
+				//singleton.selectedspreadindex = this.parent.getChildIndex(this);
+			
+				FlexGlobals.topLevelApplication.dispatchEvent(new selectSpreadEvent(selectSpreadEvent.SELECT, this));
+				
+				selectionContainer.setStyle("borderVisible", true);
+				selectionContainer.setStyle("borderWeight", 3 / currentZoom);
+				selectionContainer.setStyle("borderColor", 0xffde00);
+				
+				singleton.CloseAlertWaitWindow();
+				
+			}
+			
+			public function ShowSelectedSpreadInNavigation(event:selectSpreadEvent):void {
+			
+				//Clear the selection
+				//selectionBox.graphics.clear();
+				selectionContainer.setStyle("borderVisible", false);
+				selectionContainer.setStyle("borderWeight", 0);
+				
+			}
+			
+			public function MoveToFront(oldData:Object):void {
+				
+				var _source:Object;
+				var _lastIndex:int;
+				for (var x:int=0; x < elementcontainer.numElements; x++) {
+					var obj:Object = elementcontainer.getElementAt(x) as Object;
+					if (obj.hasOwnProperty("data")) {
+						if (obj.data.classtype.toString() == "[class userphotoclass]" ||
+							obj.data.classtype.toString() == "[class usertextclass]" ||
+							obj.data.classtype.toString() == "[class userrectangle]" ||
+							obj.data.classtype.toString() == "[class usercircle]" ||
+							obj.data.classtype.toString() == "[class userline]" ||
+							obj.data.classtype.toString() == "[class userclipartclass]") {
+						
+							_lastIndex = x;
+							
+							if (obj.data == singleton.selected_element.data) {
+								//found it, remember it for now
+								if (!_source) {
+									_source = elementcontainer.getElementAt(x) as Object;
+								}
+							}
+						}
+					}
+				}
+				
+				_lastIndex = singleton.GetIndexAfterReorder(singleton.selected_element.id);
+				
+				if (_source) {
+					elementcontainer.setElementIndex(_source as IVisualElement, _lastIndex);
+					_source.data.index = _lastIndex;
+				}
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, _source, singleton.selectedspreadindex, undoActions.ACTION_OBJECT_Z, _lastIndex);
+
+			}
+			
+			public function SendToBack(oldData:Object):void {
+				
+				var _source:Object;
+				var _firstIndex:int = -1;
+				for (var x:int=0; x < elementcontainer.numElements; x++) {
+					var obj:Object = elementcontainer.getElementAt(x) as Object;
+					if (obj.hasOwnProperty("data")) {
+						if (obj.data.classtype.toString() == "[class userphotoclass]" ||
+							obj.data.classtype.toString() == "[class usertextclass]" ||
+							obj.data.classtype.toString() == "[class userrectangle]" ||
+							obj.data.classtype.toString() == "[class usercircle]" ||
+							obj.data.classtype.toString() == "[class userline]" ||
+							obj.data.classtype.toString() == "[class userclipartclass]") {
+							
+							if (_firstIndex == -1) {
+								_firstIndex = x;
+							}
+							
+							if (obj.data == singleton.selected_element.data) {
+								//found it, remember it for now
+								if (!_source) {
+									_source = elementcontainer.getElementAt(x) as Object;
+									break;
+								}
+							}
+						}
+					}
+				}
+				
+				if (_source) {
+					elementcontainer.setElementIndex(_source as IVisualElement, _firstIndex);
+					_source.data.index = _firstIndex;
+				}
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, _source, singleton.selectedspreadindex, undoActions.ACTION_OBJECT_Z, _firstIndex);
+				
+			}
+			
+			public function UpdateElementFromUndo(undoitem:Object, action:String):void {
+				
+				var updatedata:Object;
+				var createnew:Boolean = false;
+				if (action == "undo") {
+					updatedata = undoitem.olddata;
+					if (!undoitem.data) {
+						createnew = true;
+					}
+				} else { //redo
+					updatedata = undoitem.data;	
+					if (!undoitem.olddata) {
+						createnew = true;
+					}
+				}
+				
+				if (undoitem.classtype == "Reorder") {
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new clearObjectHandlesEvent(clearObjectHandlesEvent.CLEARHANDLES));
+					
+					var from:int;
+					var to:int;
+					
+					if (action == "undo") {
+						from = undoitem.toindex;
+						to = undoitem.fromindex;
+					} else {
+						from = undoitem.fromindex;
+						to = undoitem.toindex;
+					}
+					 
+					var tempObj:Object = singleton.selected_spread.elements.getItemAt(from) as Object;
+					if (from < to) { //move to front
+						for (var i:int=from + 1; i < singleton.selected_spread.elements.length; i++) {
+							singleton.selected_spread.elements.setItemAt(singleton.selected_spread.elements.getItemAt(i), i - 1);
+						}
+						singleton.selected_spread.elements.setItemAt(tempObj, to);
+						singleton.selected_spread.elements.refresh();
+						
+					} else {
+						
+						for (i=singleton.selected_spread.elements.length -2; i > to - 1; i--) {
+							singleton.selected_spread.elements.setItemAt(singleton.selected_spread.elements.getItemAt(i), i + 1);
+						}
+						singleton.selected_spread.elements.setItemAt(tempObj, to);
+						singleton.selected_spread.elements.refresh();
+					}
+					
+					for (var q:int=0; q < singleton.selected_spread.elements.length; q++) {
+						var element:Object = singleton.selected_spread.elements.getItemAt(q) as Object;
+						for (var r:int=0; r < elementcontainer.numElements; r++) {
+							var obj:Object = elementcontainer.getElementAt(r) as Object;
+							if (obj.hasOwnProperty("data")) {
+								if (obj.data.hasOwnProperty("id")) {
+									if (obj.data.id.toString() == element.id.toString()) {
+										//Found it
+										elementcontainer.setElementIndex(obj as IVisualElement, q);
+										break;
+									}
+								}
+							}
+						}
+					}
+					
+				} else if (undoitem.classtype == "Layout") {
+					
+					var mydata:Object;
+					var myolddata:Object;
+					
+					if (action == "undo") {
+						mydata = undoitem.olddata;
+						myolddata = undoitem.data;
+					} else {
+						mydata = undoitem.data;
+						myolddata = undoitem.olddata;
+					}
+					//Remove all the elements and replace them with the old situation!
+					for (q=elementcontainer.numElements - 1; q > -1; q--) {
+						var o:Object = elementcontainer.getElementAt(q);
+						if (o.hasOwnProperty("data")) {
+							for (var t:int=0; t < myolddata.length; t++) {
+								if (myolddata.getItemAt(t).id == o.data.id) {
+									//Remove it
+									elementcontainer.removeElementAt(q);
+									break;
+								}
+							}
+						}
+					}
+					
+					singleton.selected_spread_editor.UpdateAfterUndoRedo(undoitem, action);
+					
+					for (var n:int=0; n < mydata.length; n++) {
+						
+						var item:Object = mydata.getItemAt(n) as Object;
+						
+						if (item.classtype == "[class userphotoclass]") {
+							
+							var oldphoto:userphotoclass = new userphotoclass();
+							var currentPhotoData:Object = item;
+							
+							if (currentPhotoData) {
+								
+								oldphoto.id = currentPhotoData.id;
+								oldphoto.status = currentPhotoData.status;
+								oldphoto.original_image_id = currentPhotoData.original_image_id;
+								oldphoto.fullPath = currentPhotoData.fullPath;
+								oldphoto.bytesize = currentPhotoData.bytesize;
+								oldphoto.hires = currentPhotoData.hires;
+								oldphoto.hires_url = currentPhotoData.hires_url;
+								oldphoto.lowres = currentPhotoData.lowres;
+								oldphoto.lowres_url = currentPhotoData.lowres_url;
+								oldphoto.origin = currentPhotoData.origin;
+								oldphoto.originalWidth = currentPhotoData.originalWidth;
+								oldphoto.originalHeight = currentPhotoData.originalHeight;
+								oldphoto.path = currentPhotoData.path;
+								oldphoto.thumb = currentPhotoData.thumb;
+								oldphoto.thumb_url = currentPhotoData.thumb_url;
+								oldphoto.userID = currentPhotoData.userID;
+								oldphoto.index = currentPhotoData.index;
+								oldphoto.objectX = currentPhotoData.objectX;
+								oldphoto.objectY = currentPhotoData.objectY;
+								oldphoto.objectWidth = currentPhotoData.objectWidth;
+								oldphoto.objectHeight = currentPhotoData.objectHeight;
+								oldphoto.rotation = currentPhotoData.rotation;
+								oldphoto.refOffsetX = currentPhotoData.refOffsetX;
+								oldphoto.refOffsetY = currentPhotoData.refOffsetY;
+								oldphoto.refWidth = currentPhotoData.refWidth;
+								oldphoto.refHeight = currentPhotoData.refHeight;
+								oldphoto.refScale = currentPhotoData.refScale;
+								oldphoto.imageWidth = currentPhotoData.imageWidth;
+								oldphoto.imageHeight = currentPhotoData.imageHeight;
+								oldphoto.offsetX = currentPhotoData.offsetX;
+								oldphoto.offsetY = currentPhotoData.offsetY;
+								oldphoto.imageRotation = currentPhotoData.imageRotation;
+								oldphoto.imageAlpha = currentPhotoData.imageAlpha;
+								oldphoto.shadow = currentPhotoData.shadow;
+								oldphoto.scaling = currentPhotoData.scaling;
+								oldphoto.mask_hires = currentPhotoData.mask_hires;
+								oldphoto.mask_hires_url = currentPhotoData.mask_hires_url;
+								oldphoto.mask_lowres = currentPhotoData.mask_lowres;
+								oldphoto.mask_lowres_url = currentPhotoData.mask_lowres_url;
+								oldphoto.mask_thumb = currentPhotoData.mask_thumb;
+								oldphoto.mask_thumb_url = currentPhotoData.mask_thumb_url;
+								oldphoto.mask_original_height = currentPhotoData.mask_original_height;
+								oldphoto.mask_original_width = currentPhotoData.mask_original_width;
+								oldphoto.mask_original_id = currentPhotoData.mask_original_id;
+								oldphoto.mask_path = currentPhotoData.mask_path;
+								oldphoto.overlay_hires = currentPhotoData.overlay_hires;
+								oldphoto.overlay_hires_url = currentPhotoData.overlay_hires_url;
+								oldphoto.overlay_lowres = currentPhotoData.overlay_lowres;
+								oldphoto.overlay_lowres_url = currentPhotoData.overlay_lowres_url;
+								oldphoto.overlay_thumb = currentPhotoData.overlay_thumb;
+								oldphoto.overlay_thumb_url = currentPhotoData.overlay_thumb_url;
+								oldphoto.overlay_original_height = currentPhotoData.overlay_original_height;
+								oldphoto.overlay_original_width = currentPhotoData.overlay_original_width;
+								
+								singleton.selected_spread.elements.addItem(oldphoto);
+								
+								FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.ADDFROMPAGELAYOUT, singleton.selected_spread.spreadID, oldphoto));
+							
+							}
+						}
+						
+				
+						if (item.classtype == "[class usertextclass]") {	
+						
+							XML.ignoreWhitespace = false;    
+							XML.ignoreProcessingInstructions = true;
+							XML.prettyPrinting = false;
+							
+							if (item) {
+								
+								var text:textcomponent = new textcomponent();
+								text.data = item;
+								text.id = item.id;
+								text.x = item.objectX;
+								text.y = item.objectY;
+								text.width = item.objectWidth;
+								text.height = item.objectHeight;
+								text.rotation = item.rotation;
+								
+								var tfclass:Object = singleton.GetTextFlowClassByID(item.tfID);
+								var content:String = TextConverter.export(tfclass.tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.STRING_TYPE).toString();
+								var tf:TextFlow = new TextFlow();
+								
+								tf = TextConverter.importToFlow(content, TextConverter.TEXT_LAYOUT_FORMAT);
+								tf.invalidateAllFormats();
+								text.sprite = new textsprite;
+								text.container.addElement(text.sprite);
+								
+								var cc:ContainerController = new ContainerController(text.sprite, text.width, text.height);
+								text.sprite.cc = cc;
+								tf.flowComposer.addController(text.sprite.cc);
+								tf.flowComposer.updateAllControllers();
+								
+								ontopelementcontainer.addElement(text);
+								
+								FlexGlobals.topLevelApplication.addEventListener(textFlowEvent.UPDATETEXTFLOW, UpdateTextFlowNav);
+								
+								text.CheckTextPresent();
+								
+								text.DrawBorder();
+								
+								text.SetShadow();
+								
+								singleton.selected_spread.elements.addItem(text.data);
+								
+								FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.ADDFROMPAGELAYOUT, singleton.selected_spread.spreadID, text.data));
+								
+							}
+						}
+					}
+				
+				} else if (undoitem.classtype == "Background") {
+					
+					//Delete the spread background first
+					singleton.selected_spread.backgroundData = null;
+					
+					//Restore the data
+					if (updatedata.backgroundData) {
+						//Set the spread backgrounddata
+						spreadData.backgroundData = singleton.deepcloneBackground(updatedata.backgroundData);
+						spreadData.backgroundAlpha = updatedata.backgroundAlpha;
+					} else {
+						spreadData.backgroundData = null;
+						spreadData.backgroundAlpha = 1;
+					}
+					
+					for (var p:int=0; p < updatedata.pages.length; p++) {
+						spreadData.pages.getItemAt(p).backgroundColor = updatedata.pages.getItemAt(p).backgroundColor;
+						if (updatedata.pages.getItemAt(p).backgroundData) {
+							spreadData.pages.getItemAt(p).backgroundData = singleton.deepcloneBackground(updatedata.pages.getItemAt(p).backgroundData);
+						} else {
+							spreadData.pages.getItemAt(p).backgroundData = null;
+						}
+						spreadData.pages.getItemAt(p).backgroundAlpha = updatedata.pages.getItemAt(p).backgroundAlpha;
+					}
+					
+					UpdateSpreadBackground();
+					
+				} else if (undoitem.classtype == "Text") {
+					
+					var tfxml:XML;
+					var tfID:String;
+					
+					if (action == "undo") {
+						tfID = undoitem.oldtextflowID;
+						tfxml = undoitem.oldtextflow.copy();
+					} else {
+						tfID = undoitem.textflowID;
+						tfxml = undoitem.textflow.copy();
+					}
+					
+					//Find and update the textflow
+					for (var g:int=0; g < singleton.textflowcollection.length; g++) {
+						
+						var tfcl:textflowclass = singleton.textflowcollection.getItemAt(g) as textflowclass;
+						if (tfcl.id == tfID) {
+							var cC:ContainerController = tfcl.sprite.cc as ContainerController;
+							tfcl.tf = TextConverter.importToFlow(tfxml, TextConverter.TEXT_LAYOUT_FORMAT);
+							tfcl.tf.flowComposer.addController(cC);
+							tfcl.tf.interactionManager = new EditManager(new UndoManager());
+							tfcl.tf.flowComposer.updateAllControllers();
+							
+							//Update the navigation as well
+							FlexGlobals.topLevelApplication.dispatchEvent(new textFlowEvent(textFlowEvent.UPDATETEXTFLOW, tfID));
+							break;
+						}
+						
+					}
+					
+				} else {
+				
+					if (createnew) {
+						
+						switch (undoitem.classtype) {
+							
+							case "[class userphotoclass]":
+								
+								var photo_class:Object = updatedata;
+								var photo:photocomponent = new photocomponent();
+								
+								var photodata:Object = new Object();
+								photo.id = photo_class.id;
+								photo.x = photo_class.objectX;
+								photo.y = photo_class.objectY;
+								photo.width = photo_class.objectWidth;
+								photo.height = photo_class.objectHeight;
+								
+								photo.data = photo_class;
+								
+								if (photo_class.status == "empty")
+								{
+									photo.RemoveImage(false);
+								} else
+								{
+									if (photo_class.status != "done") {
+										var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id));
+										photo.tempImage = new Image();
+										photo.tempImage.source = bitmap;
+									}
+								}
+								
+								elementcontainer.addElementAt(photo, undoitem.index);
+								
+								photo.SetEventListeners();
+								
+								if (photo_class.status != "empty")
+								{
+									photo.CreateImage(false);
+								}
+								
+								//Add the element to the spread collection
+								var se:spreadclass = singleton.spreadcollection.getItemAt(undoitem.spreadindex) as spreadclass;
+								se.elements.addItemAt(photo_class, undoitem.index);
+								spreadData = se;
+								break;
+							
+							case "[class userclipartclass]":
+								
+								var clipart_class:Object = updatedata;
+								var clipart:clipartcomponent = new clipartcomponent();
+								
+								var clipartdata:Object = new Object();
+								clipart.id = clipart_class.id;
+								clipart.x = clipart_class.objectX;
+								clipart.y = clipart_class.objectY;
+								clipart.width = clipart_class.objectWidth;
+								clipart.height = clipart_class.objectHeight;
+								
+								clipart.data = clipart_class;
+								
+								elementcontainer.addElementAt(clipart, undoitem.index);
+								
+								clipart.SetEventListeners();
+								
+								clipart.CreateImage(false);
+								
+								//Add the element to the spread collection
+								se = singleton.spreadcollection.getItemAt(undoitem.spreadindex) as spreadclass;
+								se.elements.addItemAt(clipart_class, undoitem.index);
+								spreadData = se;
+								break;
+							
+							case "[class usertextclass]":
+								
+								var text_class:Object = updatedata;
+								text = new textcomponent();
+								text.data = text_class;
+								text.id = text_class.id;
+								text.x = text_class.objectX;
+								text.y = text_class.objectY;
+								text.width = text_class.objectWidth;
+								text.height = text_class.objectHeight;
+								text.rotation = text_class.rotation;
+								
+								//Get the tfclass and add it to the textflowcollection!
+								if (undoitem.data) {
+									tfclass = singleton.GetTextFlowClassByID(undoitem.data.tfID);
+								} else {
+									tfclass = singleton.GetTextFlowClassByID(undoitem.olddata.tfID);
+								}
+								
+								content = TextConverter.export(tfclass.tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.STRING_TYPE).toString();
+								tf = new TextFlow();
+								
+								tf = TextConverter.importToFlow(content, TextConverter.TEXT_LAYOUT_FORMAT);
+								tf.invalidateAllFormats();
+								text.sprite = new textsprite;
+								text.container.addElement(text.sprite);
+								
+								cc = new ContainerController(text.sprite, text.width, text.height);
+								text.sprite.cc = cc;
+								tf.flowComposer.addController(text.sprite.cc);
+								tf.flowComposer.updateAllControllers();
+								
+								elementcontainer.addElementAt(text, undoitem.index);
+								
+								text.CheckTextPresent();
+								
+								text.DrawBorder();
+								
+								text.SetShadow();
+								
+								//Add the element to the spread collection
+								se = singleton.spreadcollection.getItemAt(undoitem.spreadindex) as spreadclass;
+								se.elements.addItemAt(text_class, undoitem.index);
+								spreadData = se;
+								break;
+							
+							case "[class userrectangle]":
+								
+								var rectangle_class:Object = updatedata;
+								var rectangle:rectangleobject = new rectangleobject;
+								rectangle.id = rectangle_class.id;
+								rectangle.x = rectangle_class.objectX;
+								rectangle.y = rectangle_class.objectY;
+								rectangle.width = rectangle_class.objectWidth;
+								rectangle.height = rectangle_class.objectHeight;
+								rectangle.rotation = rectangle_class.rotation;
+								
+								rectangle.data = rectangle_class;
+								
+								elementcontainer.addElementAt(rectangle, undoitem.index);
+								
+								rectangle.DrawRect();
+								
+								//Add the element to the spread collection
+								se = singleton.spreadcollection.getItemAt(undoitem.spreadindex) as spreadclass;
+								se.elements.addItemAt(rectangle_class, undoitem.index);
+								spreadData = se;
+								break;
+							
+							case "[class usercircle]":
+								
+								var circle_class:Object = updatedata;
+								var circle:circleobject = new circleobject;
+								circle.id = circle_class.id;
+								circle.x = circle_class.objectX;
+								circle.y = circle_class.objectY;
+								circle.width = circle_class.objectWidth;
+								circle.height = circle_class.objectHeight;
+								circle.rotation = circle_class.rotation;
+								
+								circle.data = circle_class;
+								
+								elementcontainer.addElementAt(circle, undoitem.index);
+								
+								circle.DrawCircle();
+								
+								//Add the element to the spread collection
+								se = singleton.spreadcollection.getItemAt(undoitem.spreadindex) as spreadclass;
+								se.elements.addItemAt(circle_class, undoitem.index);
+								spreadData = se;
+								break;
+							
+							case "[class userline]":
+								
+								var line_class:Object = updatedata;
+								var line:lineobject = new lineobject;
+								line.id = line_class.id;
+								line.x = line_class.objectX;
+								line.y = line_class.objectY;
+								line.width = line_class.objectWidth;
+								line.height = line_class.lineweight;
+								line.rotation = line_class.rotation;
+								
+								line.data = line_class;
+								
+								elementcontainer.addElementAt(line, undoitem.index);
+								
+								line.DrawRect();
+								
+								//Add the element to the spread collection
+								se = singleton.spreadcollection.getItemAt(undoitem.spreadindex) as spreadclass;
+								se.elements.addItemAt(line_class, undoitem.index);
+								spreadData = se;
+								break;
+						}
+						
+						
+					} else {
+					
+						if (!updatedata) {
+							
+							//updatedata is null so this means remove the object!
+							var id:String = undoitem.id;
+							if (elementcontainer) {
+								
+								//Remove the element from the nav
+								for (x=elementcontainer.numElements - 1; x > -1; x--) 
+								{
+									var e:Object = elementcontainer.getElementAt(x) as Object;
+									if (e.id == id) {
+										elementcontainer.removeElementAt(x);
+									}
+								}
+								
+							}
+							
+						} else {
+							
+							if (elementcontainer) {
+								
+								for (x=0; x < elementcontainer.numElements; x++) 
+								{
+									
+									obj = elementcontainer.getElementAt(x) as Object;
+									
+									if (obj.id == updatedata.id.toString()) {
+										
+										var index:int = singleton.GetRealObjectIndex(updatedata);
+										elementcontainer.setElementIndex(obj as IVisualElement, index);
+										
+										//Move this object to the front
+										for (var s:int=0; s < spreadData.elements.length; s++) {
+											if (s != index) {
+												if (spreadData.elements.getItemAt(s).id == updatedata.id) {
+													//found it
+													tempObj = spreadData.elements.getItemAt(index) as Object;
+													spreadData.elements.setItemAt(spreadData.elements.getItemAt(s), index);
+													spreadData.elements.setItemAt(tempObj, s);
+													spreadData.elements.refresh();
+													break;
+												}
+											}
+										}
+										
+										obj.x = updatedata.objectX;
+										obj.y = updatedata.objectY;
+										obj.width = updatedata.objectWidth;
+										obj.height = updatedata.objectHeight;
+										obj.rotation = updatedata.rotation;
+										
+										obj.data.objectX = obj.x;
+										obj.data.objectY = obj.y;
+										obj.data.objectWidth = obj.width;
+										obj.data.objectHeight = obj.height;
+										obj.data.rotation = obj.rotation;
+											
+										obj.onModelChange();
+										
+										switch (obj.constructor.toString()) 
+										{
+											case "[class photocomponent]":
+												
+												photo = obj as photocomponent;
+												
+												obj.data.borderweight = updatedata.borderweight;
+												obj.data.bordercolor = updatedata.bordercolor;
+												obj.data.borderalpha = updatedata.borderalpha;
+												
+												photo.DrawBorder();
+												
+												obj.data.shadow = updatedata.shadow;
+												
+												//Check for shadow
+												if (obj.data.shadow.toString() == "") {
+													photo.filters = null;
+												}
+												if (obj.data.shadow.toString() == "left") {
+													photo.filters = [leftShadowFilter];
+												}
+												if (obj.data.shadow.toString() == "right") {
+													photo.filters = [rightShadowFilter];
+												}
+												if (obj.data.shadow.toString() == "bottom") {
+													photo.filters = [bottomShadowFilter];
+												}
+												
+												obj.data.fliphorizontal = updatedata.fliphorizontal;
+												
+												//Flip the image
+												if (obj.data.fliphorizontal == 1) {
+													if (photo.imagecontainer) {
+														photo.imagecontainer.scaleX = -1;
+													}
+												} else {
+													if (photo.imagecontainer) {
+														photo.imagecontainer.scaleX = 1;
+													}
+												}
+												
+												if (updatedata.original_image_id.toString() == "") {
+													
+													//Remove the image and reset the data
+													obj.data.offsetX = 0;
+													obj.data.offsetY = 0;
+													obj.data.hires = "";
+													obj.data.hires_url = "";
+													obj.data.fullPath = "";
+													obj.data.bytesize = "0";
+													obj.data.imageWidth = "";
+													obj.data.imageHeight = "";
+													obj.data.imageRotation = "0";
+													obj.data.imageAlpha = 1;
+													obj.data.lowres = "";
+													obj.data.lowres_url = "";
+													obj.data.origin = "";
+													obj.data.originalHeight = "";
+													obj.data.originalWidth = "";
+													obj.data.original_image_id = "";
+													obj.data.original_image = null;
+													obj.data.original_thumb = null;
+													obj.data.path = "";
+													obj.data.refHeight = "";
+													obj.data.refWidth = "";
+													obj.data.refOffsetX = "";
+													obj.data.refOffsetY = "";
+													obj.data.refScale = "";
+													obj.data.status = "empty";
+													obj.data.thumb = "";
+													obj.data.thumb_url = "";
+													obj.data.scaling = 0;
+													
+													obj.data.mask_original_id = "";
+													obj.data.mask_original_width = "";
+													obj.data.mask_original_height = "";
+													obj.data.mask_hires = "";
+													obj.data.mask_hires_url = "";
+													obj.data.mask_lowres = "";
+													obj.data.mask_lowres_url = "";
+													obj.data.mask_thumb = "";
+													obj.data.mask_thumb_url = "";
+													obj.data.mask_path = "";
+													
+													obj.data.overlay_original_width = "";
+													obj.data.overlay_original_height = "";
+													obj.data.overlay_hires = "";
+													obj.data.overlay_hires_url = "";
+													obj.data.overlay_lowres = "";
+													obj.data.overlay_lowres_url = "";
+													obj.data.overlay_thumb = "";
+													obj.data.overlay_thumb_url = "";
+													
+													photo.RemoveImage(true);
+													
+												} else {
+													
+													obj.data.offsetX = updatedata.offsetX;
+													obj.data.offsetY = updatedata.offsetY;
+													obj.data.hires = updatedata.hires;
+													obj.data.hires_url = updatedata.hires_url;
+													obj.data.fullPath = updatedata.fullPath;
+													obj.data.bytesize = updatedata.bytesize;
+													obj.data.imageWidth = updatedata.imageWidth;
+													obj.data.imageHeight = updatedata.imageHeight;
+													obj.data.imageRotation = updatedata.imageRotation;
+													obj.data.imageAlpha = updatedata.imageAlpha;
+													obj.data.lowres = updatedata.lowres;
+													obj.data.lowres_url = updatedata.lowres_url;
+													obj.data.origin = updatedata.origin;
+													obj.data.originalHeight = updatedata.originalHeight;
+													obj.data.originalWidth = updatedata.originalWidth;
+													obj.data.original_image_id = updatedata.original_image_id;
+													obj.data.path = updatedata.path;
+													obj.data.refHeight = updatedata.refHeight;
+													obj.data.refWidth = updatedata.refWidth;
+													obj.data.refOffsetX = updatedata.refOffsetX;
+													obj.data.refOffsetY = updatedata.refOffsetY;
+													obj.data.refScale = updatedata.refScale;
+													obj.data.status = updatedata.status;
+													obj.data.thumb = updatedata.thumb;
+													obj.data.thumb_url = updatedata.thumb_url;
+													obj.data.scaling = updatedata.scaling;
+													
+													obj.data.mask_original_id = updatedata.mask_original_id;
+													obj.data.mask_original_width = updatedata.mask_original_width;
+													obj.data.mask_original_height = updatedata.mask_original_height;
+													obj.data.mask_hires = updatedata.mask_hires;
+													obj.data.mask_hires_url = updatedata.mask_hires_url;
+													obj.data.mask_lowres = updatedata.mask_lowres;
+													obj.data.mask_lowres_url = updatedata.mask_lowres_url;
+													obj.data.mask_thumb = updatedata.mask_thumb;
+													obj.data.mask_thumb_url = updatedata.mask_thumb_url;
+													obj.data.mask_path = updatedata.mask_path;
+													
+													obj.data.overlay_original_width = updatedata.overlay_original_width;
+													obj.data.overlay_original_height = updatedata.overlay_original_height;
+													obj.data.overlay_hires = updatedata.overlay_hires;
+													obj.data.overlay_hires_url = updatedata.overlay_hires_url;
+													obj.data.overlay_lowres = updatedata.overlay_lowres;
+													obj.data.overlay_lowres_url = updatedata.overlay_lowres_url;
+													obj.data.overlay_thumb = updatedata.overlay_thumb;
+													obj.data.overlay_thumb_url = updatedata.overlay_thumb_url;
+													
+													obj.data.imageFilter = updatedata.imageFilter;
+													
+													if (undoitem.undoaction == undoActions.ACTION_CHANGE_IMAGE) {
+													
+														photo.tempImage = null;
+														
+														if (obj.data.status == "new") {	
+															//Create a bitmap from the original source
+															bitmap = new Bitmap(singleton.GetOriginalBitmapData(updatedata.original_image_id), "auto", true);
+															photo.tempImage = new Image();
+															photo.tempImage.source = bitmap;
+															photo.tempImage.cacheAsBitmap = true;
+															photo.tempImage.validateNow();
+														}
+														
+														//Set the image data
+														photo.CreateImage(true, false);
+													
+													} else {
+													
+														//Set the image data
+														photo.CreateImage(true, false);
+														
+													}
+													
+												}
+												break;
+											
+											case "[class clipartcomponent]":
+												clipart = obj as clipartcomponent;
+												if (clipart.img) 
+												{
+													clipart.img.x = 0;
+													clipart.img.y = 0;
+													clipart.img.width = updatedata.objectWidth;
+													clipart.img.height = updatedata.objectHeight;
+													clipart.img.alpha = updatedata.imageAlpha;
+													
+													//Check for shadow
+													if (!updatedata.shadow) {
+														updatedata.shadow = "";
+													}
+													
+													if (updatedata.shadow.toString() == "") {
+														clipart.filters = null;
+													}
+													if (updatedata.shadow.toString() == "left") {
+														clipart.filters = [leftShadowFilter];
+													}
+													if (updatedata.shadow.toString() == "right") {
+														clipart.filters = [rightShadowFilter];
+													}
+													if (updatedata.shadow.toString() == "bottom") {
+														clipart.filters = [bottomShadowFilter];
+													}
+													
+													clipart.data.fliphorizontal = updatedata.fliphorizontal;
+													
+													clipart.DrawBorder();
+													
+													clipart.CreateImage(true);
+													
+												}
+												
+												break;
+											
+											case "[class textcomponent]":
+												
+												text = obj as textcomponent;
+												//Update the textflow
+												text.CheckTextPresent();
+												
+												//Check for shadow
+												if (!updatedata.shadow) {
+													updatedata.shadow = "";
+												}
+												
+												if (updatedata.shadow.toString() == "") {
+													text.filters = null;
+												}
+												if (updatedata.shadow.toString() == "left") {
+													text.filters = [leftShadowFilter];
+												}
+												if (updatedata.shadow.toString() == "right") {
+													text.filters = [rightShadowFilter];
+												}
+												if (updatedata.shadow.toString() == "bottom") {
+													text.filters = [bottomShadowFilter];
+												}
+												
+												text.DrawBorder();
+												
+												text.SetShadow();
+												
+												break;
+											
+											case "[class rectangleobject]":
+												
+												rectangle = obj as rectangleobject;
+												rectangle.data.borderweight = updatedata.borderweight;
+												rectangle.data.bordercolor = updatedata.bordercolor;
+												rectangle.data.fillcolor = updatedata.fillcolor;
+												rectangle.data.fillalpha = updatedata.fillalpha;
+												rectangle.data.shadow = updatedata.shadow;
+												rectangle.DrawRect();
+												break;
+											
+											case "[class circleobject]":
+												
+												circle = obj as circleobject;
+												circle.data.borderweight = updatedata.borderweight;
+												circle.data.bordercolor = updatedata.bordercolor;
+												circle.data.fillcolor = updatedata.fillcolor;
+												circle.data.fillalpha = updatedata.fillalpha;
+												circle.data.shadow = updatedata.shadow;
+												circle.DrawCircle();
+												break;
+											
+											case "[class lineobject]":
+												
+												line = obj as lineobject;
+												line.data.lineweight = updatedata.lineweight;
+												line.data.fillcolor = updatedata.fillcolor;
+												line.data.fillalpha = updatedata.fillalpha;
+												line.data.shadow = updatedata.shadow;
+												line.DrawRect();
+												break;
+										}
+										
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			public function ClearContainer():void {
+				
+				selectionContainer.setStyle("borderVisible", false);
+				selectionContainer.setStyle("borderWeight", 0);
+				selectionContainer.setStyle("cornerRadius", 0);
+				container.validateNow();
+				
+			}
+			
+			public function PreviewSnapshot(count:int):snapshot {
+				
+				var selected:Boolean = false;
+				
+				for (var x:int=0; x < elementcontainer.numElements; x++) {
+					var obj:Object = elementcontainer.getElementAt(x) as Object;
+					if (obj.constructor.toString() == "[class textcomponent]") {
+						var t:textcomponent = obj as textcomponent;
+						if (t.sprite.cc) {
+							if (t.sprite.cc.textLength <= 1) {
+								t.visible = false;
+							}
+						}
+					}
+					if (obj.constructor.toString() == "[class photocomponent]") {
+						var p:photocomponent = obj as photocomponent;
+						if (p.data.status == "empty") {
+							p.visible = false;
+						}
+					}
+				}
+				
+				if (singleton.selectedspreadindex == this.parent.getChildIndex(this)) {
+					selected = true;
+					selectionContainer.setStyle("borderVisible", false);
+					selectionContainer.setStyle("borderWeight", 0);
+				}
+				
+				//Create the snapshot
+				var w:Number = 0;
+				var h:Number = 0;
+				var scale:Number = 0;
+				if (isCover) {
+					h = FlexGlobals.topLevelApplication.snapCoverHeight + (2 * (singleton._defaultCoverBleed + singleton._defaultCoverWrap));
+					scale = h / (container.height - (2 * (singleton._defaultCoverBleed + singleton._defaultCoverWrap)));
+					w = container.width * scale;
+				} else {
+					h = FlexGlobals.topLevelApplication.snapHeight + (singleton._defaultPageBleed * 2);
+					scale = h / (container.height - (singleton._defaultPageBleed * 2));
+					w = container.width * scale;
+				}
+				
+				var snap:snapshot = new snapshot();
+				snap.targetUI = container;
+				snap.width = w;
+				snap.height = h;
+				snap.smooth = true;
+				snap.validateNow();
+				
+				for (x=0; x < elementcontainer.numElements; x++) {
+					obj = elementcontainer.getElementAt(x) as Object;
+					if (obj.constructor.toString() == "[class textcomponent]") {
+						obj.visible = true;
+					}
+					if (obj.constructor.toString() == "[class photocomponent]") {
+						obj.visible = true;
+					}
+				}
+				
+				if (selected) {
+					selectionContainer.setStyle("borderVisible", true);
+					selectionContainer.setStyle("borderWeight", 3 / currentZoom);
+					selectionContainer.setStyle("cornerRadius", 8);
+					container.validateNow();
+				}
+				
+				return snap;
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer id="selectionContainer" mouseEnabled="false" horizontalCenter="0" verticalCenter="-5" 
+					   borderVisible="false" cornerRadius="0" borderWeight="0" 
+					   filters="{[rightShadowFilter]}">
+		
+		<s:BorderContainer id="container" mouseEnabled="false" 
+						   borderVisible="false" cornerRadius="0" borderWeight="0" />
+		
+	</s:BorderContainer>
+		
+	<s:HGroup id="pagenumbers" gap="0" bottom="12" left="0" right="0" horizontalAlign="center" mouseEnabled="false" />
+	
+	<s:Group id="myNavItem" mouseDown="{SelectSpread()}" width="100%" height="100%" mouseEnabledWhereTransparent="true" />
+	
+</s:Group>

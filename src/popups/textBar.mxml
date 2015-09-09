@@ -1,0 +1,1090 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:classes="classes.*"
+				   xmlns:components="components.*"
+				   height="30"
+				   backgroundColor="#4e4e4e"
+				   borderVisible="false" cornerRadius="0"
+				   filters="{[toolbarShadow]}"
+				   creationComplete="_creationCompleteHandler(event)"
+				   initialize="_initializeHandler(event)"
+				   mouseDown="_mouseDownHandler(event)">
+	
+	<fx:Declarations>
+		<s:DropShadowFilter id="toolbarShadow" distance="5" color="0" alpha=".6" angle="45" blurX="10" blurY="10" />
+		<s:DropShadowFilter id="leftShadowFilter" distance="3" color="0" alpha=".6" angle="135" blurX="8" blurY="8" />
+		<s:DropShadowFilter id="rightShadowFilter" distance="3" color="0" alpha=".6" angle="45" blurX="8" blurY="8" />
+		<s:DropShadowFilter id="bottomShadowFilter" distance="3" color="0" alpha=".6" angle="90" blurX="8" blurY="8" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.StyleModuleMarshaller;
+			import classes.textflowclass;
+			import classes.undoActions;
+			
+			import com.roguedevelopment.objecthandles.ObjectChangedEvent;
+			
+			import components.textcomponent;
+			
+			import events.barMenuEvent;
+			import events.showPhotoMenuEvent;
+			import events.showPoofEvent;
+			import events.textFlowEvent;
+			import events.updateElementsEvent;
+			
+			import flash.text.engine.FontLookup;
+			import flash.text.engine.FontWeight;
+			import flash.text.engine.RenderingMode;
+			import flash.utils.setTimeout;
+			
+			import flashx.textLayout.container.ContainerController;
+			import flashx.textLayout.conversion.ConversionType;
+			import flashx.textLayout.conversion.TextConverter;
+			import flashx.textLayout.edit.EditManager;
+			import flashx.textLayout.elements.TextFlow;
+			import flashx.textLayout.formats.TextAlign;
+			import flashx.textLayout.formats.TextDecoration;
+			import flashx.textLayout.formats.TextLayoutFormat;
+			
+			import itemrenderers.spreadEditor;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.core.IVisualElement;
+			import mx.events.ColorPickerEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ModuleEvent;
+			import mx.managers.PopUpManager;
+			
+			import org.osmf.elements.LoadFromDocumentElement;
+			
+			import spark.components.Group;
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			[Bindable] public var corpsArr:Array;
+			[Bindable] public var corpsArray:ArrayCollection;
+			[Bindable] public var leadingArr:Array;
+			[Bindable] public var leadingArray:ArrayCollection;
+			
+			[Bindable] public var fonts:XMLListCollection;
+			[Bindable] public var corps_value:Number = 12;
+			[Bindable] public var leading_value:Number = 14;
+			[Bindable] public var font_name:String = "_arial";
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			protected function _mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();
+			}
+			
+			protected function corps_changeHandler(event:IndexChangeEvent):void
+			{
+				
+				if (!singleton.selected_element) {
+					
+					singleton.ShowMessage("Geen tekst geselecteerd","Probeer opnieuw.");
+					
+				} else {
+					
+					SetTextUndo();
+				
+					corps_value = event.currentTarget.selectedItem;
+					leading_value = leading.selectedItem;
+					
+					var tlf:TextLayoutFormat = new TextLayoutFormat();
+					tlf.fontSize = corps_value;
+					tlf.lineHeight = leading_value;
+					var text:textcomponent = singleton.selected_element as textcomponent;
+					var em:EditManager = text.sprite.cc.textFlow.interactionManager as EditManager;
+					em.applyLeafFormat(tlf);
+					
+					text.sprite.cc.textFlow.invalidateAllFormats();
+					text.sprite.cc.textFlow.flowComposer.updateAllControllers();
+					
+					if (leading_value < corps_value + 2) {
+						leading_value = corps_value + 2;
+						leading.selectedIndex = GetLeadingIndex(leading_value.toString());
+						leading.dispatchEvent(new IndexChangeEvent(IndexChangeEvent.CHANGE));
+					}
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new textFlowEvent(textFlowEvent.UPDATETEXTFLOW, text.sprite.tfID));
+					
+					text.SizeTextComponentToContent();
+				}
+				
+			}
+			
+			protected function leading_changeHandler(event:IndexChangeEvent):void
+			{
+			
+				if (!singleton.selected_element) {
+					
+					singleton.ShowMessage("Geen tekst geselecteerd","Probeer opnieuw.");
+					
+				} else {
+					
+					SetTextUndo();
+					
+					//Update the leading value for the selection
+					leading_value = leading.selectedItem;
+					
+					var tlf:TextLayoutFormat = new TextLayoutFormat();
+					tlf.lineHeight = leading_value;
+					var text:textcomponent = singleton.selected_element as textcomponent;
+					var em:EditManager = text.sprite.cc.textFlow.interactionManager as EditManager;
+					em.applyLeafFormat(tlf);
+					
+					text.sprite.cc.textFlow.invalidateAllFormats();
+					text.sprite.cc.textFlow.flowComposer.updateAllControllers();
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new textFlowEvent(textFlowEvent.UPDATETEXTFLOW, text.sprite.tfID));
+					
+					text.SizeTextComponentToContent();
+				}
+				
+			}
+			
+			protected function bold_changeHandler(event:Event):void
+			{
+			
+				SetTextUndo();
+				
+				/*
+				var tlf:TextLayoutFormat = new TextLayoutFormat();
+				
+				if (event.currentTarget.selected) {
+					tlf.fontWeight = FontWeight.BOLD;
+				} else {
+					tlf.fontWeight = FontWeight.NORMAL;
+				}
+				
+				var text:textcomponent = singleton.selected_element as textcomponent;
+				var em:EditManager = text.sprite.cc.textFlow.interactionManager as EditManager;
+				em.applyLeafFormat(tlf);
+				
+				text.sprite.cc.textFlow.invalidateAllFormats();
+				text.sprite.cc.textFlow.flowComposer.updateAllControllers();
+				*/
+				
+				UpdateTextFont();
+				
+				//FlexGlobals.topLevelApplication.dispatchEvent(new textFlowEvent(textFlowEvent.UPDATETEXTFLOW, text.sprite.tfID));
+			}
+			
+			protected function italic_changeHandler(event:Event):void
+			{
+				
+				SetTextUndo();
+				
+				/*
+				var tlf:TextLayoutFormat = new TextLayoutFormat();
+				
+				if (event.currentTarget.selected) {
+					tlf.fontStyle = FontStyle.ITALIC;
+				} else {
+					tlf.fontStyle = "normal";
+				}
+				
+				var text:textcomponent = singleton.selected_element as textcomponent;
+				var em:EditManager = text.sprite.cc.textFlow.interactionManager as EditManager;
+				em.applyLeafFormat(tlf);
+				
+				text.sprite.cc.textFlow.invalidateAllFormats();
+				text.sprite.cc.textFlow.flowComposer.updateAllControllers();
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new textFlowEvent(textFlowEvent.UPDATETEXTFLOW, text.sprite.tfID));
+				*/
+				
+				UpdateTextFont();
+				
+			}
+			
+			protected function underline_changeHandler(event:Event):void
+			{
+				
+				if (!singleton.selected_element) {
+					
+					singleton.ShowMessage("Geen tekst geselecteerd","Probeer opnieuw.");
+					
+				} else {
+					
+					SetTextUndo();
+					
+					var tlf:TextLayoutFormat = new TextLayoutFormat();
+					
+					if (event.currentTarget.selected) {
+						tlf.textDecoration = TextDecoration.UNDERLINE;
+					} else {
+						tlf.textDecoration = TextDecoration.NONE;
+					}
+					
+					var text:textcomponent = singleton.selected_element as textcomponent;
+					var em:EditManager = text.sprite.cc.textFlow.interactionManager as EditManager;
+					em.applyLeafFormat(tlf);
+					
+					text.sprite.cc.textFlow.invalidateAllFormats();
+					text.sprite.cc.textFlow.flowComposer.updateAllControllers();
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new textFlowEvent(textFlowEvent.UPDATETEXTFLOW, text.sprite.tfID));
+				}
+					
+			}
+			
+			protected function color_changeHandler(event:ColorPickerEvent):void
+			{
+				
+				if (!singleton.selected_element) {
+					
+					singleton.ShowMessage("Geen tekst geselecteerd","Probeer opnieuw.");
+					
+				} else {
+					
+						
+					SetTextUndo();
+					
+					var tlf:TextLayoutFormat = new TextLayoutFormat();
+					tlf.color = event.color;
+					
+					//UPDATE THE RGB/CMYK VALUES AS WELL!!
+					var color:Object = new Object();
+					color.id = event.color;
+					color.rgb = singleton.GetRgb(color.id);
+					color.cmyk = singleton.GetCMYK(color.id);
+					singleton.colorcollection.addItem(color);
+					
+					var text:textcomponent = singleton.selected_element as textcomponent;
+					var em:EditManager = text.sprite.cc.textFlow.interactionManager as EditManager;
+					em.applyLeafFormat(tlf);
+					
+					text.sprite.cc.textFlow.invalidateAllFormats();
+					text.sprite.cc.textFlow.flowComposer.updateAllControllers();
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new textFlowEvent(textFlowEvent.UPDATETEXTFLOW, text.sprite.tfID));
+					
+				}
+				
+			}
+			
+			[Bindable] public var selected_fontfamily:Object;
+			protected function font_changeHandler(event:IndexChangeEvent):void
+			{
+				
+				SetTextUndo();
+				
+				//Load the family
+				selected_fontfamily = event.currentTarget.selectedItem;
+				LoadFontFamily();
+				
+			}
+			
+			[Bindable] private var myFontLoader:StyleModuleMarshaller = new StyleModuleMarshaller();
+			public function LoadFontFamily():void {
+				
+				try {
+					
+					//Check if this font was allready loaded
+					if (!singleton.loadedfonts) {
+						singleton.loadedfonts = new Array();
+					}
+					
+					var found:Boolean = false;
+					if (singleton.loadedfonts.indexOf(selected_fontfamily.name.toString()) > -1) { 
+						found = true; 
+					} else {
+						singleton.loadedfonts.push(selected_fontfamily.name.toString());
+					}
+					
+					if (!found) {
+						//Load the regular font first
+						singleton.AlertWaitWindow("Lettertype laden", "Lettertype " + selected_fontfamily.name + " wordt nu geladen...", false);
+						
+						loadedfont_type = "regular";
+						loadedfont_name = selected_fontfamily.regular_name;
+						loadedfont_swf = selected_fontfamily.regular_swfname;
+						LoadFontType();
+					} else {
+						//Set the font
+						setTimeout(UpdateTextFont, 100);
+					}
+			
+				} catch (err:Error) {
+					singleton.ShowMessage("Er is iets mis gegaan", "Probeer opnieuw");
+				}
+				
+			}
+			
+			[Bindable] public var loadedfont_type:String;
+			[Bindable] public var loadedfont_name:String;
+			[Bindable] public var loadedfont_swf:String;
+			private function LoadFontType():void {
+				
+				myFontLoader.SetUrl(singleton._fonturl + loadedfont_swf);
+				myFontLoader.addEventListener(ModuleEvent.READY, fontLoadedHandler);
+				myFontLoader.addEventListener(ModuleEvent.ERROR, errorLoaderHandler);
+				myFontLoader.loadModule();
+				
+			}
+			
+			private function errorLoaderHandler(event:ModuleEvent):void {
+				
+				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n textBar|errorLoaderHandler|" + event.errorText);
+			}
+			
+			public function fontLoadedHandler(event:ModuleEvent):void {
+				
+				//Regular is done, check if we have others left?
+				var _continue:Boolean = true;
+				switch (loadedfont_type) {
+					case "regular":
+						if (selected_fontfamily.hasOwnProperty("bold_name")) {
+							loadedfont_type = "bold";
+							loadedfont_name = selected_fontfamily.bold_name;
+							loadedfont_swf = selected_fontfamily.bold_swfname;
+						} else if (selected_fontfamily.hasOwnProperty("italic_name")) {
+							loadedfont_type = "italic";
+							loadedfont_name = selected_fontfamily.italic_name;
+							loadedfont_swf = selected_fontfamily.italic_swfname;
+						} else if (selected_fontfamily.hasOwnProperty("bolditalic_name")) {
+							loadedfont_type = "bolditalic";
+							loadedfont_name = selected_fontfamily.bolditalic_name;
+							loadedfont_swf = selected_fontfamily.bolditalic_swfname;
+						} else {
+							_continue = false;
+						}
+						break;
+					case "bold":
+						if (selected_fontfamily.hasOwnProperty("italic_name")) {
+							loadedfont_type = "italic";
+							loadedfont_name = selected_fontfamily.italic_name;
+							loadedfont_swf = selected_fontfamily.italic_swfname;
+						} else if (selected_fontfamily.hasOwnProperty("bolditalic_name")) {
+							loadedfont_type = "bolditalic";
+							loadedfont_name = selected_fontfamily.bolditalic_name;
+							loadedfont_swf = selected_fontfamily.bolditalic_swfname;
+						} else {
+							_continue = false;
+						}
+						break;
+					case "italic":
+						if (selected_fontfamily.hasOwnProperty("bolditalic_name")) {
+							loadedfont_type = "bolditalic";
+							loadedfont_name = selected_fontfamily.bolditalic_name;
+							loadedfont_swf = selected_fontfamily.bolditalic_swfname;
+						} else {
+							_continue = false;
+						}
+						break;
+					case "bolditalic":
+						_continue = false;
+						break;
+				}
+			
+				if (_continue) {
+					LoadFontType();	
+				} else {
+					setTimeout(UpdateTextFont, 100);
+				}
+			}
+			
+			public function UpdateTextFont():void {
+				
+				if (!selected_fontfamily) {
+					
+					singleton.ShowMessage("Geen tekst geselecteerd.", "Probeer opnieuw.");
+					
+				} else {
+					
+					var tlf:TextLayoutFormat = new TextLayoutFormat();
+					tlf.fontLookup = FontLookup.EMBEDDED_CFF;
+					tlf.renderingMode = RenderingMode.CFF;
+					
+					//Check if bold and italic are pressed or not, to determine the correct font to load
+					if (bold.selected == true && italic.selected == true) {
+						loadedfont_name = selected_fontfamily.bolditalic_name;
+					} else if (bold.selected == true && italic.selected == false) {
+						loadedfont_name = selected_fontfamily.bold_name;
+					} else if (bold.selected == false && italic.selected == true) {
+						loadedfont_name = selected_fontfamily.italic_name;
+					} else if (bold.selected == false && italic.selected == false) {
+						loadedfont_name = selected_fontfamily.regular_name;
+					}
+					tlf.fontFamily = loadedfont_name;
+					
+					var text:textcomponent = singleton.selected_element as textcomponent;
+					var em:EditManager = text.sprite.cc.textFlow.interactionManager as EditManager;
+					em.applyLeafFormat(tlf);
+					
+					text.sprite.cc.textFlow.fontLookup = FontLookup.EMBEDDED_CFF;
+					text.sprite.cc.textFlow.renderingMode = RenderingMode.CFF;
+					
+					this.callLater(UpdateTextFlows, [text.sprite.cc.textFlow]);
+					
+					//font.setStyle("fontFamily", "_e" + selected_fontfamily.name);
+					
+				}
+				
+			}
+			
+			private function UpdateTextFlows(tf:TextFlow):void {
+				
+				var text:textcomponent = singleton.selected_element as textcomponent;
+				
+				//refresh all the textflow layouts
+				var tfcoll:ArrayCollection = singleton.textflowcollection;
+				for (var x:int=0; x < tfcoll.length; x++) {
+					tfcoll[x].tf.flowComposer.updateAllControllers();
+				}
+				
+				var tf:TextFlow = text.sprite.cc.textFlow as TextFlow;
+				
+				if (tf) {
+					//Update the controllers
+					for (x=0; x < tf.flowComposer.numControllers; x++) {
+						var cc:ContainerController = tf.flowComposer.getControllerAt(x) as ContainerController;
+						cc.container.dispatchEvent(new KeyboardEvent(KeyboardEvent.KEY_UP));
+					}
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new textFlowEvent(textFlowEvent.UPDATETEXTFLOW, text.sprite.tfID));
+				
+				text.SizeTextComponentToContent();
+				
+				singleton.CloseAlertWaitWindow();
+				
+			}
+
+			public function SetNewAlignment(pos:int = 0):void
+			{
+				
+				SetTextUndo();
+				
+				var tlf:TextLayoutFormat = new TextLayoutFormat();
+				switch (pos) {
+					case 0:
+						tlf.textAlign = TextAlign.LEFT;
+						break;
+					case 1:
+						tlf.textAlign = TextAlign.CENTER;
+						break;
+					case 2:
+						tlf.textAlign = TextAlign.RIGHT;
+						break;
+				}
+				
+				var text:textcomponent = singleton.selected_element as textcomponent;
+				var em:EditManager = text.sprite.cc.textFlow.interactionManager as EditManager;
+				em.applyParagraphFormat(tlf);
+				
+				text.sprite.cc.textFlow.invalidateAllFormats();
+				text.sprite.cc.textFlow.flowComposer.updateAllControllers();
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new textFlowEvent(textFlowEvent.UPDATETEXTFLOW, text.sprite.tfID));
+				
+			}
+			
+			public function SetSelectionFormat(_fontfamily:String, _align:String, _corps:String, _leading:String, _bold:Boolean, _italic:Boolean, _underline:Boolean, _color:uint):void {
+				
+				for (var x:int=0; x < singleton.cms_font_families.length; x++) {
+					
+					if (singleton.cms_font_families.getItemAt(x).regular_name == _fontfamily ||
+						singleton.cms_font_families.getItemAt(x).bold_name == _fontfamily ||
+						singleton.cms_font_families.getItemAt(x).italic_name == _fontfamily ||
+						singleton.cms_font_families.getItemAt(x).bolditalic_name == _fontfamily) {
+						selected_fontfamily = singleton.cms_font_families.getItemAt(x);
+						font.selectedIndex = x;
+						break;
+					}
+				}
+				
+				if (_align == "left") {
+					paralignment._selectedIndex = 0;
+				}
+				if (_align == "center") {
+					paralignment._selectedIndex = 1;
+				}
+				if (_align == "right") {
+					paralignment._selectedIndex = 2;
+				}
+				
+				corps.selectedIndex = GetCorpsIndex(_corps);
+				leading.selectedIndex = GetLeadingIndex(_leading);
+				bold.selected = _bold;
+				italic.selected = _italic;
+				underline.selected = _underline;
+				color.selectedColor = _color;
+				
+			}
+			
+			private function GetCorpsIndex(value:String):int {
+				
+				var index:int = 0;
+				
+				for (var x:int=0; x < corpsArray.length; x++) {
+					if (corpsArray[x].toString() == value.toString()) {
+						index = x;
+						break;
+					}
+				}
+				
+				return index;
+			}
+			
+			private function GetLeadingIndex(value:String):int {
+				
+				var index:int = 0;
+				
+				for (var x:int=0; x < leadingArray.length; x++) {
+					if (leadingArray[x].toString() == value.toString()) {
+						index = x;
+						break;
+					}
+				}
+				
+				return index;
+			}
+			
+			private function DeleteText():void {
+				
+				var oldData:Object = singleton.CloneObject(singleton.selected_element.data);
+				
+				var index:int = singleton.GetRealObjectIndex(singleton.selected_element);
+				
+				var elementContainer:Group = singleton.selected_element.parent as Group;
+				elementContainer.removeElement(singleton.selected_element as IVisualElement);
+				
+				singleton.selected_element.parentObjectHandles.selectionManager.clearSelection();
+				singleton.selected_element.graphics.clear();
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new showPoofEvent(showPoofEvent.POOF));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.DELETE, singleton.selected_spread.spreadID, singleton.selected_element.data)); 
+				
+				singleton.selected_spread_editor.textmenu.visible = false;
+				
+				//Delete the textflow as well from singleton.textflowcollection
+				var refTFclass:textflowclass;
+				for (var x:int=0; x < singleton.textflowcollection.length; x++) {
+					if (singleton.textflowcollection.getItemAt(x).id.toString() == singleton.selected_element.data.tfID.toString()) {
+						refTFclass = singleton.textflowcollection.getItemAt(x) as textflowclass;
+						//singleton.textflowcollection.removeItemAt(x);
+						break;
+					}
+				}
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_DELETE_ELEMENT, index, refTFclass);
+				
+			}
+			
+			protected function btnMoveToFront_clickHandler(event:MouseEvent):void
+			{
+				
+				//Store for undo
+				var oldData:Object;
+				
+				//Move this object to the front
+				for (var x:int=0; x < singleton.selected_spread.elements.length; x++) {
+					if (singleton.selected_spread.elements.getItemAt(x) == singleton.selected_element.data) {
+						//found it
+						var tempObj:Object = singleton.selected_spread.elements.getItemAt(singleton.selected_spread.elements.length - 1) as Object;
+						singleton.selected_spread.elements.setItemAt(singleton.selected_spread.elements.getItemAt(x), singleton.selected_spread.elements.length - 1);
+						singleton.selected_spread.elements.setItemAt(tempObj, x);
+						singleton.selected_spread.elements.refresh();
+						break;
+					}
+				}
+				
+				var editor:spreadEditor = FlexGlobals.topLevelApplication.viewer.getElementAt(0) as spreadEditor;
+				
+				var _source:Object;
+				var _lastIndex:int;
+				for (x=0; x < editor.elementcontainer.numElements; x++) {
+					var obj:Object = editor.elementcontainer.getElementAt(x) as Object;
+					if (obj.hasOwnProperty("data")) {
+						if (obj.data.classtype.toString() == "[class userphotoclass]" ||
+							obj.data.classtype.toString() == "[class usertextclass]" ||
+							obj.data.classtype.toString() == "[class userrectangle]" ||
+							obj.data.classtype.toString() == "[class usercircle]" ||
+							obj.data.classtype.toString() == "[class userline]" ||
+							obj.data.classtype.toString() == "[class userclipartclass]") {
+						
+							_lastIndex = x;
+							
+							if (obj.data == singleton.selected_element.data) {
+								//found it, remember it for now
+								if (!_source) {
+									_source = editor.elementcontainer.getElementAt(x) as Object;
+									oldData = singleton.CloneObject(_source.data);
+								}
+							}
+						}
+					}
+				}
+				
+				if (_source) {
+					editor.elementcontainer.setElementIndex(_source as IVisualElement, _lastIndex);
+				}
+				
+				singleton.selected_spread_item.MoveToFront(oldData);
+			}
+			
+			protected function btnSendToBack_clickHandler(event:MouseEvent):void
+			{
+				
+				//Store for undo
+				var oldData:Object;
+				
+				//Send this object to the back
+				for (var x:int=0; x < singleton.selected_spread.elements.length; x++) {
+					if (singleton.selected_spread.elements.getItemAt(x) == singleton.selected_element.data) {
+						//found it
+						var currObj:Object = singleton.selected_spread.elements.getItemAt(x) as Object;
+						//move the former one up
+						for (var n:int=x-1; n > -1; n--) {
+							var tempObj:Object = singleton.selected_spread.elements.getItemAt(n) as Object;
+							singleton.selected_spread.elements.setItemAt(tempObj, n + 1);
+						}
+						singleton.selected_spread.elements.setItemAt(currObj, 0);
+						singleton.selected_spread.elements.refresh();
+						break;
+					}
+				}
+				
+				var editor:spreadEditor = FlexGlobals.topLevelApplication.viewer.getElementAt(0) as spreadEditor;
+				
+				var _source:Object;
+				var _firstIndex:int;
+				for (x=0; x < editor.elementcontainer.numElements; x++) {
+					var obj:Object = editor.elementcontainer.getElementAt(x) as Object;
+					if (obj.hasOwnProperty("data")) {
+						if (obj.data.classtype.toString() == "[class userphotoclass]" ||
+							obj.data.classtype.toString() == "[class usertextclass]" ||
+							obj.data.classtype.toString() == "[class userrectangle]" ||
+							obj.data.classtype.toString() == "[class usercircle]" ||
+							obj.data.classtype.toString() == "[class userline]" ||
+							obj.data.classtype.toString() == "[class userclipartclass]") {
+						
+							if (!_firstIndex) {
+								_firstIndex = x;
+							}
+							
+							if (obj.data == singleton.selected_element.data) {
+								//found it, remember it for now
+								if (!_source) {
+									_source = editor.elementcontainer.getElementAt(x) as Object;
+									oldData = singleton.CloneObject(_source.data);
+									break;
+								}
+							}
+						}
+					}
+				}
+				
+				if (_source) {
+					editor.elementcontainer.setElementIndex(_source as IVisualElement, _firstIndex);
+				}
+				
+				singleton.selected_spread_item.SendToBack(oldData);
+				
+			}
+			
+			protected function btnBordersAndShadows_clickHandler(event:MouseEvent):void
+			{
+				
+				var editor:spreadEditor = FlexGlobals.topLevelApplication.viewer.getElementAt(0) as spreadEditor;
+				if ((this.y + bcBordersAndShadows.height) > editor.elementcontainer.height) { 
+					bcBordersAndShadows.top = -(bcBordersAndShadows.height + 5);
+				} else {
+					bcBordersAndShadows.top = 35;
+				}
+				
+				bcBordersAndShadows.visible = !bcBordersAndShadows.visible;
+				
+			}
+			
+			protected function noshadow_clickHandler(event:MouseEvent):void
+			{
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.filters = null;
+					singleton.selected_element.data.shadow = "";
+				}
+				
+				bcNoshadow.setStyle("backgroundAlpha", 1);
+				bcLeftshadow.setStyle("backgroundAlpha", 0);
+				bcRightshadow.setStyle("backgroundAlpha", 0);
+				bcBottomshadow.setStyle("backgroundAlpha", 0);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+			}
+			
+			protected function leftshadow_clickHandler(event:MouseEvent):void
+			{
+				
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.filters = [leftShadowFilter];
+					singleton.selected_element.data.shadow = "left";
+				}
+				
+				bcNoshadow.setStyle("backgroundAlpha", 0);
+				bcLeftshadow.setStyle("backgroundAlpha", 1);
+				bcRightshadow.setStyle("backgroundAlpha", 0);
+				bcBottomshadow.setStyle("backgroundAlpha", 0);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+			}
+			
+			protected function rightshadow_clickHandler(event:MouseEvent):void
+			{
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.filters = [rightShadowFilter];
+					singleton.selected_element.data.shadow = "right";
+				}
+				
+				bcNoshadow.setStyle("backgroundAlpha", 0);
+				bcLeftshadow.setStyle("backgroundAlpha", 0);
+				bcRightshadow.setStyle("backgroundAlpha", 1);
+				bcBottomshadow.setStyle("backgroundAlpha", 0);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+			}
+			
+			protected function bottomshadow_clickHandler(event:MouseEvent):void
+			{
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.filters = [bottomShadowFilter];
+					singleton.selected_element.data.shadow = "bottom";
+				}
+				
+				bcNoshadow.setStyle("backgroundAlpha", 0);
+				bcLeftshadow.setStyle("backgroundAlpha", 0);
+				bcRightshadow.setStyle("backgroundAlpha", 0);
+				bcBottomshadow.setStyle("backgroundAlpha", 1);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+			}
+			
+			protected function bordercolor_changeHandler(event:ColorPickerEvent):void
+			{
+				
+				//UPDATE THE RGB/CMYK VALUES AS WELL!!
+				var color:Object = new Object();
+				color.id = event.color;
+				color.rgb = singleton.GetRgb(color.id);
+				color.cmyk = singleton.GetCMYK(color.id);
+				singleton.colorcollection.addItem(color);
+				
+				singleton.selected_element.data.bordercolor = color.id;
+				
+				//Update the border
+				singleton.selected_element.DrawBorder();
+				
+				if (!singleton.lastusedcolors) {
+					singleton.lastusedcolors = new ArrayCollection();
+				}
+				
+				if (singleton.lastusedcolors.getItemIndex(event.color.toString()) == -1) {
+					singleton.lastusedcolors.addItemAt(event.color.toString(), 0);
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+			}
+			
+			private function borderwidth_changeHandler(event:Event):void {
+				
+				singleton.selected_element.data.borderweight = event.currentTarget.selectedItem;
+				
+				//Update the border
+				singleton.selected_element.DrawBorder();
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+			}
+			
+			private function borderalpha_changeHandler(event:Event):void {
+				
+				singleton.selected_element.data.borderalpha = event.currentTarget.value / 100;
+				
+				//Update the border
+				singleton.selected_element.DrawBorder();
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+			}
+			
+			public function UpdateTextMenu():void {
+				
+				if (singleton.selected_element) {
+					
+					bordercolor.selectedColor = singleton.selected_element.data.bordercolor;
+					borderwidth.selectedIndex = singleton.GetBorderWeightIndex(singleton.selected_element.data.borderweight);
+					borderalphaslider.value = singleton.selected_element.data.borderalpha * 100;
+					
+					bcNoshadow.setStyle("backgroundAlpha", 0);
+					bcLeftshadow.setStyle("backgroundAlpha", 0);
+					bcRightshadow.setStyle("backgroundAlpha", 0);
+					bcBottomshadow.setStyle("backgroundAlpha", 0);
+					
+					if (singleton.selected_element.data.shadow == "") {
+						bcNoshadow.setStyle("backgroundAlpha", 1);
+					}
+					if (singleton.selected_element.data.shadow == "left") {
+						bcLeftshadow.setStyle("backgroundAlpha", 1);
+					}
+					if (singleton.selected_element.data.shadow == "right") {
+						bcRightshadow.setStyle("backgroundAlpha", 1);
+					}
+					if (singleton.selected_element.data.shadow == "bottom") {
+						bcBottomshadow.setStyle("backgroundAlpha", 1);
+					}
+					
+				}
+			}
+			
+			public function SetTextUndo():void {
+				
+				if (!singleton.textchanged) {
+					singleton.textchanged = true;
+					singleton.oldtextflow = new Object;
+					singleton.oldtextflow.id = singleton.selected_element.sprite.tfID;
+					singleton.oldtextflow.textflow = TextConverter.export(singleton.selected_element.sprite.cc.textFlow, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.XML_TYPE);
+				}
+				
+			}
+			
+			protected function dragHandle_mouseDownHandler(event:MouseEvent):void
+			{
+				singleton.selected_spread_editor.textmenu.startDrag();
+			}
+			
+			protected function dragHandle_mouseUpHandler(event:MouseEvent):void
+			{
+				singleton.selected_spread_editor.textmenu.stopDrag();
+				if (singleton._toolbarX != this.x || singleton._toolbarY != this.y) {
+					singleton._toolbarX = this.x;
+					singleton._toolbarY = this.y;
+					singleton._toolbarMoved = true;
+				}
+			}
+			
+			protected function borderwidth_mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopPropagation();
+			}
+			
+			protected function corps_mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopPropagation();
+			}
+			
+			protected function leading_mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopPropagation();
+			}
+			
+			private function EnableBar(event:barMenuEvent):void {
+				this.enabled = true;
+				this.mouseEnabled = true;
+			}
+			
+			private function DisableBar(event:barMenuEvent):void {
+				this.enabled = false;
+				this.mouseEnabled = false;
+			}
+			
+			protected function _initializeHandler(event:FlexEvent):void
+			{
+				corpsArr = new Array();
+				leadingArr = new Array();
+				
+				for (var x:int=8; x < 124; x+=2) {
+					corpsArr.push(x);
+					leadingArr.push(x);
+				}
+				
+				corpsArray = new ArrayCollection(corpsArr);
+				leadingArray = new ArrayCollection(leadingArr);
+			}
+			
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				FlexGlobals.topLevelApplication.addEventListener(barMenuEvent.SETBARENABLED, EnableBar);
+				FlexGlobals.topLevelApplication.addEventListener(barMenuEvent.SETBARDISABLED, DisableBar);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup paddingLeft="0" paddingRight="5" verticalAlign="middle" gap="4">
+		
+		<s:BorderContainer id="dragHandle" width="20" height="30" backgroundColor="0xD2D2D2" borderVisible="false"
+						   mouseDown="dragHandle_mouseDownHandler(event)"
+						   mouseUp="dragHandle_mouseUpHandler(event)">
+			<s:Image source="@Embed('assets/icons/drag_handle.png')" height="25" width="14" horizontalCenter="0" verticalCenter="0" />
+		</s:BorderContainer>
+		
+		<classes:menuButton id="btnDelete" width="22" height="22" 
+							_text="&#xf014;" _font="_AppFontAwesome" _fontsize="18"
+							buttonMode="true" click="{DeleteText()}"
+							mouseChildren="false" toolTip="Verwijderen"
+							useHandCursor="true"/>
+		
+		<s:DropDownList id="font" width="110" change="font_changeHandler(event)"
+						dataProvider="{singleton.cms_font_families}" fontFamily="_eCalligraffitti"
+						itemRenderer="itemrenderers.fontsItemRenderer" labelField="name"
+						prompt="Kies een lettertype..." selectedIndex="-1"
+						skinClass="skins.dropDownSkin" useVirtualLayout="false"/>
+		
+		<s:HGroup gap="4" height="100%" verticalAlign="middle">
+			<s:Label color="#FFFFFF" text="&#xf034;" fontSize="14" fontFamily="_AppFontAwesome" />
+			<s:DropDownList id="corps" width="55" dataProvider="{corpsArray}" change="corps_changeHandler(event)"
+							skinClass="skins.dropDownSkin" selectedIndex="0" mouseDown="corps_mouseDownHandler(event)" />
+		</s:HGroup>
+		
+		<s:HGroup gap="4" height="100%" verticalAlign="middle">
+			<s:Label color="#FFFFFF" text="&#xe618;" fontSize="14" fontFamily="_AppFontEnjoy" />
+			<s:DropDownList id="leading" width="55" dataProvider="{leadingArray}" 
+							change="leading_changeHandler(event)" mouseDown="leading_mouseDownHandler(event)"
+							skinClass="skins.dropDownSkin" selectedIndex="0" />
+		</s:HGroup>
+		
+		<s:HGroup gap="0">
+			
+			<s:ToggleButton id="bold" width="22" height="22" change="bold_changeHandler(event)"
+							label="&#xf032;" uid="_AppFontAwesome"
+							skinClass="skins.toggleButtonTextSkin"/>
+			<s:ToggleButton id="italic" width="22" height="22"
+							label="&#xf033;" uid="_AppFontAwesome"
+							skinClass="skins.toggleButtonTextSkin" 
+							change="italic_changeHandler(event)"/>
+			<s:ToggleButton id="underline" width="22" height="22" 
+							label="&#xf0cd;" uid="_AppFontAwesome"
+							skinClass="skins.toggleButtonTextSkin" 
+							change="underline_changeHandler(event)"/>
+		</s:HGroup>
+		
+		<mx:ColorPicker id="color" change="color_changeHandler(event)" />
+		
+		<components:aligncomponent id="paralignment" />
+		
+	</s:HGroup>
+	
+	<!-- ****************************************
+	
+	Border and shadows window 
+	
+	**************************************** -->
+	
+	<s:BorderContainer id="bcBordersAndShadows" visible="false" x="0"
+					   top="35" width="350" height="170" backgroundColor="#58595B"
+					   borderVisible="false" cornerRadius="0" dropShadowVisible="true" fontSize="11"
+					   mouseChildren="true" mouseEnabled="{bcBordersAndShadows.visible}">
+		<s:layout>
+			<s:VerticalLayout gap="3" paddingBottom="10" paddingLeft="10" paddingRight="10"
+							  paddingTop="10"/>
+		</s:layout>
+		
+		<s:Label color="#FFFFFF" paddingTop="4" text="Rand:" fontSize="14"/>
+		
+		<s:HGroup gap="4" width="100%" verticalAlign="middle"> 
+			
+			<s:Image source="@Embed('assets/icons/border-weight-icon.png')"/>
+			
+			<s:DropDownList id="borderwidth" width="60" dataProvider="{singleton.borderArray}" change="{borderwidth_changeHandler(event)}"
+							skinClass="skins.dropDownSkin" selectedIndex="0" mouseDown="borderwidth_mouseDownHandler(event)" />
+			
+			<mx:ColorPicker id="bordercolor" change="{bordercolor_changeHandler(event)}" />
+			
+			<s:SWFLoader source="@Embed('assets/icons/border_transparency.swf')" autoLoad="true" />
+			
+			<s:HGroup width="100%" verticalAlign="middle">
+				<s:Label color="#D2D2D2" text="0%"/>
+				<s:HSlider id="borderalphaslider" width="100%" maximum="100" minimum="0" skinClass="skins.ZoomSlider"
+						   stepSize="1" value="100" change="{borderalpha_changeHandler(event)}" uid="55"/>
+				<s:Label color="#D2D2D2" text="100%"/>
+			</s:HGroup>
+			
+		</s:HGroup>
+		
+		<mx:HRule width="100%" height="1" />
+		
+		<s:Label color="#FFFFFF" paddingTop="4" text="Schaduw:" fontSize="14"/>
+		
+		<s:HGroup gap="4" width="100%">
+			
+			<s:BorderContainer id="bcNoshadow" backgroundAlpha="1" backgroundColor="0x64AADD"
+							   borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" verticalAlign="top" gap="5"
+									  paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+				</s:layout>
+				<s:Image id="noshadow" width="50" height="40"
+						 source="@Embed('assets/icons/nofilter.jpg')"
+						 click="noshadow_clickHandler(event)"/>
+				<s:Label text="Geen schaduw" fontSize="10" color="0xFFFFFF" />
+			</s:BorderContainer>
+			
+			<s:BorderContainer id="bcLeftshadow" backgroundAlpha="1" backgroundColor="0x64AADD"
+							   borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" verticalAlign="top" gap="5"
+									  paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+				</s:layout>
+				<s:Image id="leftshadow" width="50" height="40"
+						 source="@Embed('assets/icons/nofilter.jpg')"
+						 filters="{[leftShadowFilter]}"
+						 click="leftshadow_clickHandler(event)"/>
+				<s:Label text="Schaduw links" fontSize="10" color="0xFFFFFF" />
+			</s:BorderContainer>
+			
+			<s:BorderContainer id="bcRightshadow" backgroundAlpha="1" backgroundColor="0x64AADD"
+							   borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" verticalAlign="top" gap="5"
+									  paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+				</s:layout>
+				<s:Image id="rightshadow" width="50" height="40"
+						 source="@Embed('assets/icons/nofilter.jpg')"
+						 filters="{rightShadowFilter}"
+						 click="rightshadow_clickHandler(event)"/>
+				<s:Label text="Schaduw rechts" fontSize="10" color="0xFFFFFF" />
+			</s:BorderContainer>
+			
+			<s:BorderContainer id="bcBottomshadow" backgroundAlpha="1" backgroundColor="0x64AADD"
+							   borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" verticalAlign="top" gap="5"
+									  paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+				</s:layout>
+				<s:Image id="bottomshadow" width="50" height="40"
+						 source="@Embed('assets/icons/nofilter.jpg')"
+						 filters="{bottomShadowFilter}"
+						 click="bottomshadow_clickHandler(event)"/>
+				<s:Label text="Schaduw onder" fontSize="10" color="0xFFFFFF" />
+			</s:BorderContainer>
+			
+		</s:HGroup>
+		
+	</s:BorderContainer>
+	
+</s:BorderContainer>

@@ -1,0 +1,551 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 creationComplete="_creationCompleteHandler(event)"
+		 rollOver="_rollOverHandler(event)"
+		 rollOut="_rollOutHandler(event)"
+		 keyDown="_keyDownHandler(event)"
+		 keyUp="_keyUpHandler(event)"
+		 clipAndEnableScrolling="false">
+	
+	<fx:Declarations>
+		<mx:GlowFilter id="myGlow" color="0xD2D2D2" alpha=".5" blurX="10" blurY="10" />
+		<mx:GlowFilter id="myGlowImage" color="0x00ff06" alpha=".5" blurX="10" blurY="10" />
+		<mx:DropShadowFilter id="dropShadow" distance="5" angle="45" blurX="10" blurY="10" alpha=".7" color="0x000000" />
+		<s:DropShadowFilter id="leftShadowFilter" distance="3" color="0" alpha=".6" angle="135" blurX="8" blurY="8" />
+		<s:DropShadowFilter id="rightShadowFilter" distance="3" color="0" alpha=".6" angle="45" blurX="8" blurY="8" />
+		<s:DropShadowFilter id="bottomShadowFilter" distance="3" color="0" alpha=".6" angle="90" blurX="8" blurY="8" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.bookclass;
+			import classes.textsprite;
+			import classes.undoActions;
+			import classes.userphotoclass;
+			
+			import com.roguedevelopment.objecthandles.ObjectChangedEvent;
+			import com.roguedevelopment.objecthandles.ObjectHandles;
+			import com.roguedevelopment.objecthandles.example.SimpleDataModel;
+			
+			import events.clearObjectHandlesEvent;
+			import events.dragdropExposeEvent;
+			import events.selectTextComponentEvent;
+			import events.showPoofEvent;
+			
+			import flashx.textLayout.conversion.ConversionType;
+			import flashx.textLayout.conversion.TextConverter;
+			import flashx.textLayout.edit.SelectionManager;
+			import flashx.textLayout.tlf_internal;
+			
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.core.mx_internal;
+			import mx.events.FlexEvent;
+			import mx.events.PropertyChangeEvent;
+			import mx.managers.CursorManager;
+			import mx.managers.DragManager;
+			
+			import skins.selectedTabSkin;
+			
+			[Embed(source="/assets/icons/grab_closed.png")] 
+			[Bindable] public var grabClosed:Class;
+			[Embed(source="/assets/icons/cursor_move.png")] 
+			[Bindable] public var moveCursor:Class;
+			
+			private var cursorID:Number = 0;
+			[Bindable] public var data:Object;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var parentObjectHandles:ObjectHandles;
+			[Bindable] public var objectWidth:Number;
+			[Bindable] public var objectHeight:Number;
+			[Bindable] public var objectRotation:Number;
+			[Bindable] public var isNav:Boolean = false;
+			[Bindable] public var sprite:textsprite;
+			public var _model:SimpleDataModel;
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				if (!singleton.previewMode) {
+					FlexGlobals.topLevelApplication.addEventListener(selectTextComponentEvent.TEXTCOMPONENT_SELECT, SelectTextComponent);
+					DrawHandles();
+				}
+				
+			}
+			
+			public function SetParentObjectHandles(oh:ObjectHandles):void {
+				
+				parentObjectHandles = oh;
+				
+			}
+			
+			public function set model(model:SimpleDataModel):void
+			{			
+				if( _model )
+				{
+					_model.removeEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onModelChange);
+				}			
+				_model = model;
+				redraw();
+				x = model.x;
+				y = model.y;
+				width = model.width;
+				height = model.height;
+				rotation = model.rotation;
+				model.addEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onModelChange);	
+				
+				objectWidth = width;
+				objectHeight = height;
+				objectRotation = model.rotation;
+				
+			}
+			
+			public function DrawHandles():void {
+				
+				topDrag.left = -20 / singleton.zoomFactor;
+				topDrag.right = -20 / singleton.zoomFactor;
+				topDrag.top = -20 / singleton.zoomFactor;
+				topDrag.bottom = -20 / singleton.zoomFactor;
+				topDrag.validateNow();
+					
+				topDrag.graphics.clear();
+				topDrag.graphics.beginFill(0xD2D2D2, 0);
+				//Top
+				topDrag.graphics.drawRect(0, 0, topDrag.width, 20 / singleton.zoomFactor);
+				//Bottom
+				topDrag.graphics.drawRect(0, topDrag.height - (20 / singleton.zoomFactor), topDrag.width, 20 / singleton.zoomFactor);
+				//Left
+				topDrag.graphics.drawRect(0, 20 / singleton.zoomFactor, 20 / singleton.zoomFactor, topDrag.height - (40 / singleton.zoomFactor));
+				//Right
+				topDrag.graphics.drawRect(topDrag.width - (20 / singleton.zoomFactor), 20 / singleton.zoomFactor, 20 / singleton.zoomFactor, topDrag.height - (40 / singleton.zoomFactor));
+				topDrag.graphics.endFill();
+				
+				if (singleton.selected_element == this) {
+					selectionContainer.graphics.clear();
+					selectionContainer.graphics.lineStyle(1, 0x64AADD, 1);
+					selectionContainer.graphics.drawRect(0, 0, this.width, this.height);
+				}
+				
+				CheckTextPresent();
+			}
+			
+			public function onModelChange(event:PropertyChangeEvent = null):void
+			{
+				
+				if (event) {
+					switch( event.property )
+					{
+						case "x": 
+							x = event.newValue as Number; 
+							//data.@objectX = x;
+							break;
+						case "y": 
+							y = event.newValue as Number; 
+							//data.@objectY = y;
+							break;
+						case "rotation": 
+							rotation = event.newValue as Number;
+							//data.@rotation = rotation;
+							break;
+						case "width": 
+							width = event.newValue as Number; 
+							//data.@objectWidth = width;
+							break;
+						case "height": 
+							height = event.newValue as Number; 
+							//data.@objectHeight = height;
+							break;
+						default: return;
+					}
+				}
+				
+				objectWidth = width;
+				objectHeight = height;
+				objectRotation = rotation;
+				
+				singleton.objectWidth = width;
+				singleton.objectHeight = height;
+				singleton.objectRotation = rotation;
+				singleton.objectX = x;
+				singleton.objectY = y;
+				
+				this.width = width;
+				this.height = height;
+					
+				borderContainer.width = this.width;
+				borderContainer.height = this.height;
+				
+				selectionContainer.width = this.width;
+				selectionContainer.height = this.height;
+				
+				DrawBorder();
+				
+				//Update the container controller
+				if (sprite) {
+					if (sprite.cc) {
+						sprite.cc.setCompositionSize(objectWidth, objectHeight);
+						sprite.cc.flowComposer.updateAllControllers();
+					}
+				}
+				
+				redraw();
+				
+				SizeTextComponentToContent(event.property.toString());
+				
+			}
+			
+			protected function redraw() : void
+			{
+				if(!_model){return;}
+				graphics.clear();
+				//graphics.lineStyle(1, 0xF5DD3F, 1);
+				graphics.beginFill(0xEAEAEA, 0);
+				graphics.drawRect(0,0,_model.width,_model.height);
+				graphics.endFill();		
+				
+				DrawHandles();
+			
+			}
+			
+			public function SetEventListeners():void {
+				
+				FlexGlobals.topLevelApplication.addEventListener(dragdropExposeEvent.BACKGROUNDS, onDragDropBackground);
+				FlexGlobals.topLevelApplication.addEventListener(dragdropExposeEvent.ENABLEALL, onDragDropEnableAll);
+				FlexGlobals.topLevelApplication.addEventListener(dragdropExposeEvent.PHOTOS, onDragDropPhoto);
+				FlexGlobals.topLevelApplication.addEventListener(dragdropExposeEvent.CLIPART, onDragDropClipart);
+			}
+			
+			protected function _keyUpHandler(event:KeyboardEvent):void
+			{
+				
+				if (!singleton.previewMode) {
+					CheckTextPresent();
+				}
+				
+			}
+			
+			public function CheckTextPresent(preview:Boolean=false):void {
+				
+				background.setStyle("backgroundAlpha", 0);
+				img.visible = false;
+				
+				if (!singleton.previewMode) {
+					
+					if (sprite) {
+						
+						if (sprite.cc) {
+							
+							if (sprite.cc.textLength > 1) {
+									background.setStyle("backgroundAlpha", 0);
+									img.visible = false;
+								
+							} else {
+								background.setStyle("backgroundAlpha", 0.8);
+								img.visible = true;
+							}
+						}
+						
+					} else {
+						
+						background.setStyle("backgroundAlpha", 0.8);
+						img.visible = true;
+						
+					}
+				} else {
+					
+					background.setStyle("backgroundAlpha", 0);
+					img.visible = false;
+				}
+				
+				SizeTextComponentToContent();
+				
+			}
+			
+			public function SelectTextComponent(event:selectTextComponentEvent):void {
+				
+				if (singleton.selected_element) {
+					
+					if (singleton.selected_element.data.id == data.id) {
+						
+						if (event._selected) {
+							
+							background.setStyle("backgroundAlpha", 0);
+							img.visible = false;
+							//background.setStyle("backgroundColor", 0xFFFFFF);
+							//background.setStyle("backgroundAlpha", .7);
+							
+						} else {
+							
+							background.setStyle("backgroundColor", 0xD2D2D2);
+							background.setStyle("backgroundAlpha", 0);
+							CheckTextPresent();
+						}
+					}
+				} else {
+					background.setStyle("backgroundColor", 0xD2D2D2);
+					background.setStyle("backgroundAlpha", 0);
+					CheckTextPresent();
+				}
+			}
+			
+			[Bindable] public var textisoutside:Boolean = false;
+			public function SizeTextComponentToContent(property:String = ""):void {
+				
+				if (sprite) {
+					
+					if (sprite.cc) {
+						
+						var ccContentHeight:Number = this.height;
+						var modify:Boolean = false;
+						
+						if (sprite.cc.tlf_internal::contentHeight) {
+							if (sprite.cc.tlf_internal::contentHeight > ccContentHeight) {
+								ccContentHeight = sprite.cc.tlf_internal::contentHeight + 10;
+								modify = true;
+							}
+						}
+						
+						if (modify) {
+							
+							//Update the height of the textbox
+							container.graphics.clear();
+							
+							this.height = ccContentHeight;
+							
+							container.height = this.height;
+							
+							sprite.cc.setCompositionSize(this.width, this.height);
+							sprite.cc.flowComposer.updateAllControllers();
+							
+							//Update the data
+							data.objectHeight = this.height;
+							if (_model) {
+								_model.height = this.height;
+								parentObjectHandles.dispatchEvent(new ObjectChangedEvent(null, ObjectChangedEvent.OBJECT_RESIZING, false, false));
+							}
+					
+						}
+					}
+				}
+			}
+			
+			public function UpdatePositionAfterChangePageLayout():void {
+				
+				container.width = this.width;
+				container.height = this.height;
+				
+				//Update the text container 
+				if (sprite) {
+					if (sprite.cc) {
+						sprite.cc.setCompositionSize(objectWidth, objectHeight);
+						sprite.cc.flowComposer.updateAllControllers();
+					}
+				}
+				
+			}
+			
+			private function onDragDropBackground(event:dragdropExposeEvent):void
+			{
+				this.mouseEnabled = false;
+				this.mouseChildren = false;
+			}
+			
+			private function onDragDropEnableAll(event:dragdropExposeEvent):void
+			{
+				this.mouseEnabled = true;
+				this.mouseChildren = true;
+			}
+			
+			private function onDragDropPhoto(event:dragdropExposeEvent):void
+			{
+				this.mouseEnabled = false;	
+				this.mouseChildren = false;
+			}
+			
+			private function onDragDropClipart(event:dragdropExposeEvent):void
+			{
+				this.mouseEnabled = false;	
+				this.mouseChildren = false;
+			}
+			
+			public function _rollOverHandler(event:Event):void {
+				
+				if (!singleton.previewMode && !singleton.multiselect) {
+					
+					if (singleton.selected_element) {
+						if (singleton.selected_element.id != data.id) {
+							selectionContainer.filters = [myGlow];
+							selectionContainer.graphics.clear();
+							selectionContainer.graphics.beginFill(0xFFFFFF, 0);
+							selectionContainer.graphics.lineStyle(1, 0x64AADD, 1);
+							selectionContainer.graphics.drawRect(0, 0, this.width, this.height);
+						}
+					} else {
+						selectionContainer.filters = [myGlow];
+						selectionContainer.graphics.clear();
+						selectionContainer.graphics.beginFill(0xFFFFFF, 0);
+						selectionContainer.graphics.lineStyle(1, 0x64AADD, 1);
+						selectionContainer.graphics.drawRect(0, 0, this.width, this.height);
+					}
+					
+				} else {
+					
+					selectionContainer.filters = null;
+					selectionContainer.graphics.clear();
+					background.setStyle("backgroundAlpha", 0);
+					img.visible = false;
+				}
+				
+			}
+			
+			public function _rollOutHandler(event:Event):void {
+				if (!singleton.previewMode) {
+					selectionContainer.filters = null;
+					if (singleton.selected_element != this) {
+						selectionContainer.graphics.clear();
+					}
+				}
+			}
+			
+			public function SetShadow():void {
+				
+				//Check for shadow
+				if (data.shadow) {
+					if (data.shadow.toString() == "") {
+						this.filters = null;
+					}
+					if (data.shadow.toString() == "left") {
+						this.filters = [leftShadowFilter];
+					}
+					if (data.shadow.toString() == "right") {
+						this.filters = [rightShadowFilter];
+					}
+					if (data.shadow.toString() == "bottom") {
+						this.filters = [bottomShadowFilter];
+					}
+				} else {
+					this.filters = null;
+				}
+			}
+			
+			public function DrawBorder():void {
+				
+				borderContainer.graphics.clear();
+				
+				if (data.borderalpha.toString() == "NaN") {
+					data.borderalpha = 1;
+				}
+				
+				if (data.borderweight > 0) {
+					borderContainer.graphics.lineStyle(data.borderweight + 1, data.bordercolor, data.borderalpha, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+					borderContainer.graphics.drawRect(-data.borderweight / 2, -data.borderweight / 2, this.width + data.borderweight, this.height + data.borderweight);
+				}
+			}
+			
+			protected function _keyDownHandler(event:KeyboardEvent):void
+			{
+				if (!singleton.previewMode) {
+					if (!singleton.textchanged) {
+						singleton.textchanged = true;
+						singleton.oldtextflow = new Object;
+						singleton.oldtextflow.id = sprite.tfID;
+						singleton.oldtextflow.textflow = TextConverter.export(sprite.cc.textFlow, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.XML_TYPE);
+					}
+				}
+			}
+			
+			protected function topDrag_rollOverHandler(event:MouseEvent):void
+			{
+				if (!singleton.previewMode) {
+					
+					if (!singleton._isChanging && !singleton.multiselect) {
+						
+						Mouse.hide();
+						cursorID = CursorManager.setCursor(moveCursor, 2, -8 / FlexGlobals.topLevelApplication.viewer.scaleX, -8 / FlexGlobals.topLevelApplication.viewer.scaleX);		
+						singleton.moveAllowed = true;
+						
+						topDrag.graphics.clear();
+						topDrag.graphics.beginFill(0x64AADD, .5);
+						//Top
+						topDrag.graphics.drawRect(0, 0, topDrag.width, 20 / singleton.zoomFactor);
+						//Bottom
+						topDrag.graphics.drawRect(0, topDrag.height - (20 / singleton.zoomFactor), topDrag.width, 20 / singleton.zoomFactor);
+						//Left
+						topDrag.graphics.drawRect(0, 20 / singleton.zoomFactor, 20 / singleton.zoomFactor, topDrag.height - (40 / singleton.zoomFactor));
+						//Right
+						topDrag.graphics.drawRect(topDrag.width - (20 / singleton.zoomFactor), 20 / singleton.zoomFactor, 20 / singleton.zoomFactor, topDrag.height - (40 / singleton.zoomFactor));
+						topDrag.graphics.endFill();
+					} else {
+						topDrag.graphics.clear();
+					}
+					
+				}
+			}
+			
+			protected function topDrag_rollOutHandler(event:MouseEvent):void
+			{
+				if (!singleton.previewMode) {
+					
+					singleton.moveAllowed = false;
+					CursorManager.removeCursor(cursorID);
+					Mouse.show();
+					
+					topDrag.graphics.clear();
+					topDrag.graphics.beginFill(0x64AADD, 0);
+					//Top
+					topDrag.graphics.drawRect(0, 0, topDrag.width, 20 / singleton.zoomFactor);
+					//Bottom
+					topDrag.graphics.drawRect(0, topDrag.height - (20 / singleton.zoomFactor), topDrag.width, 20 / singleton.zoomFactor);
+					//Left
+					topDrag.graphics.drawRect(0, 20 / singleton.zoomFactor, 20 / singleton.zoomFactor, topDrag.height - (40 / singleton.zoomFactor));
+					//Right
+					topDrag.graphics.drawRect(topDrag.width - (20 / singleton.zoomFactor), 20 / singleton.zoomFactor, 20 / singleton.zoomFactor, topDrag.height - (40 / singleton.zoomFactor));
+					topDrag.graphics.endFill();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Group id="selectionContainer" width="{this.width}" height="{this.height}" clipAndEnableScrolling="false" />
+	
+	<s:Group id="borderContainer" width="{this.width}" height="{this.height}" clipAndEnableScrolling="false" />
+	
+	<s:Group id="container" width="{this.width}" height="{this.height}" clipAndEnableScrolling="true">
+		
+		<s:BorderContainer id="background" visible="true" 
+						   left="-5" right="-5" top="-5" bottom="-5" 
+						   backgroundColor="#d2d2d2" backgroundAlpha="0"
+						   borderVisible="false" mouseEnabled="false" />
+		
+		<s:Image id="img" 
+				 width="{24 / singleton.selected_spread_editor.scaleX}" 
+				 height="{24  / singleton.selected_spread_editor.scaleX}" 
+				 horizontalCenter="0" smooth="true" visible="false" mouseEnabled="false"
+				 source="@Embed('assets/icons/texticon.png')" verticalCenter="0" />
+		
+	</s:Group>
+	
+	<s:Group id="warningContainer" width="{this.width}" height="{this.height}" 
+			 mouseEnabled="false" clipAndEnableScrolling="false" />
+	
+	<s:Image id="textoutside" visible="{textisoutside}" 
+			 width="{24 / singleton.selected_spread_editor.scaleX}" 
+			 height="{24  / singleton.selected_spread_editor.scaleX}" 
+			 left="{10 / singleton.selected_spread_editor.scaleX}" 
+			 top="{10 / singleton.selected_spread_editor.scaleX}"
+			 toolTip="Tekst staat mogelijk (gedeeltelijk) buiten het afdrukbare gebied. Deze tekst wordt dan niet afgedrukt."
+			 smooth="true" mouseEnabled="false"
+			 source="@Embed('assets/icons/warning-icon.png')" />
+	
+	<s:Group id="topDrag"  mouseEnabledWhereTransparent="false"
+			 left="{-20 / singleton.selected_spread_editor.scaleX}"
+			 right="{-20 / singleton.selected_spread_editor.scaleX}"
+			 top="{-20 / singleton.selected_spread_editor.scaleX}" 
+			 bottom="{-20 / singleton.selected_spread_editor.scaleX}"
+			 rollOver="topDrag_rollOverHandler(event)"
+			 rollOut="topDrag_rollOutHandler(event)"/>
+	
+</s:Group>

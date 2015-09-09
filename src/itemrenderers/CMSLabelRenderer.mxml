@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				rollOver="_rollOverHandler(event)"
+				rollOut="_rollOutHandler(event)"
+				width="100%" height="30"
+				creationComplete="_creationCompleteHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.SelectMenuItemEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.core.mx_internal;
+			
+			[Bindable] private var _selected:Boolean = false;
+			import mx.events.FlexEvent;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				FlexGlobals.topLevelApplication.addEventListener(SelectMenuItemEvent.SELECTMENUITEM, SelectedMenuItem);
+				
+			}
+			
+			private function SelectedMenuItem(event:SelectMenuItemEvent):void {
+				
+				_selected = false;
+				
+				if (event.menuID == data.id) {
+					_selected = true;
+				}
+			
+				if (_selected) {
+					background.fill = new SolidColor(0xE9E9E9, 1);
+					lbl.setStyle("color", 0);
+				} else {
+					background.fill = new SolidColor(0xD2D2D2, 1);
+					lbl.setStyle("color", 0);
+				}
+				
+			}
+			
+			protected function _rollOverHandler(event:MouseEvent):void
+			{
+				background.fill = new SolidColor(0xE9E9E9, 1);
+			}
+			
+			protected function _rollOutHandler(event:MouseEvent):void
+			{
+				if (!_selected) {
+					background.fill = new SolidColor(0xD2D2D2, 1);
+					lbl.setStyle("color", 0);
+				} else {
+					background.fill = new SolidColor(0xE9E9E9, 1);
+					lbl.setStyle("color", 0);
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:Rect id="background" width="100%" height="100%">
+		<s:fill>
+			<s:SolidColor color="0xD2D2D2" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Label id="lbl" text="{data.name}" verticalCenter="0" left="7" color="0" fontSize="12" />
+	
+</s:ItemRenderer>

@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   backgroundColor="0xFFFFFF"
+				   borderVisible="false" borderWeight="1" borderColor="#58595B"
+				   minWidth="800" minHeight="600"
+				   creationComplete="_creationCompleteHandler(event)" 
+				   xmlns:components="components.*">
+	
+	<fx:Script>
+		
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.SwitchMenuEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.NameUtil;
+			
+			import spark.events.IndexChangeEvent;
+			
+			/**************************************************************************
+			 SINGLETON INSTANCE / Create the singleton instance
+			 ***************************************************************************/
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				//Get the products
+				var ast:AsyncToken = FlexGlobals.topLevelApplication.api_cms.api_get("Product");
+				ast.addResponder(new mx.rpc.Responder(onGetProducts, onFail));
+			}
+			
+			[Bindable] public var productdetails:ArrayCollection;
+			[Bindable] public var themes:ArrayCollection;
+			
+			private function onGetProducts(event:ResultEvent):void {
+				
+				singleton.products = new ArrayCollection();
+				
+				for each (var product in event.result) {
+					if (product.Product.status == "A") {
+						//Add the id and size to the list if it does not excist yet
+						var w:Number = product.Product.page_width;
+						var h:Number = product.Product.page_height;
+						if (w != -1 && h != -1) {
+							if (w > 0 && h > 0) {
+								var e:* = CheckExcist(w, h);
+								if (!e) {
+									var p:Object = new Object();
+									p.width = product.Product.page_width;
+									p.height = product.Product.page_height;
+									p.name = p.width + " x " + p.height + " mm.";
+									p.ids = new Array();
+									p.ids.push(product.Product.id);
+									p.infos = new Array();
+									var wrap:int = product.ProductCover.wrap || 0;
+									product.Product.coverwrap = wrap;
+									p.infos.push(product.Product);
+									singleton.products.addItem(p);
+										
+								} else {
+									
+									//If it excist, just add the id
+									e.ids.push(product.Product.id);
+									wrap = product.ProductCover.wrap || 0;
+									product.Product.coverwrap = wrap;
+									e.infos.push(product.Product);
+										
+								}
+							}
+						}	
+					}
+				}
+			}
+			
+			private function CheckExcist(w:Number, h:Number):Object {
+				
+				var excist:* = null;
+				
+				for each (var o:Object in singleton.products) {
+					if (o.width.toString() == w.toString() && o.height.toString() == h.toString()) {	
+						excist = o;
+						break;
+					}
+				}
+				
+				return excist;
+			}
+			
+			private function onFail(event:FaultEvent):void {
+				
+				trace(event);
+				
+			}
+			
+			private var titleinput:inputTextWindow;
+			protected function btnAdd_clickHandler(event:MouseEvent):void {
+				
+				//Start a new product, based on the first item in the selected product
+				var product:Object = lstProducts.selectedItem;
+				
+				//Find the softcover version
+				var selectedproduct:int = 0;
+				
+				for (var x:int=0; x < product.infos.length; x++) {
+					if (product.infos[x].coverwrap == 0) {
+						selectedproduct = x;
+						break;
+					}
+				}
+				
+				singleton._productID = product.ids[selectedproduct];
+				
+				titleinput = inputTextWindow(PopUpManager.createPopUp(this, inputTextWindow, true));
+				PopUpManager.centerPopUp(titleinput);
+				
+				titleinput.btnOk.addEventListener(MouseEvent.CLICK, SaveThemeTitle);
+				titleinput.btnCancel.addEventListener(MouseEvent.CLICK, CloseThemeTitle);
+				
+				titleinput.header.text = "Thema titel invoeren";
+				titleinput.input.prompt = "Naam voor dit thema";
+				
+			}
+			
+			private function SaveThemeTitle(event:Event):void {
+				
+				if (titleinput.input.text != "") {
+					
+					singleton._bookTitle = titleinput.input.text;
+					
+					CloseThemeTitle();
+					
+					singleton._userProductID = null;
+					singleton.spreadcollection = null;
+					singleton.userphotos = null;
+					singleton.userphotoshidden = null;
+					singleton.userphotosforupload = null;
+					singleton.userphotosfromhdu = null;
+					singleton.albumtimeline = null;
+					FlexGlobals.topLevelApplication.lstSpreads.removeAllElements();
+					FlexGlobals.topLevelApplication.viewer.removeAllElements();
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new SwitchMenuEvent(SwitchMenuEvent.SELECTEDMENU, "theme"));
+					
+					FlexGlobals.topLevelApplication.themeBuilderLabel.text = "Gekozen thema: " + singleton._bookTitle + " (" + lstProducts.selectedItem.width + " x " + lstProducts.selectedItem.height + " mm)"
+					FlexGlobals.topLevelApplication.themeBuilderLabel.visible = true;
+					FlexGlobals.topLevelApplication.themeBuilderLabel.percentWidth = 100;
+					
+					FlexGlobals.topLevelApplication.menuside.lstProductSizes.validateNow();
+					FlexGlobals.topLevelApplication.menuside.lstProductSizes.selectedIndex = lstProducts.selectedIndex;
+					
+					FlexGlobals.topLevelApplication.GetProduct();
+					
+				} else {
+					
+					singleton.ShowMessage("Naam invoeren", "Voer een naam in voor dit thema...", true);
+				}
+				
+			}
+			
+			private function CloseThemeTitle(event:Event = null):void {
+				PopUpManager.removePopUp(titleinput);
+			}	
+			
+			protected function lstProducts_changeHandler(event:IndexChangeEvent):void
+			{
+				
+				productdetails =  new ArrayCollection(event.currentTarget.selectedItem.infos);
+				
+				//Get the themes
+				var keys:Array = new Array();
+				var values:Array = new Array();
+				
+				keys.push("Theme.page_width");
+				keys.push("Theme.page_height");
+				
+				values.push(event.currentTarget.selectedItem.width);
+				values.push(event.currentTarget.selectedItem.height);
+				
+				var ast:AsyncToken = FlexGlobals.topLevelApplication.api_cms.api_search("Theme", keys, values); //2nd, Type or Styke
+				ast.addResponder(new mx.rpc.Responder(onGetThemes, onFail));
+				
+				themename.text = "";
+				
+			}
+			
+			private function onGetThemes(event:ResultEvent):void {
+				
+				themes = event.result as ArrayCollection;
+			}
+			
+			protected function btnSelect_clickHandler(event:MouseEvent):void
+			{
+				
+				singleton._bookTitle = lstThemes.selectedItem.Theme.name;
+				singleton._userProductID = lstThemes.selectedItem.Theme.id;
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new SwitchMenuEvent(SwitchMenuEvent.SELECTEDMENU, "theme"));
+				
+				FlexGlobals.topLevelApplication.menuside.lstProductSizes.validateNow();
+				FlexGlobals.topLevelApplication.menuside.lstProductSizes.selectedIndex = lstProducts.selectedIndex;
+				
+				FlexGlobals.topLevelApplication.GetThemeProduct();
+			}
+			
+			protected function themename_focusOutHandler(event:FocusEvent):void
+			{
+				
+				if (event.currentTarget.text != singleton._bookTitle) {
+					
+					//Update the booktitle
+					var keys:Array = new Array();
+					var values:Array = new Array();
+					
+					keys.push("name");
+					
+					//Thembuilder new name
+					values.push(event.currentTarget.text);
+					
+					var ast:AsyncToken = FlexGlobals.topLevelApplication.api.api_saveThemeProductById(singleton._userProductID, keys, values);
+					ast.addResponder(new mx.rpc.Responder(onSaveNameResult, onFail));
+					
+				}
+				
+			}
+			
+			private function onSaveNameResult(event:Event):void {
+				trace("Naam opgeslagen");
+			}
+			
+			protected function lstThemes_changeHandler(event:IndexChangeEvent):void
+			{
+				singleton._bookTitle = event.currentTarget.selectedItem.Theme.name;
+				singleton._userProductID = event.currentTarget.selectedItem.Theme.id;
+				
+				themename.text = singleton._bookTitle;
+			}
+			
+			protected function btnDelete_clickHandler(event:MouseEvent):void
+			{
+				singleton.ShowMessage("Thema verwijderen", "Weet je zeker dat je dit thema wilt verwijderen?", false, true, false, true, "JA", "NEE", RemoveTheme, CancelDelete);
+				
+			}
+			
+			public function RemoveTheme(event:Event = null):void {
+				
+				singleton.HideMessage();
+				
+				var ast:AsyncToken = FlexGlobals.topLevelApplication.api.api_delete("Theme", singleton._userProductID);
+				ast.addResponder(new mx.rpc.Responder(onDeleteThemeResult, onFail));
+			}
+			
+			private function CancelDelete(event:Event = null):void {
+				singleton.HideMessage();
+			}
+	
+			private function onDeleteThemeResult(event:Event):void {
+				
+				themename.text = "";
+				
+				lstProducts.dispatchEvent(new IndexChangeEvent(IndexChangeEvent.CHANGE));
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Style source="styles/oem_stylesheet.css" />
+	
+	<s:BorderContainer width="100%" height="35" backgroundColor="{singleton.baseColor}" borderVisible="false">
+		<s:layout>
+			<s:HorizontalLayout gap="0" verticalAlign="middle" paddingLeft="10" paddingRight="10" />
+		</s:layout>
+		
+		<s:HGroup width="100%" horizontalAlign="center">
+			<s:Label color="0xFFFFFF" fontSize="20"
+					 text="Thema's"/>
+		</s:HGroup>
+		
+	</s:BorderContainer>
+	
+	<mx:HDividedBox top="50" bottom="50" width="100%" height="100%" paddingLeft="10" paddingRight="10">
+		
+		<s:VGroup minWidth="150" width="300" height="100%" gap="10">
+		
+			<s:Label fontSize="18" text="Producten"/>
+			
+			<mx:HRule width="100%" height="1" />
+			
+			<s:List id="lstProducts" width="100%" height="100%" borderVisible="false" 
+					dataProvider="{singleton.products}"
+					change="lstProducts_changeHandler(event)"
+					labelField="name" itemRenderer="itemrenderers.itemProduct">
+				
+			</s:List>
+			
+			<s:Label fontSize="18" text="Inhoud" enabled="{lstProducts.selectedIndex != -1}" />
+			
+			<mx:HRule width="100%" height="1" />
+			
+			<s:List id="lstProductDetails" width="100%" height="150" borderVisible="false" 
+					dataProvider="{productdetails}" 
+					itemRenderer="itemrenderers.itemProductDetail" horizontalScrollPolicy="off"
+					enabled="{lstProducts.selectedIndex != -1}">
+				
+			</s:List>
+				
+		</s:VGroup>
+		
+		<s:VGroup width="100%" height="100%" gap="10">
+			
+			<s:Label fontSize="18" text="Thema's"/>
+			
+			<mx:HRule width="100%" height="1" />
+			
+			<s:List id="lstThemes" width="100%" height="100%" borderVisible="false" dataProvider="{themes}" 
+					itemRenderer="itemrenderers.itemThemeDetail" horizontalScrollPolicy="off"
+					change="lstThemes_changeHandler(event)">
+				
+			</s:List>
+		
+		</s:VGroup>
+		
+		<s:VGroup minWidth="240" height="100%" gap="10" enabled="{lstThemes.selectedIndex != -1}">
+			
+			<s:Label width="100%" color="#58595B" fontSize="18" text="Informatie:"/>
+			
+			<s:HGroup width="100%" verticalAlign="middle">
+				
+				<s:Label color="#58595B" fontSize="14" text="Naam:"/>
+				
+				<s:TextInput id="themename" width="100%" focusOut="themename_focusOutHandler(event)"/>
+				
+			</s:HGroup>
+			
+			
+			<mx:HRule width="100%" height="1" />
+			
+		</s:VGroup>
+		
+	</mx:HDividedBox>
+	
+	<s:HGroup right="10" bottom="10">
+		
+		<s:Button id="btnCancel" label="Sluiten" skinClass="skins.btnGraySkin" />
+		<s:Button id="btnAdd" label="Nieuw" skinClass="skins.btnGreenSkin" enabled="{lstProducts.selectedIndex != -1}" click="btnAdd_clickHandler(event)" />
+		<s:Button id="btnSelect" label="Bewerken" skinClass="skins.btnGreenSkin" enabled="{lstThemes.selectedIndex != -1}" click="btnSelect_clickHandler(event)" />
+		<s:Button id="btnDelete" label="Verwijderen" skinClass="skins.btnGreenSkin" enabled="{lstThemes.selectedIndex != -1}" click="btnDelete_clickHandler(event)" />
+		
+	</s:HGroup>
+	
+	<s:Label id="btnCloseWindow" right="5" top="5"
+			 fontFamily="_AppFontEnjoy" fontSize="18" color="#FFFFFF" text="&#xe614;" />
+	
+</s:BorderContainer>

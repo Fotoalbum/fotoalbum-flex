@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabled=".5"> 
+
+    <!-- host component -->
+    <fx:Metadata>
+    <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.DropDownList")]
+		
+	]]>
+    </fx:Metadata> 
+
+    <s:states>
+        <s:State name="normal" />
+        <s:State name="open" />
+        <s:State name="disabled" />
+    </s:states>
+    
+    <s:Group id="popUp" visible.normal="false" visible.open="true" includeIn="open"
+        left="0" top="12" width="200" height="120" itemDestructionPolicy="auto">
+		<s:Rect left="0" right="0" top="0" bottom="0">
+			<s:fill>
+				<s:SolidColor color="0" alpha="1" />
+			</s:fill>
+		</s:Rect>
+	</s:Group>
+    
+    <s:Button id="openButton" width="24" height="24" focusEnabled="false" tabEnabled="false"
+        skinClass="skins.photoMenuButtonSkin" />  
+  
+</s:SparkSkin>

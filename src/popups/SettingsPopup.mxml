@@ -1,0 +1,3462 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   width="100%" height="100%" backgroundColor="0xFFFFFF"
+				   borderVisible="false" borderWeight="0"
+				   creationPolicy="all"
+				   creationComplete="_creationCompleteHandler(event)" 
+				   xmlns:components="components.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.PageType;
+			import classes.Singleton;
+			import classes.photoclass;
+			
+			import events.selectPhotoEvent;
+			
+			import itemrenderers.userAlbumPhotoRenderer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.containers.ControlBar;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.core.IVisualElement;
+			import mx.core.mx_internal;
+			import mx.events.CollectionEvent;
+			import mx.events.DragEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.ListEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.Base64Decoder;
+			import mx.utils.ObjectUtil;
+			import mx.utils.UIDUtil;
+			
+			import skins.btnToggleOpenCloseAlbumWithArrow;
+			import skins.btnToggleOpenCloseButtonWithArrow;
+			import skins.btnToggleOpenCloseFolderWithArrow;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+			import spark.components.Image;
+			import spark.events.IndexChangeEvent;
+			
+			/**************************************************************************
+			 SINGLETON INSTANCE / Create the singleton instance
+			 ***************************************************************************/
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			private function SelectPhotosFromHDU(e:Event):void 
+			{
+				
+				//Disable the button to prevent double click
+				//e.currentTarget.enabled = false;
+				
+				if (ExternalInterface.available) {
+					var wrapperFunction:String = "browseFiles";
+					ExternalInterface.call(wrapperFunction, singleton._currentAlbumID, singleton._currentAlbumName);
+				}
+				
+				//Debug
+				/*
+				var JSONLoader:URLLoader = new URLLoader();
+				JSONLoader.addEventListener(Event.COMPLETE, TESTcompleteHandler);
+				var request:URLRequest = new URLRequest("http://new.xhibit.com/files/photoselectors/thumbs.json");
+				request.method = URLRequestMethod.POST;
+				try {
+					JSONLoader.load(request);
+				}
+				catch (error:Error) {
+					trace("Unable to load requested document.");
+				}
+				*/
+			}
+			
+			[Bindable] public var snapInterval:int;
+			[Bindable] public var tickerInterval:int;
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				if (!singleton.userphotosforupload) {
+					singleton.userphotosforupload = new ArrayCollection();
+				}
+				
+				if (!singleton.userphotosfromhdu) {
+					singleton.userphotosfromhdu = new ArrayCollection();
+				}
+				
+				singleton.userphotosforupload.addEventListener(CollectionEvent.COLLECTION_CHANGE, CalculateAverageAndPages);
+				
+				snapInterval = singleton._stepSize;
+				tickerInterval = singleton._stepSize;
+			
+				var pageLabels:Array = new Array;
+				var value:int = singleton._minPages;
+				var done:Boolean = false;
+				while (!done) {
+					
+					pageLabels.push(value);
+					
+					if (value >= singleton._maxPages) {
+						
+						if (pageLabels.length > 12) {
+						
+							var subdone:Boolean = false;
+							while (!subdone) {
+								
+								for (var x:int=pageLabels.length - 2; x > 0; x-=2) {
+									pageLabels.splice(x, 1);
+								}
+								
+								if (pageLabels.length <= 12) {
+									subdone = true;
+									done = true;
+								}
+							}		
+						}
+						
+						done = true;
+						
+					} else {
+					
+						value += singleton._stepSize;
+					
+					}
+				}
+				
+				numPagesSelection.labels = pageLabels;
+				
+			}
+			
+			[Bindable] private var thumbArr:Array;
+			private function TESTcompleteHandler(event:Event):void {
+				
+				var loader:URLLoader = URLLoader(event.target);
+				
+				if (loader.data) {
+					
+					var json:Object = JSON.parse(loader.data);
+					thumbArr = json.thumbs as Array;
+					
+					for each (var photo:Object in thumbArr) {
+						
+						var ba:ByteArray;		
+						
+						var arr:Array = photo.source.split(",");
+						
+						var base64:Base64Decoder = new Base64Decoder();
+						base64.decode(arr[1]);
+						
+						ba = base64.toByteArray();
+						
+						var thumbLoader:Loader = new Loader();
+						thumbLoader.name = photo.id;
+						thumbLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, TESTloaderCompleteHandler);
+						thumbLoader.loadBytes(ba);
+					}
+				}
+			}
+			
+			private function TESTloaderCompleteHandler(event:Event):void {
+				
+				try {
+					
+					if (!singleton.userphotosupload) {
+						singleton.userphotosupload = new ArrayCollection();
+					}
+					
+					if (!singleton.userphotosforupload) {
+						singleton.userphotosforupload = new ArrayCollection();
+					}
+					
+					if (!singleton.userphotosfromhdu) {
+						singleton.userphotosfromhdu = new ArrayCollection();
+					}
+					
+					var loader:Loader = (event.target as LoaderInfo).loader;
+					
+					var photosource:Object;
+					for each(var thumb:Object in thumbArr) {
+						if (thumb.id == loader.name) {
+							photosource = thumb;
+							break;
+						}
+					}
+					var bmp:Bitmap = Bitmap(loader.content);
+					
+					for (var x:int=0; x < 20; x++) {
+					
+						var photo:photoclass = new photoclass();
+						photo.id = UIDUtil.createUID();
+						photo.name = photosource.filename;
+						photo.origin = "Harde schijf";
+						photo.status = "new";
+						photo.preview = true;
+						photo.exif = <exif/>;
+						
+						var currDate:Date = new Date();
+						var currDateF:DateFormatter = new DateFormatter();
+						currDateF.formatString = "YYYY/MM/DD";
+						var dateS:String = currDateF.format(currDate);
+						var currTimeF:DateFormatter = new DateFormatter();
+						currTimeF.formatString = "HH:NN:SS";
+						var timeS:String = currTimeF.format(currDate);
+						
+						/*
+						if (photosource.exif) {
+							
+							if (photosource.exif.orientation) {
+								photo.exif.@orientation = photosource.exif.orientation;
+							} else {
+								photo.exif.@orientation = "1";
+							}
+							if (photosource.exif.date) {
+								var dateStr:String = photosource.exif.date.toString().split(":").join("/");
+								photo.exif.@date = dateStr;
+								photo.dateCreated = dateStr;
+							} else {
+								photo.exif.@date = dateS;
+								photo.dateCreated = "";
+							}
+							if (photosource.exif.time) {
+								var timeStr:String = photosource.exif.time.toString();
+								photo.exif.@time = timeStr;
+								photo.timeCreated = timeStr;
+							} else {
+								photo.exif.@time = timeS;
+								photo.timeCreated = "";
+							}
+							if (photosource.exif.make) {
+								photo.exif.@make = photosource.exif.make.toString();
+							} else {
+								photo.exif.@make = "Onbekend";
+							}
+							if (photosource.exif.model) {
+								photo.exif.@model = photosource.exif.model.toString();
+							} else {
+								photo.exif.@model = "Onbekend";
+							}
+							if (photosource.exif.GPSLatitudeRef) {
+								photo.exif.@latref = photosource.exif.GPSLatitudeRef.toString();
+							} else {
+								photo.exif.@latref = "";
+							}
+							if (photosource.exif.GPSLongitudeRef) {
+								photo.exif.@longref = photosource.exif.GPSLongitudeRef.toString();
+							} else {
+								photo.exif.@longref = "";
+							}
+							if (photosource.exif.GPSLatitude) {
+								photo.exif.@latitude = photosource.exif.GPSLatitude.toString();
+							} else {
+								photo.exif.@latitude = "";
+							}
+							if (photosource.exif.GPSLongitude) {
+								photo.exif.@longitude = photosource.exif.GPSLongitude.toString();
+							} else {
+								photo.exif.@longitude = "";
+							}
+						}
+						*/
+						photo.source = bmp;
+						photo.originalWidth = photosource.width;
+						photo.originalHeight = photosource.height;
+						photo.folderID = singleton._newAlbumID;
+						photo.folderName = singleton._newAlbumName;
+						
+						singleton.userphotosfromhdu.addItem(photo);
+					
+					}
+						
+					vsPhotoUpload.selectedIndex = 1;
+					
+				} catch (err:Error) {
+					singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n SettingsPopup|TESTloaderCompleteHandler|" + err.toString());
+				}
+				
+			}
+			
+			public function CalculateAverageAndPages(event:Event = null):void {
+				
+				//Calculate the optimum pages and average photos
+				var totalPhotos:int = singleton.userphotosforupload.length;
+				var numPages:int = singleton._minPages + 2; //2 voor cover
+				var currentindex:int = 0;
+				
+				var startAveragePhotos:int = 3;
+				
+				numPages = Math.ceil(totalPhotos / startAveragePhotos);
+				
+				if (numPages < singleton._minPages) { numPages = singleton._minPages; };
+				if (numPages > singleton._maxPages) { numPages = singleton._maxPages; };
+				
+				numPagesSelection.value = numPages;
+				
+				var average:int = Math.ceil(totalPhotos / (numPages + 2));
+				if (average > 4) { average = 4; };
+				if (average < 1) { average = 1; };
+				
+				averagePhotosPerPage.value = average;
+				
+			}
+			
+			public function SortUserPhotos():void {
+				
+				singleton.DebugPrint("SortUserPhotos");
+				
+				if (dateSort.selectedIndex == 0) {
+					ChangeSortOrderByDate();
+				} else {
+					ChangeSortOrderByName();
+				}
+				
+			}
+			
+			private function GetFacebookPhotos():void {
+				
+				FlexGlobals.topLevelApplication.GetExternalPhotos("facebook");
+			}
+			
+			private function GetInstagramPhotos():void {
+				
+				FlexGlobals.topLevelApplication.GetExternalPhotos("instagram");
+				
+			}
+			
+			private function GetGooglePhotos():void {
+				
+				FlexGlobals.topLevelApplication.GetExternalPhotos("google");
+				
+			}
+			
+			private function GetFlickrPhotos():void {
+				
+				FlexGlobals.topLevelApplication.GetExternalPhotos("flickr");
+				
+			}
+			
+			private var sortTimerDate:Timer = new Timer(1000, 0);
+			private var sortTimerName:Timer = new Timer(1000, 0);
+			public function ChangeSortOrderByDate():void {
+				
+				if (!sortTimerDate.running) {
+					if (singleton.userphotosforupload && singleton.userphotosforupload.length > 0) {
+						sortTimerDate.addEventListener(TimerEvent.TIMER, onSortTimerDate);
+						sortTimerDate.start();
+					} else {
+						bcSorting.visible = false;
+						sortTimerDate.stop();
+						sortTimerDate.reset();	
+					}
+				} else {
+					
+					bcSorting.visible = false;
+					
+					sortTimerDate.stop();
+					sortTimerDate.reset();
+					sortTimerDate.start();
+				}
+				
+			}
+			
+			public function onSortTimerDate(event:Event):void {
+				
+				sortTimerDate.stop();
+				sortTimerDate.reset();
+				
+				sortTimerDate.removeEventListener(TimerEvent.TIMER, onSortTimerDate);
+				
+				//Order by date initially
+				if (singleton.userphotosforupload) {
+					if (singleton.userphotosforupload.length > 0) {
+						var dateSort:Sort = new Sort();
+						var fields:Array = [ new SortField("dateCreated", false), new SortField("timeCreated", false) ];
+						dateSort.fields = fields;
+						singleton.userphotosforupload.sort = dateSort;
+						singleton.userphotosforupload.refresh();
+					}
+				}
+				
+				bcSorting.visible = false;
+				
+			}
+			
+			public function ChangeSortOrderByName():void {
+				
+				if (!sortTimerName.running) {
+					if (singleton.userphotosforupload && singleton.userphotosforupload.length > 0) {
+						sortTimerName.addEventListener(TimerEvent.TIMER, onSortTimerName);
+						sortTimerName.start();
+					} else {
+						bcSorting.visible = false;
+						sortTimerName.stop();
+						sortTimerName.reset();	
+					}
+				} else {
+					bcSorting.visible = false;
+					sortTimerName.stop();
+					sortTimerName.reset();
+					sortTimerName.start();
+				}
+			}
+			
+			public function onSortTimerName(event:Event):void {
+				
+				sortTimerName.stop();
+				sortTimerName.reset();
+				
+				sortTimerName.removeEventListener(TimerEvent.TIMER, onSortTimerName);
+				
+				//Order by name
+				if (singleton.userphotosforupload) {
+					if (singleton.userphotosforupload.length > 0) {
+						singleton.userphotosforupload.refresh();
+						var dataSortField:SortField = new SortField();
+						dataSortField.name = "name";
+						dataSortField.descending = false;
+						var dateSort:Sort = new Sort();
+						dateSort.fields = [dataSortField];
+						singleton.userphotosforupload.sort = dateSort;
+						singleton.userphotosforupload.refresh();
+					}
+				}
+				
+				bcSorting.visible = false;
+				
+			}
+			
+			private function SortPhotos(event:Event):void {
+				
+				sortTimerDate.stop();
+				sortTimerName.stop();
+				
+				bcSorting.visible = true;
+				
+				if (event.currentTarget.selectedIndex == 0) {
+					ChangeSortOrderByDate();
+				} else {
+					ChangeSortOrderByName();
+				}
+			}
+			
+			private function SelectAllPhotos():void {
+				
+				try {
+					
+					if (singleton.userphotosfromhdu) {
+						
+						if (!singleton.userphotosforupload) {
+							singleton.userphotosforupload = new ArrayCollection();
+						}
+					
+						for (var x:int=0; x < singleton.userphotosfromhdu.length; x++) {
+							if (singleton.userphotosfromhdu.getItemAt(x).selectedforupload == false) {
+								singleton.userphotosfromhdu.getItemAt(x).selectedforupload = true;
+								//Add the photo to the selection
+								var selected:Object = new Object();
+								selected.id = singleton.userphotosfromhdu.getItemAt(x).id;
+								selected.exif = singleton.userphotosfromhdu.getItemAt(x).exif.copy();
+								selected.name = singleton.userphotosfromhdu.getItemAt(x).name;
+								selected.dateCreated = singleton.userphotosfromhdu.getItemAt(x).dateCreated;
+								selected.timeCreated= singleton.userphotosfromhdu.getItemAt(x).timeCreated;
+								selected.source = singleton.userphotosfromhdu.getItemAt(x).source.bitmapData.clone();
+								selected.origin = singleton.userphotosfromhdu.getItemAt(x).origin;
+								selected.origin_type = singleton.userphotosfromhdu.getItemAt(x).origin_type;
+								singleton.userphotosforupload.addItem(selected);
+								//Sort the array to the setting
+								SortUserPhotos();
+							}
+						}
+					
+						//singleton.userphotosforupload.refresh();
+						singleton.userphotosfromhdu.refresh();
+						
+					}
+				} catch (err:Error) {
+					
+					singleton.ShowMessage("Er is iets fout gegaan", "Wacht even tot alle foto's zijn geladen en probeer het dan opnieuw." + err.message);
+				}
+			}
+		
+			private function DeSelectAllPhotos():void {
+			
+				try {
+					if (singleton.userphotosupload) {
+						
+						if (!singleton.userphotosforupload) {
+							singleton.userphotosforupload = new ArrayCollection();
+						}
+						
+						for (var x:int=0; x < singleton.userphotosfromhdu.length; x++) {
+							if (singleton.userphotosfromhdu.getItemAt(x).selectedforupload == true) {
+								singleton.userphotosfromhdu.getItemAt(x).selectedforupload = false;
+								//Remove the photo from the selection
+								for (var y:int=0; y < singleton.userphotosforupload.length; y++) {
+									if (singleton.userphotosforupload.getItemAt(y).id == singleton.userphotosfromhdu.getItemAt(x).id) {
+										singleton.userphotosforupload.removeItemAt(y);
+									}
+								}
+							}
+						}
+					
+						singleton.userphotosfromhdu.refresh();
+						singleton.userphotosforupload.refresh();
+					}
+				} catch (err:Error) {
+						
+					singleton.ShowMessage("Er is iets fout gegaan", "Wacht even tot alle foto's zijn geladen en probeer het dan opnieuw." + err.message);
+				}
+			}
+			
+			private function SelectAllAlbumPhotos():void {
+				
+				try {
+					
+					if (!singleton.userphotosforupload) {
+						singleton.userphotosforupload = new ArrayCollection();
+					}
+					
+					var currDate:Date = new Date();
+					var currDateF:DateFormatter = new DateFormatter();
+					currDateF.formatString = "YYYY/MM/DD";
+					var dateS:String = currDateF.format(currDate);
+					var currTimeF:DateFormatter = new DateFormatter();
+					currTimeF.formatString = "HH:NN:SS";
+					var timeS:String = currTimeF.format(currDate);
+					
+					if (singleton.photosfromalbums) {
+						
+						for (var x:int=0; x < singleton.photosfromalbums.length; x++) {
+							
+							if (singleton.photosfromalbums.getItemAt(x).selectedforupload == false) {
+								
+								singleton.photosfromalbums.getItemAt(x).selectedforupload = true;
+								
+								//Add the photo to the selection
+								var selected:Object = new Object();
+								selected.id = singleton.photosfromalbums.getItemAt(x).id;
+								selected.guid = singleton.photosfromalbums.getItemAt(x).guid;
+								selected.name = singleton.photosfromalbums.getItemAt(x).hires;
+								selected.exif = singleton.photosfromalbums.getItemAt(x).exif.copy();
+								selected.thumb_url = singleton.photosfromalbums.getItemAt(x).thumb_url;
+								selected.origin = "Harde schijf";
+								selected.origin_type = "Fotoalbum";
+								
+								if (singleton.photosfromalbums.getItemAt(x).exif && singleton.photosfromalbums.getItemAt(x).exif.toXMLString() != "" && singleton.photosfromalbums.getItemAt(x).exif.toXMLString() != <exif/>) {
+									var d:String = singleton.photosfromalbums.getItemAt(x).exif.@date_created.toString();
+									if (d.indexOf(" ") > -1) {
+										var arr:Array = d.split(" ");
+										selected.dateCreated = arr[0].toString().split(":").join("/");
+										selected.timeCreated = arr[1].toString();
+									} else {
+										selected.dateCreated = dateS;
+										selected.timeCreated = timeS;
+									}
+								}
+								
+								singleton.userphotosforupload.addItem(selected);
+								
+								if (singleton.foldercollection) {
+									if (singleton.foldercollection[0]) {
+										for each (var xml:XML in singleton.foldercollection[0]..photo) {
+											if (xml.@guid == selected.guid) {
+												xml.@selectedforupload = "true";
+											}
+										}
+									}
+								}
+								
+								if (singleton.otherprojectphotos) {
+									for each (var obj:Object in singleton.otherprojectphotos) {
+										if (obj.guid == selected.guid) {
+											obj.selectedforupload = true;
+										}
+									}
+								}
+								
+							}
+							
+							singleton.photosfromalbums.refresh();
+							
+						}
+						
+						singleton.userphotosforupload.refresh();
+						
+						//Sort the array to the setting
+						SortUserPhotos();
+						
+					}
+				} catch (err:Error) {
+					
+					singleton.ShowMessage("Er is iets fout gegaan", "Wacht even tot alle foto's zijn geladen en probeer het dan opnieuw." + err.message);
+				}
+			}
+			
+			private function DeSelectAllAlbumPhotos():void {
+				
+				try {
+					
+					if (singleton.userphotosforupload) {
+						
+						var id:String = "";
+						
+						for (var x:int=0; x < singleton.photosfromalbums.length; x++) {
+							
+							if (singleton.photosfromalbums.getItemAt(x).selectedforupload == true) {
+								
+								singleton.photosfromalbums.getItemAt(x).selectedforupload = false;
+								
+								//Remove the photo from the selection
+								for (var y:int=0; y < singleton.userphotosforupload.length; y++) {
+									if (singleton.userphotosforupload.getItemAt(y).id == singleton.photosfromalbums.getItemAt(x).id) {
+										
+										singleton.userphotosforupload.removeItemAt(y);
+										
+									}
+								}
+								
+								if (singleton.foldercollection) {
+									if (singleton.foldercollection[0]) {
+										for each (var xml:XML in singleton.foldercollection[0]..photo) {
+											if (xml.@id == singleton.photosfromalbums.getItemAt(x).id) {
+												xml.@selectedforupload = "false";
+											}
+										}
+									}
+								}
+								
+								if (singleton.otherprojectphotos) {
+									for each (var obj:Object in singleton.otherprojectphotos) {
+										if (obj.id == singleton.photosfromalbums.getItemAt(x).id) {
+											obj.selectedforupload = false;
+										}
+									}
+								}
+								
+							}
+						}
+						
+						singleton.photosfromalbums.refresh();
+						singleton.userphotosforupload.refresh();
+						
+					}
+				} catch (err:Error) {
+					
+					singleton.ShowMessage("Er is iets fout gegaan", "Wacht even tot alle foto's zijn geladen en probeer het dan opnieuw." + err.message);
+				}
+			}
+			
+			public function RemoveAllSelectedPhotos():void {
+				
+				if (singleton.userphotosforupload) {
+					
+					for (var x:int=0; x < singleton.userphotosforupload.length; x++) {
+						
+						//Remove the photo from the selection
+						if (singleton.userphotosfromhdu) {
+							for (var y:int=0; y < singleton.userphotosfromhdu.length; y++) {
+								if (singleton.userphotosforupload.getItemAt(x).id == singleton.userphotosfromhdu.getItemAt(y).id) {
+									singleton.userphotosfromhdu.getItemAt(y).selectedforupload = false;
+									FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.userphotosfromhdu.getItemAt(y).id, false));
+								}
+							}
+						}
+						if (singleton.userphotos) {
+							for (y=0; y < singleton.userphotos.length; y++) {
+								if (singleton.userphotosforupload.getItemAt(x).id == singleton.userphotos.getItemAt(y).id) {
+									singleton.userphotos.getItemAt(y).selectedforupload = false;
+									FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.userphotos.getItemAt(y).id, false));
+								}
+							}
+						}
+						if (singleton.facebookTree) {
+							for (y=0; y < singleton.facebookTree.length; y++) {
+								for (var t:int=0; t < singleton.facebookTree[y]..photo; t++) {
+									if (singleton.userphotosforupload.getItemAt(x).id == singleton.facebookTree[y].getItemAt(t).@id.toString()) {
+										singleton.facebookTree[y].getItemAt(t).@selectedforupload = false;
+										FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.facebookTree[y].getItemAt(t).@id.toString(), false));
+									}
+								}
+							}
+						}
+						if (singleton.facebookCollectionSelected) {
+							for (y=0; y < singleton.facebookCollectionSelected.length; y++) {
+								if (singleton.userphotosforupload.getItemAt(x).id == singleton.facebookCollectionSelected.getItemAt(y).@id.toString()) {
+									singleton.facebookCollectionSelected.getItemAt(y).@selectedforupload = false;
+									FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.facebookCollectionSelected.getItemAt(y).@id.toString(), false));
+								}
+							}
+						}
+						if (singleton.instagramCollectionSelected) {
+							for (y=0; y < singleton.instagramCollectionSelected.length; y++) {
+								if (singleton.userphotosforupload.getItemAt(x).id == singleton.instagramCollectionSelected.getItemAt(y).@id.toString()) {
+									singleton.instagramCollectionSelected.getItemAt(y).@selectedforupload = false;
+									FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.instagramCollectionSelected.getItemAt(y).@id.toString(), false));
+								}
+							}
+						}
+						if (singleton.googleCollectionSelected) {
+							for (y=0; y < singleton.googleCollectionSelected.length; y++) {
+								if (singleton.userphotosforupload.getItemAt(x).id == singleton.googleCollectionSelected.getItemAt(y).@id.toString()) {
+									singleton.googleCollectionSelected.getItemAt(y).@selectedforupload = false;
+									FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.googleCollectionSelected.getItemAt(y).@id.toString(), false));
+								}
+							}
+						}
+					}
+				}
+				
+				if (singleton.foldercollection) {
+					if (singleton.foldercollection.length > 0) {
+						if (singleton.foldercollection[0]) {
+							for each (var xml:XML in singleton.foldercollection[0]..photo) {
+								xml.@selectedforupload = "false";
+							}
+						}
+					}
+				}
+				
+				if (singleton.otherprojectphotos) {
+					for each (var obj:Object in singleton.otherprojectphotos) {
+						obj.selectedforupload = false;
+					}
+				}
+				if (singleton.photosfromalbums) {
+					for (x=0; x < singleton.photosfromalbums.length; x++) {
+						singleton.photosfromalbums.getItemAt(x).selectedforupload = false;
+					}
+				}
+				
+				if (singleton.userphotosfromhdu) {
+					singleton.userphotosfromhdu.refresh();
+				}
+				
+				if (singleton.facebookTree) {
+					singleton.facebookTree.refresh();
+				}
+				
+				if (singleton.facebookCollectionSelected) {
+					singleton.facebookCollectionSelected.refresh();
+				}
+				
+				if (singleton.instagramCollectionSelected) {
+					singleton.instagramCollectionSelected.refresh();
+				}
+				
+				if (singleton.googleCollectionSelected) {
+					singleton.googleCollectionSelected.refresh();
+				}
+				
+				if (singleton.userphotos) {
+					singleton.userphotos.refresh();
+				}
+				
+				if (singleton.userphotosfromalbum) {
+					singleton.userphotosfromalbum.refresh();
+				}
+				
+				if (singleton.photosfromalbums) {
+					singleton.photosfromalbums.refresh();
+				}
+				
+				if (singleton.otherprojectphotos) {
+					singleton.otherprojectphotos.refresh();
+				}
+				
+				if (singleton.foldercollection) {
+					singleton.foldercollection.refresh();
+				}
+				
+				singleton.userphotosforupload = new ArrayCollection();
+				
+				singleton.userphotosforupload.addEventListener(CollectionEvent.COLLECTION_CHANGE, CalculateAverageAndPages);
+				
+			}
+			
+			protected function menuSelection(event:Event):void
+			{
+				
+				btnMenuPhotos.selected = false;
+				btnMenuFotoalbum.selected = false;
+				/*
+				btnMenuFacebook.selected = false;
+				btnMenuInstagram.selected = false;
+				btnMenuGoogle.selected = false;
+				*/
+				
+				switch (event.currentTarget.id.toString()) {
+					
+					case "btnMenuPhotos": //Upload
+						btnMenuPhotos.selected = true;
+						vsPhotos.selectedIndex = 0;
+						break;
+					
+					case "btnMenuFotoalbum": //Fotofolders
+						btnMenuFotoalbum.selected = true;
+						vsPhotos.selectedIndex = 1;
+						
+						if (singleton._userLoggedIn) {
+							vsMyAlbums.selectedIndex = 1;
+						} else {
+							vsMyAlbums.selectedIndex = 0;
+						}
+						
+						CreateFolderStructure();
+						
+						break;
+					/*
+					case "btnMenuFacebook": //Facebook
+						btnMenuFacebook.selected = true;
+						vsPhotos.selectedIndex = 2;
+						if (!singleton.facebookTree || singleton.facebookTree.length == 0) {
+							FlexGlobals.topLevelApplication.GetExternalPhotos("facebook");
+						}
+						break;
+					
+					case "btnMenuInstagram": //Instagram
+						btnMenuInstagram.selected = true;
+						vsPhotos.selectedIndex = 3;
+						if (!singleton.instagramTree || singleton.instagramTree.length == 0) {
+							FlexGlobals.topLevelApplication.GetExternalPhotos("instagram");
+						}
+						break;
+					
+					case "btnMenuGoogle": //Google
+						btnMenuGoogle.selected = true;
+						vsPhotos.selectedIndex = 4;
+						if (!singleton.googleTree || singleton.googleTree.length == 0) {
+							
+							//FlexGlobals.topLevelApplication.externalPhotosToApp(null);
+							
+							FlexGlobals.topLevelApplication.GetExternalPhotos("google");
+						}
+						break;
+					*/
+				}
+			}
+			
+			public function CreateFolderStructure():void {
+				
+				//Create the folder structure
+				if (userFolders.numElements < 1) {
+					
+					for (var x:int=0; x < singleton.foldercollection.length; x++) {
+						
+						var folder:XML = XML(singleton.foldercollection.getItemAt(x).toString());
+						
+						var folderButton:ToggleButton = new ToggleButton;
+						var folderID:String = UIDUtil.createUID();
+						//Use uid for match with detail group
+						folderButton.uid = folderID;
+						folderButton.name = "folder";
+						folderButton.label = folder.@name.toString();
+						folderButton.percentWidth = 100;
+						folderButton.height = 35;
+						folderButton.setStyle("skinClass", skins.btnToggleOpenCloseFolderWithArrow);
+						folderButton.selected = false;
+						folderButton.addEventListener(MouseEvent.CLICK, OpenOrCloseFolder);
+						
+						userFolders.addElement(folderButton);
+						
+						var albumGroup:VGroup = new VGroup;
+						albumGroup.uid = folderID;
+						albumGroup.name = "album";
+						albumGroup.percentWidth = 100;
+						albumGroup.height = 0;
+						albumGroup.gap = -1;
+						albumGroup.visible = false;
+						
+						userFolders.addElement(albumGroup);
+						
+						var albums:XMLList = folder..album;
+						
+						for each (var album:XML in albums) {
+							
+							var subAlbumGroup:VGroup = new VGroup;
+							subAlbumGroup.percentWidth = 100;
+							subAlbumGroup.gap = 0;
+							albumGroup.addElement(subAlbumGroup);
+							
+							var photos:XMLList = album..photo;
+							
+							var albumButton:ToggleButton = new ToggleButton;
+							albumButton.uid = album.@id.toString();
+							albumButton.percentWidth = 100;
+							albumButton.height = 35;
+							albumButton.setStyle("skinClass", skins.btnToggleOpenCloseAlbumWithArrow);
+							albumButton.label = album.@name.toString() + " (" + photos.length() + ")";
+							albumButton.selected = false;
+							albumButton.addEventListener(MouseEvent.CLICK, OpenOrCloseAlbum);
+							
+							subAlbumGroup.addElement(albumButton);
+							
+							/*
+							//Photo labels/info
+							var photoGroup:VGroup = new VGroup;
+							photoGroup.uid = folderID;
+							photoGroup.name = "photos";
+							photoGroup.percentWidth = 100;
+							photoGroup.paddingLeft = 40;
+							photoGroup.paddingRight = 5;
+							photoGroup.height = 0;
+							photoGroup.gap = 0;
+							photoGroup.visible = false;
+							
+							subAlbumGroup.addElement(photoGroup);
+							
+							for each (var photo:XML in photos) {
+								
+								var label:Label = new Label;
+								label.percentWidth = 100;
+								label.height = 25;
+								label.setStyle("textAlign", "left");
+								label.setStyle("verticalAlign", "middle");
+								label.setStyle("fontSize", 11);
+								label.id = photo.@id;
+								label.uid = photo.@albumID;
+								label.text = photo.@name.toString();
+								photoGroup.addElement(label);
+								
+							}
+							*/
+							
+							subAlbumGroup.validateNow();
+							
+						}
+						
+					}
+				}
+			}
+			
+			public function OpenOrCloseFolder(event:MouseEvent):void {
+			
+				
+				if (event.currentTarget.selected) {
+					
+					//Open the vgroup with the albums
+					for (var x:int=0; x < userFolders.numElements; x++) {
+						if (userFolders.getElementAt(x)["uid"] == event.currentTarget.uid) {
+							if (userFolders.getElementAt(x)["name"] == "album") {
+								userFolders.getElementAt(x).percentHeight = 100;
+								userFolders.getElementAt(x).visible = true;
+							}
+						} else {
+							userFolders.getElementAt(x).percentHeight = null;
+							userFolders.getElementAt(x).height = 0;
+							userFolders.getElementAt(x).visible = false;
+						}
+					}
+					
+				} else {
+					
+					//Open the vgroup with the albums
+					for (x=0; x < userFolders.numElements; x++) {
+						if (userFolders.getElementAt(x)["uid"] == event.currentTarget.uid) {
+							if (userFolders.getElementAt(x)["name"] == "album") {
+								userFolders.getElementAt(x).percentHeight = null;
+								userFolders.getElementAt(x).height = 0;
+								userFolders.getElementAt(x).visible = false;
+							}
+						}
+					}
+				}
+			}
+			
+			public function OpenOrCloseAlbum(event:MouseEvent):void {
+				
+				//Set the photos in the preview
+				var albumID:String = event.currentTarget.uid;
+				
+				if (userFolders.numElements > 1) {
+					var albumList:Object = userFolders.getElementAt(1);
+					for (var p:int=0; p < albumList.numElements; p++) {
+						
+						//Get the subalbum
+						if (albumList.getElementAt(p).numElements > 0) {
+							//Set the album toggle buttons
+							if (albumList.getElementAt(p).getElementAt(0).uid != albumID) {
+								albumList.getElementAt(p).getElementAt(0).selected = false;
+							}
+						}
+					}
+				}
+				
+				//Get the photos
+				var albumXML:String = singleton.foldercollection.toString();
+				var albums:XMLList = XML(albumXML)..album;
+				var photos:XMLList;
+				for each (var album:XML in albums) {
+					if (album.@id == albumID) {
+						//Get the photos
+						photos = album..photo;
+						break;
+					}
+				}
+				
+				singleton.photosfromalbums = new ArrayCollection;
+				
+				for each (var ph:XML in photos) {
+					
+					//Get the original image data
+					var photo:Object = singleton.GetImageFromOtherProject(ph.@id);
+					
+					var userphoto:Object = new Object();
+					userphoto.id = photo.id;
+					userphoto.bytesize = photo.bytesize;
+					userphoto.comments = photo.comments;
+					userphoto.created = photo.created;
+					userphoto.dir = photo.dir;
+					userphoto.exif = photo.exif;
+					userphoto.fullPath = photo.fullPath;
+					userphoto.guid = photo.guid;
+					userphoto.guid_folder = photo.guid_folder;
+					userphoto.height = photo.height;
+					userphoto.hires = photo.hires;
+					userphoto.hires_url = photo.hires_url;
+					userphoto.lowres = photo.lowres;
+					userphoto.lowres_url = photo.lowres_url;
+					userphoto.modified = photo.modified;
+					userphoto.name_folder = photo.name_folder;
+					userphoto.path = photo.path;
+					userphoto.platform = photo.platform;
+					userphoto.thumb = photo.thumb;
+					userphoto.thumb_url = photo.thumb_url;
+					userphoto.url = photo.url;
+					userphoto.user_id = photo.user_id;
+					userphoto.width = photo.width;
+					userphoto.selectedforupload = photo.selectedforupload;
+					
+					singleton.photosfromalbums.addItem(userphoto);
+				}
+				
+				/*
+				if (event.currentTarget.selected) {
+					
+					event.currentTarget.parent.getElementAt(1).visible = true;
+					event.currentTarget.parent.getElementAt(1).percentHeight = 100;
+					
+				} else {
+					
+					event.currentTarget.parent.getElementAt(1).visible = false;
+					event.currentTarget.parent.getElementAt(1).percentHeight = null;
+					event.currentTarget.parent.getElementAt(1).height = 0;
+				}
+				*/
+			}
+			
+			public function Login():void {
+				
+				btnLogin.enabled = false;
+				
+				//Popup login 
+				FlexGlobals.topLevelApplication.sendLoginToHtml();
+				
+			}
+			
+			private function treeLabel(item:Object):String {
+				
+				var node:XML = XML(item);
+				
+				if (node.localName() == "folder" )
+					return node.@name;
+				else
+					return node.@name;
+			}
+			
+			private function treeLabelFacebook(item:Object):String {
+				
+				var node:XML = XML(item);
+				
+				if (node.localName() == "folder" )
+					return node.@name;
+				else
+					return node.@name;
+			}
+			
+			protected function folderName_keyUpHandler(event:KeyboardEvent):void
+			{
+				
+				/*
+				if (event.keyCode == Keyboard.ENTER) {
+					UpdateFolderNames();
+				} else if (event.keyCode == Keyboard.ESCAPE) {
+					folderName.text = currentNode.@name;
+					folderName.selectRange(-1,-1);
+				}
+				*/
+			}
+			
+			[Bindable] private var currentFacebookNode:XML;
+			protected function treeFoldersFacebook_itemClickHandler(event:ListEvent):void
+			{
+				
+				currentFacebookNode = XML(event.itemRenderer.data.toXMLString());
+				
+				if (currentFacebookNode.localName() == "folder") {
+					
+					facebookFolderName.text = "";
+					
+					singleton.facebookCollectionSelected = new XMLListCollection();
+					
+					for each (var photo:XML in currentFacebookNode..photo) {
+						singleton.facebookCollectionSelected.addItem(photo.copy());	
+					}
+					
+					singleton.facebookCollectionSelected.refresh();
+					
+					facebookFolderName.text = currentFacebookNode.@name;
+					
+				} else if (currentFacebookNode.localName() == "photo") {
+					
+					//Select the album
+					if (facebookFolderName.text != currentFacebookNode.@folderName) {
+						
+						facebookFolderName.text = "";
+						
+						singleton.facebookCollectionSelected = new XMLListCollection();
+						
+						for (var x:int=0; x < singleton.facebookTree.length; x++) {
+							for each (photo in singleton.facebookTree[x]..photo) {
+								if (photo.@folderID == currentFacebookNode.@folderID) {
+									singleton.facebookCollectionSelected.addItem(photo.copy());	
+								}
+							}
+						}
+						
+						singleton.facebookCollectionSelected.refresh();
+						
+						facebookFolderName.text = currentFacebookNode.@folderName;
+					
+					}
+				}
+			}
+			
+			[Bindable] private var currentGoogleNode:XML;
+			protected function treeFoldersGoogle_itemClickHandler(event:ListEvent):void
+			{
+				
+				currentGoogleNode = XML(event.itemRenderer.data.toXMLString());
+				
+				if (currentGoogleNode.localName() == "folder") {
+					
+					googleFolderName.text = "";
+					
+					singleton.googleCollectionSelected = new XMLListCollection();
+					
+					for each (var photo:XML in currentGoogleNode..photo) {
+						singleton.googleCollectionSelected.addItem(photo.copy());	
+					}
+					
+					singleton.googleCollectionSelected.refresh();
+					
+					googleFolderName.text = currentGoogleNode.@name;
+					
+				} else if (currentGoogleNode.localName() == "photo") {
+					
+					//Select the album
+					if (googleFolderName.text != currentGoogleNode.@folderName) {
+						
+						googleFolderName.text = "";
+						
+						singleton.googleCollectionSelected = new XMLListCollection();
+						
+						for (var x:int=0; x < singleton.googleTree.length; x++) {
+							for each (photo in singleton.googleTree[x]..photo) {
+								if (photo.@folderID == currentGoogleNode.@folderID) {
+									singleton.googleCollectionSelected.addItem(photo.copy());	
+								}
+							}
+						}
+						
+						singleton.googleCollectionSelected.refresh();
+						
+						googleFolderName.text = currentGoogleNode.@folderName;
+						
+					}
+				}
+			}
+			
+			protected function folderName_updateCompleteHandler(event:Event):void
+			{
+				UpdateFolderNames();
+			}
+			
+			private function UpdateFolderNames():void {
+				
+				/*
+				if (currentNode.@albumName.toString() != "") {
+					
+					if (currentNode.@albumName.toString() != folderName.text) {
+						
+						//Update all the photos (field: name_folder) in the xhibit_documents table with the new name
+						var keys:Array = new Array();
+						var values:Array = new Array();
+						
+						for each (var obj:Object in singleton.userphotos) {
+							if (obj.folderID == currentNode.@albumID) {
+								keys.push(obj.id);
+								values.push(folderName.text);
+							}
+						}
+						
+						if (keys.length > 0) {
+							var ast:AsyncToken = FlexGlobals.topLevelApplication.api.api_updateUserDocumentsByField("name_folder", keys, values);
+							ast.addResponder(new mx.rpc.Responder(onUpdateFolderNameResult, onUpdateFolderNameFail));
+						}
+						
+						currentNode.@albumName = folderName.text;
+						
+					}
+					
+					folderName.selectRange(-1,-1);
+					
+					for each(var xml:XML in singleton.foldercollection) {
+						var albums:XMLList = xml..album;
+						for each (var album:XML in albums) {
+							if (album.@id == currentNode.@albumID) {
+								album.@name = currentNode.@albumName;
+								var photos:XMLList = album..photo;
+								for each (var photo:XML in photos) {
+									photo.@albumName = currentNode.@albumName;
+								}
+							}
+						}
+					}
+					
+					singleton.foldercollection.refresh();
+					
+				} else {
+				
+					if (currentNode.@name.toString() != folderName.text) {
+						
+						//Update all the photos (field: name_folder) in the xhibit_documents table with the new name
+						keys = new Array();
+						values = new Array();
+						
+						for each (obj in singleton.userphotos) {
+							if (obj.folderID == currentNode.@id) {
+								keys.push(obj.id);
+								values.push(folderName.text);
+							}
+						}
+						
+						if (keys.length > 0) {
+							ast = FlexGlobals.topLevelApplication.api.api_updateUserDocumentsByField("name_folder", keys, values);
+							ast.addResponder(new mx.rpc.Responder(onUpdateFolderNameResult, onUpdateFolderNameFail));
+						}
+						
+						currentNode.@name = folderName.text;
+						
+					}
+					
+					folderName.selectRange(-1,-1);
+					
+					for each(xml in singleton.foldercollection) {
+						albums = xml..album;
+						for each (album in albums) {
+							if (album.@id == currentNode.@id) {
+								album.@name = currentNode.@name;
+								photos = album..photo;
+								for each (photo in photos) {
+									photo.@albumName = currentNode.@name;
+								}
+							}
+						}
+						
+					}
+					
+					singleton.foldercollection.refresh();
+				}
+				*/
+			}
+			
+			private function onUpdateFolderNameFail(event:FaultEvent):void {
+				//do nothing for now
+				trace(event);
+			}
+			
+			private function onUpdateFolderNameResult(event:ResultEvent):void {
+				
+				if (updateFolderObject) {
+					var keys:Array = new Array();
+					var values:Array = new Array();
+					keys.push(updateFolderObject.id);
+					values.push(updateFolderObject.folderGuid);
+					updateFolderObject = null;
+					if (keys.length > 0) {
+						var ast:AsyncToken = FlexGlobals.topLevelApplication.api.api_updateUserDocumentsByField("guid_folder", keys, values);
+						ast.addResponder(new mx.rpc.Responder(onUpdateFolderNameResult, onUpdateFolderNameFail));
+					}
+				}
+			}
+			
+			protected function btnAddPhotoFolder_clickHandler(event:MouseEvent):void
+			{
+				
+				if (singleton.foldercollection) {
+					
+					/*
+					//Get the myAlbums folder
+					var parentNode:XML = singleton.foldercollection[1];
+					var contentNode:XML = singleton.foldercollection[1].album[0];
+					
+					var albumXML:XML = <album />;
+					albumXML.@id = UIDUtil.createUID();
+					albumXML.@name = "Nieuwe map";
+					
+					var firstItem:XML = <empty />;
+					firstItem.@id = "";
+					firstItem.@name = "-- Sleep hier uw foto's naartoe --";
+					albumXML.appendChild(firstItem);
+					
+					parentNode.insertChildBefore(contentNode, albumXML);
+					
+					ExpandAllNodes();
+					*/
+					
+				}
+				
+			}
+			
+			protected function btnDeletePhotoFolder_clickHandler(event:MouseEvent):void
+			{
+				
+				/*
+				if (currentNode) {
+					if (currentNode.localName() == "album") {
+						//Delete the folder and its content, flag the userphoto to invisible
+						
+						
+					}
+				}
+				*/
+				
+			}
+			
+			private function ExpandAllNodes(event:Event = null):void {
+				
+				//Expand all nodes
+				/*
+				if (singleton.foldercollection) {
+					for (var i:int = 0; i < singleton.foldercollection.length; ++i){ 
+						if (treeFolders) {
+							//treeFolders.expandChildrenOf(singleton.foldercollection[i][0] ,true) 
+						}
+					} 
+				}
+				*/
+			}
+			
+			protected function treeFolders_mouseDownHandler(event:MouseEvent):void
+			{
+				
+				/*
+				try {
+					
+					if (treeFolders.selectedIndex != -1) {
+						
+						if (treeFolders.selectedItem.localName() == "photo") {
+							
+							//Dragging allowed!!
+							if (treeFolders.selectedItem.@status.toString() != "new") {
+								treeFolders.dragEnabled = true;
+								treeFolders.dropEnabled = true;
+								treeFolders.dragMoveEnabled = true;
+							} else {
+								treeFolders.dragEnabled = false;
+								treeFolders.dropEnabled = false;
+								treeFolders.dragMoveEnabled = false;
+							}
+							
+						} else {
+							
+							treeFolders.dragEnabled = false;
+							treeFolders.dropEnabled = false;
+							treeFolders.dragMoveEnabled = false;
+							
+						}
+					}
+				} catch (err:Error) {
+					//Do nothing
+				}
+				*/
+				
+			}
+			
+			[Bindable] public var updateFolderObject:Object;
+			private function onDragDrop(event:DragEvent):void {
+				
+				//Check if this move is allowed
+				/*
+				if (event.dragInitiator.mx_internal::_dropData.parent) {
+					
+					var targetFolder:XML = XML(event.dragInitiator.mx_internal::_dropData.parent.toXMLString());
+					
+					if (targetFolder.localName() == "album") {
+						
+						//Only update if its a different folder
+						if (treeFolders.selectedItem.@albumID.toString() != targetFolder.@id.toString()) {
+						
+							//Move the selected photo and update the folder names
+							var item:Object = treeFolders.selectedItem;
+							item.@albumID = targetFolder.@id;
+							item.@albumName = targetFolder.@name;
+							
+							//Update the document table
+							var keys:Array = new Array();
+							var values:Array = new Array();
+							keys.push(item.@id.toString());
+							values.push(targetFolder.@name.toString());
+							
+							updateFolderObject = new Object();
+							updateFolderObject.id = item.@id.toString();
+							updateFolderObject.folderGuid = targetFolder.@id.toString();
+							
+							if (keys.length > 0) {
+								var ast:AsyncToken = FlexGlobals.topLevelApplication.api.api_updateUserDocumentsByField("name_folder", keys, values);
+								ast.addResponder(new mx.rpc.Responder(onUpdateFolderNameResult, onUpdateFolderNameFail));
+							}
+						
+							//Update the selection (if its there)
+							if (singleton.userphotosfromalbum) {
+								for (var x:int=0; x < singleton.userphotosfromalbum.length; x++) {
+									if (singleton.userphotosfromalbum.getItemAt(x).id == item.@id) {
+										singleton.userphotosfromalbum.removeItemAt(x);	
+										break;
+									}
+								}
+								singleton.userphotosfromalbum.refresh();
+							}
+							
+							if (singleton.userphotos) {
+								for (var y:int=0; y < singleton.userphotos.length; y++) {
+									if (singleton.userphotos.getItemAt(y).id.toString() == item.@id.toString()) {
+										singleton.userphotos.getItemAt(y).folderID = targetFolder.@id.toString();
+										singleton.userphotos.getItemAt(y).folderName = targetFolder.@name.toString();
+										break;
+									}
+										
+								}
+							}
+							
+							if (targetFolder.child(0).localName().toString() == "empty") {
+								
+								//delete targetFolder.children()[0];
+								
+								var albums:XMLList = XMLList(singleton.foldercollection[1])..album;
+								
+								for (x=0; x < albums.length(); x++) {
+									if (albums[x].@id == targetFolder.@id) {
+										//delete singleton.foldercollection[1].children()[x].children()[0];
+										break;
+									}
+								}
+								
+							}
+							
+							treeFolders.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+						
+						} else {
+							
+							trace("same folder! Do nothing");
+						}
+						
+					} else {
+						
+						event.preventDefault();		
+						trace("not allowed");
+					}
+					
+				} else {
+					
+					//Move is false
+					event.preventDefault();
+					trace("not allowed");
+				}
+				
+				treeFolders.validateNow();
+				*/
+			}
+			
+			protected function btnContinueManual_clickHandler(event:MouseEvent):void
+			{
+				
+				singleton._autofill = false;
+				
+				//Go to the storyboard without autofill settings
+				var numPages:int = singleton._minPages + 2; //2 voor cover
+			
+				var pageNum:int = 1;
+				
+				//Create the minimum number of spreads for this book
+				singleton.albumtimeline = new XMLListCollection();
+				
+				singleton.albumtimelineXML = <root/>;
+				
+				var timeline:XML = <spread/>;
+				timeline.@spreadID = UIDUtil.createUID();
+				timeline.background = <background/>;
+				timeline.pages = <pages/>;
+				
+				singleton.albumtimelineXML.appendChild(timeline);
+				
+				//Cover back
+				var page:XML = <page/>;
+				page.@pageID = UIDUtil.createUID();
+				page.@type = "coverback";
+				page.@pagenum = "Achterkant";
+				page.photos = <photos/>;
+				page.@numphotos = 0;
+				page.@timelineID = timeline.@spreadID;
+				page.@spreadID = timeline.@spreadID;
+				timeline.pages.appendChild(page);
+				
+				//Cover front
+				var frontpage:XML = <page/>;
+				frontpage.@pageID = UIDUtil.createUID();
+				frontpage.@type = "coverfront";
+				frontpage.@pagenum = "Voorkant";
+				frontpage.photos = <photos/>;
+				frontpage.@numphotos = 0;
+				frontpage.@timelineID = timeline.@spreadID;
+				frontpage.@spreadID = timeline.@spreadID;
+				
+				timeline.pages.appendChild(frontpage);
+				
+				for (var x:int=0; x < singleton._minPages; x++) {
+					
+					if (x == 0 || x == singleton._minPages - 1) {
+						
+						timeline = <spread/>;
+						timeline.@spreadID = UIDUtil.createUID();
+						timeline.pages = <pages/>;
+						
+						singleton.albumtimelineXML.appendChild(timeline);
+						
+						//Single page
+						page = <page/>;
+						page.@pageID = UIDUtil.createUID();
+						page.@type = PageType.NORMAL;
+						page.@pagenum = "Pagina " + pageNum;
+						pageNum++;
+						page.photos = <photos/>;
+						page.@numphotos = 0;
+						page.@timelineID = timeline.@spreadID;
+						page.@spreadID = timeline.@spreadID;
+						timeline.pages.appendChild(page);
+						
+					} else {
+						
+						timeline = <spread/>;
+						timeline.@spreadID = UIDUtil.createUID();
+						timeline.pages = <pages/>;
+						
+						singleton.albumtimelineXML.appendChild(timeline);
+						
+						//Left page
+						page = <page/>;
+						page.@pageID = UIDUtil.createUID();
+						page.@type = PageType.NORMAL;
+						page.@pagenum = "Pagina " + pageNum;
+						pageNum++;
+						page.photos = <photos/>;
+						page.@numphotos = 0;
+						page.@timelineID = timeline.@spreadID;
+						page.@spreadID = timeline.@spreadID;
+						
+						timeline.pages.appendChild(page);
+						
+						x++;
+						
+						//Right page
+						page = <page/>;
+						page.@pageID = UIDUtil.createUID();
+						page.@type = PageType.NORMAL;
+						page.@pagenum = "Pagina " + pageNum;
+						pageNum++;
+						page.photos = <photos/>;
+						page.@numphotos = 0;
+						page.@timelineID = timeline.@spreadID;
+						page.@spreadID = timeline.@spreadID;
+						
+						timeline.pages.appendChild(page);
+						
+					}
+					
+				}
+				
+				singleton.albumtimeline = new XMLListCollection(singleton.albumtimelineXML..spread);
+				
+				vsMain.selectedIndex = 2;
+				vsMain.validateNow();
+				
+				
+			}
+			
+			public function CreateStoryBoard(event:MouseEvent = null):void
+			{
+				
+				var continueSB:Boolean = false;
+				
+				if (!singleton.userphotosforupload || singleton.userphotosforupload.length == 0) {
+					
+					if (singleton._autofill == true) {
+						continueSB = true;
+					}
+				}
+				
+				if (continueSB) {
+					
+					singleton.ShowMessage("Geen foto's geselecteerd", "Je hebt nog geen foto's geselecteerd voor je album. Doe dit eerst voor je verder gaat, of kies voor handmatig vullen.");
+					
+				} else {
+					
+					singleton.ShowWaitBox("De verhaallijn wordt gemaakt, een ogenblikje geduld ajb");
+					
+					this.callLater(ContinueCreateStoryBoard);
+					
+				}
+			}
+			
+			private function ContinueCreateStoryBoard():void {
+				
+				singleton.DebugPrint("autofill:  " + singleton._autofill);
+				
+				if (singleton.albumtimeline && singleton.albumtimeline.length > 0) {
+					
+					for (var s:int=0; s < singleton.userphotosforupload.length; s++) {
+						if (!singleton.userphotosforupload.getItemAt(s).hasOwnProperty("usedinstoryboard")) {
+							singleton.userphotosforupload.getItemAt(s).usedinstoryboard = false;
+							singleton.userphotosforupload.getItemAt(s).guid = UIDUtil.createUID();
+						}
+					}
+					
+				} else {
+					
+					singleton.userphotosforuploadhidden = new ArrayCollection();
+					
+					var arrHidden:Array = new Array();
+					
+					var totalPhotos:int = singleton.userphotosforupload.length;
+					var numPages:int = numPagesSelection.value; //2 voor cover
+					var currentindex:int = 0;
+					
+					if (singleton._useCover) {
+						numPages += 2;
+					}
+					
+					singleton._numPages = numPagesSelection.value;
+					singleton.CalculatePrice();
+					
+					var averagePhotos:int = averagePhotosPerPage.value;
+					
+					var photosremaining:int = totalPhotos;
+					var photoarray:Array = new Array();
+					
+					var photo_min:int = averagePhotos - 2;
+					var photo_max:int = averagePhotos;
+					
+					if (photo_min < 1) {
+						photo_min = 1;
+						photo_max = 2;
+					}
+					
+					//Create an array of photos and pages
+					var done:Boolean = false;
+					var photocounter:int = 0;
+					
+					while(!done) {
+						
+						if (photosremaining <= 0) {
+							
+							done = true;
+							
+						} else {
+							
+							if (photoarray.length < numPages) {
+								var rnd:int = Math.floor(Math.random() * (1 + photo_max - photo_min)) + photo_min;
+								photoarray.push(rnd);
+								photosremaining-=rnd;
+							} else {
+								if (photocounter == photoarray.length) {
+									photocounter = 0;
+								}
+								photoarray[photocounter] += 1;
+								photocounter++;
+								photosremaining--;
+							}
+						}
+					}
+					
+					if (photoarray.length < numPages) {
+						for (var l:int=photoarray.length - 1; l < numPages; l++) {
+							photoarray.push(Math.floor(Math.random() * (1 + photo_max - photo_min)) + photo_min);
+						}
+					}
+					
+					//Create the minimum number of spreads for this book
+					singleton.albumtimeline = new XMLListCollection();
+					singleton.albumtimelineXML = <root/>;
+					
+					var totalSpreads:int = (photoarray.length + 2) / 2;
+					var pagecounter:int = 0;
+					var photoindex:int = 0;
+					var pageNum:int = 1;
+					var firstPage:Boolean = true;
+					var lastPage:Boolean = false;
+					
+					for (var u:int=0; u < totalSpreads; u++) {
+						
+						if (u == totalSpreads - 1) {
+							lastPage = true;
+						}
+						
+						var cover:Boolean = false;
+						if (u == 0) {
+							if (singleton._useCover) {
+								cover = true;
+							} else {
+								cover = false;
+							}
+						}
+						
+						if (cover) {
+							
+							var timeline:XML = <spread/>;
+							timeline.@spreadID = UIDUtil.createUID();
+							timeline.@status = "new";
+							timeline.pages = <pages/>;
+							timeline.elements = <elements/>;
+							timeline.background = <background/>;
+							
+							singleton.albumtimelineXML.appendChild(timeline);
+							
+							singleton._defaultCoverSpine = singleton.CalculateSpine(singleton._numPages);
+							
+							//Cover back
+							var page:XML = <page/>;
+							page.@pageID = UIDUtil.createUID();
+							page.@type = "coverback";
+							page.@pagenum = "Achterkant";
+							page.@timelineID = timeline.@spreadID;
+							page.@spreadID = timeline.@spreadID;
+							page.@pageLeftRight = "coverback";
+							page.elements = <elements/>;
+							
+							page.@width = singleton._defaultCoverWidth;
+							page.@height = singleton._defaultCoverHeight;
+							page.@pageType = page.@type;
+							page.@pageWidth = page.@width;
+							page.@pageHeight = page.@height;
+							page.@horizontalBleed = singleton._defaultCoverBleed;
+							page.@verticalBleed = singleton._defaultCoverWrap;
+							page.@horizontalWrap = singleton._defaultCoverWrap;
+							page.@verticalWrap = singleton._defaultCoverWrap;
+							page.@backgroundColor = "-1";
+							page.@backgroundAlpha = "1";
+							page.@singlepage = false;
+							
+							var numPhotos:int = photoarray[pagecounter];
+							pagecounter++;
+							
+							var pagelayout:Object = singleton.GetRandomPagelayoutOnFixedNumPhotos(numPhotos, 0) as Object;
+							var autoElements:XMLList = XML(pagelayout.layout)..item;
+							var pageWidth:Number = singleton._defaultCoverWidth;
+							var pageHeight:Number = singleton._defaultCoverHeight;
+							var margin:Number = singleton._defaultCoverWrap + singleton._defaultCoverBleed;
+							
+							var counter:int = 0;
+							
+							for (var p:int=0; p < numPhotos; p++) {
+								
+								var newphoto:XML = <element/>;
+								newphoto.@id = UIDUtil.createUID();
+								newphoto.@pageID = page.@pageID;
+								newphoto.@type = "photo";
+								newphoto.@usedinstoryboard = true;
+								
+								var photo:Object = null;
+								var refImg:Object = null;
+								if (photoindex < singleton.userphotosforupload.length) {
+									
+									photo = singleton.userphotosforupload.getItemAt(photoindex) as Object;
+									photoindex++;
+									
+									if (singleton._autofill == true) {
+										refImg = singleton.GetOriginalImageData(photo.id);
+									}
+							
+								}
+									
+								if (refImg) {
+									
+									newphoto.@origin = photo.origin;
+									newphoto.@original_image_id = photo.id;
+									//Get original info
+									newphoto.@originalWidth = refImg.originalWidth;
+									newphoto.@originalHeight = refImg.originalHeight;
+									newphoto.@status = refImg.status;
+									newphoto.@fullPath = refImg.fullPath;
+									newphoto.@path = refImg.path;
+									newphoto.@bytesize = refImg.bytesize;
+									newphoto.@hires = refImg.hires;
+									newphoto.@hires_url = refImg.hires_url;
+									newphoto.@lowres = refImg.lowres;
+									newphoto.@lowres_url = refImg.lowres_url;
+									newphoto.@thumb = refImg.thumb;
+									newphoto.@thumb_url = refImg.thumb_url;
+									if (refImg.exif) {
+										newphoto.exif = refImg.exif.copy();
+									} else {
+										newphoto.exif = <exif/>;
+									}
+								} else {
+									
+									newphoto.@origin = "";
+									newphoto.@original_image_id = "";
+									//Get original info
+									newphoto.@originalWidth = "0";
+									newphoto.@originalHeight = "0";
+									newphoto.@status = "empty";
+									newphoto.@fullPath = "";
+									newphoto.@path = "";
+									newphoto.@bytesize = "";
+									newphoto.@hires = "";
+									newphoto.@hires_url = "";
+									newphoto.@lowres = "";
+									newphoto.@lowres_url = "";
+									newphoto.@thumb = "";
+									newphoto.@thumb_url = "";
+									newphoto.exif = <exif/>;
+								}
+								
+								newphoto.@mask_original_id = "";
+								newphoto.@mask_original_width = "";
+								newphoto.@mask_original_height = "";
+								newphoto.@mask_hires = "";
+								newphoto.@mask_hires_url = "";
+								newphoto.@mask_lowres = "";
+								newphoto.@mask_lowres_url = "";
+								newphoto.@mask_thumb = "";
+								newphoto.@mask_thumb_url = "";
+								newphoto.@mask_path = "";
+								newphoto.@overlay_hires =  "";
+								newphoto.@overlay_hires_url = "";
+								newphoto.@overlay_lowres = "";
+								newphoto.@overlay_lowres_url = "";
+								newphoto.@overlay_thumb = "";
+								newphoto.@overlay_thumb_url = "";
+								newphoto.@overlay_original_height = "";
+								newphoto.@overlay_original_width = "";
+								newphoto.@userID = singleton._userID;	
+								newphoto.@shadow = "";
+								
+								newphoto.@imageAlpha = "1";
+								newphoto.@imageFilter = "";
+								newphoto.@index = page..element.length();
+								newphoto.@borderalpha = "1";
+								newphoto.@bordercolor = "#000000";
+								newphoto.@borderweight = "0";
+								newphoto.imageRotation = 0;
+								newphoto.@scaling = 1;
+								
+								var auto:XML = autoElements[counter].copy();
+								newphoto.@objectX = margin + ((parseFloat(auto.@left.toString()) / 100) * pageWidth);
+								newphoto.@objectY = margin + ((parseFloat(auto.@top.toString()) / 100) * pageHeight);
+								newphoto.@objectWidth = pageWidth - ((parseFloat(auto.@right.toString()) / 100) * pageWidth) - parseFloat(newphoto.@objectX) + margin;
+								newphoto.@objectHeight = pageHeight - ((parseFloat(auto.@bottom.toString()) / 100) * pageHeight) - parseFloat(newphoto.@objectY) + margin;
+								newphoto.@rotation = auto.@r;
+								
+								//Calculate
+								if (refImg) {
+									
+									singleton.CalculateImageZoomAndPosition(newphoto);
+								
+									// Get the other info from the original image
+									newphoto.@refOffsetX = newphoto.@offsetX;
+									newphoto.@refOffsetY = newphoto.@offsetY;
+									newphoto.@refWidth = newphoto.@imageWidth;
+									newphoto.@refHeight = newphoto.@imageHeight;
+									newphoto.@refScale = newphoto.@scaling;
+									
+								} else {
+								
+									newphoto.@refOffsetX = "";
+									newphoto.@refOffsetY = "";
+									newphoto.@refWidth = "";
+									newphoto.@refHeight = "";
+									newphoto.@refScale = "";
+								}
+								
+								counter++;
+								
+								page.elements.appendChild(newphoto);
+								timeline.elements.appendChild(newphoto.copy());
+								
+							}
+							
+							timeline.pages.appendChild(page);
+							
+							//Spine
+							var spine:XML = <page/>;
+							spine.@pageID = UIDUtil.createUID();
+							spine.@type = "coverspine";
+							spine.@pagenum = "Rug";
+							spine.@pageLeftRight = "coverspine";
+							spine.elements = <elements/>;
+							spine.@timelineID = timeline.@spreadID;
+							spine.@spreadID = timeline.@spreadID;
+							spine.@width = singleton._defaultCoverSpine;
+							spine.@height = singleton._defaultCoverHeight;
+							spine.@pageType = spine.@type;
+							spine.@pageWidth = spine.@width;
+							spine.@pageHeight = spine.@height;
+							spine.@horizontalBleed = 0;
+							spine.@verticalBleed = singleton._defaultCoverWrap;
+							spine.@horizontalWrap = 0;
+							spine.@verticalWrap = singleton._defaultCoverWrap;
+							spine.@backgroundColor = "-1";
+							spine.@backgroundAlpha = "1";
+							spine.@singlepage = false;
+							
+							timeline.pages.appendChild(spine);
+							
+							//Cover front
+							page = <page/>;
+							page.@pageID = UIDUtil.createUID();
+							page.@type = "coverfront";
+							page.@pagenum = "Voorkant";
+							page.@pageLeftRight = "coverfront";
+							page.elements = <elements/>;
+							page.@timelineID = timeline.@spreadID;
+							page.@spreadID = timeline.@spreadID;
+							page.@width = singleton._defaultCoverWidth;
+							page.@height = singleton._defaultCoverHeight;
+							page.@pageType = page.@type;
+							page.@pageWidth = page.@width;
+							page.@pageHeight = page.@height;
+							page.@horizontalBleed = singleton._defaultCoverBleed;
+							page.@verticalBleed = singleton._defaultCoverWrap;
+							page.@horizontalWrap = singleton._defaultCoverWrap;
+							page.@verticalWrap = singleton._defaultCoverWrap;
+							page.@backgroundColor = "-1";
+							page.@backgroundAlpha = "1";
+							page.@singlepage = false;
+							
+							numPhotos = photoarray[pagecounter];
+							pagecounter++;
+							
+							pagelayout = singleton.GetRandomPagelayoutOnFixedNumPhotos(numPhotos, 0) as Object;
+							autoElements = XML(pagelayout.layout)..item;
+							pageWidth = singleton._defaultCoverWidth;
+							pageHeight = singleton._defaultCoverHeight;
+							margin = pageWidth + singleton._defaultCoverWrap + singleton._defaultCoverBleed + singleton._defaultCoverSpine;
+							
+							counter = 0;
+							
+							for (p=0; p < numPhotos; p++) {
+								
+								newphoto = <element/>;
+								newphoto.@id = UIDUtil.createUID();
+								newphoto.@pageID = page.@pageID;
+								newphoto.@type = "photo";
+								newphoto.@usedinstoryboard = true;
+								
+								photo = null;
+								refImg = null;
+								if (photoindex < singleton.userphotosforupload.length) {
+									
+									photo = singleton.userphotosforupload.getItemAt(photoindex) as Object;
+									photoindex++;
+									
+									if (singleton._autofill == true) {
+										refImg = singleton.GetOriginalImageData(photo.id);
+									}
+									
+								}
+								
+								if (refImg) {
+									
+									newphoto.@origin = photo.origin;
+									newphoto.@original_image_id = photo.id;
+									//Get original info
+									newphoto.@originalWidth = refImg.originalWidth;
+									newphoto.@originalHeight = refImg.originalHeight;
+									newphoto.@status = refImg.status;
+									newphoto.@fullPath = refImg.fullPath;
+									newphoto.@path = refImg.path;
+									newphoto.@bytesize = refImg.bytesize;
+									newphoto.@hires = refImg.hires;
+									newphoto.@hires_url = refImg.hires_url;
+									newphoto.@lowres = refImg.lowres;
+									newphoto.@lowres_url = refImg.lowres_url;
+									newphoto.@thumb = refImg.thumb;
+									newphoto.@thumb_url = refImg.thumb_url;
+									if (refImg.exif) {
+										newphoto.exif = refImg.exif.copy();
+									} else {
+										newphoto.exif = <exif/>;
+									}
+								} else {
+									
+									newphoto.@origin = "";
+									newphoto.@original_image_id = "";
+									//Get original info
+									newphoto.@originalWidth = "0";
+									newphoto.@originalHeight = "0";
+									newphoto.@status = "empty";
+									newphoto.@fullPath = "";
+									newphoto.@path = "";
+									newphoto.@bytesize = "";
+									newphoto.@hires = "";
+									newphoto.@hires_url = "";
+									newphoto.@lowres = "";
+									newphoto.@lowres_url = "";
+									newphoto.@thumb = "";
+									newphoto.@thumb_url = "";
+									newphoto.exif = <exif/>;
+								}
+								
+								newphoto.@mask_original_id = "";
+								newphoto.@mask_original_width = "";
+								newphoto.@mask_original_height = "";
+								newphoto.@mask_hires = "";
+								newphoto.@mask_hires_url = "";
+								newphoto.@mask_lowres = "";
+								newphoto.@mask_lowres_url = "";
+								newphoto.@mask_thumb = "";
+								newphoto.@mask_thumb_url = "";
+								newphoto.@mask_path = "";
+								newphoto.@overlay_hires =  "";
+								newphoto.@overlay_hires_url = "";
+								newphoto.@overlay_lowres = "";
+								newphoto.@overlay_lowres_url = "";
+								newphoto.@overlay_thumb = "";
+								newphoto.@overlay_thumb_url = "";
+								newphoto.@overlay_original_height = "";
+								newphoto.@overlay_original_width = "";
+								newphoto.@userID = singleton._userID;	
+								newphoto.@shadow = "";
+								
+								newphoto.@imageAlpha = "1";
+								newphoto.@imageFilter = "";
+								newphoto.@index = page..element.length();
+								newphoto.@borderalpha = "1";
+								newphoto.@bordercolor = "#000000";
+								newphoto.@borderweight = "0";
+								newphoto.imageRotation = 0;
+								newphoto.@scaling = 1;
+								
+								auto = autoElements[counter].copy();
+								newphoto.@objectX = margin + ((parseFloat(auto.@left.toString()) / 100) * pageWidth);
+								newphoto.@objectY = (singleton._defaultCoverWrap + singleton._defaultCoverBleed) + ((parseFloat(auto.@top.toString()) / 100) * pageHeight);
+								newphoto.@objectWidth = pageWidth - ((parseFloat(auto.@right.toString()) / 100) * pageWidth) - parseFloat(newphoto.@objectX) + margin;
+								newphoto.@objectHeight = pageHeight - ((parseFloat(auto.@bottom.toString()) / 100) * pageHeight) - parseFloat(newphoto.@objectY) + (singleton._defaultCoverWrap + singleton._defaultCoverBleed);
+								newphoto.@rotation = auto.@r;
+								
+								//Calculate
+								if (refImg) {
+									
+									singleton.CalculateImageZoomAndPosition(newphoto);
+									
+									// Get the other info from the original image
+									newphoto.@refOffsetX = newphoto.@offsetX;
+									newphoto.@refOffsetY = newphoto.@offsetY;
+									newphoto.@refWidth = newphoto.@imageWidth;
+									newphoto.@refHeight = newphoto.@imageHeight;
+									newphoto.@refScale = newphoto.@scaling;
+									
+								} else {
+									
+									newphoto.@refOffsetX = "";
+									newphoto.@refOffsetY = "";
+									newphoto.@refWidth = "";
+									newphoto.@refHeight = "";
+									newphoto.@refScale = "";
+								}
+								
+								counter++;
+								
+								page.elements.appendChild(newphoto);
+								timeline.elements.appendChild(newphoto.copy());
+								
+							}
+							
+							timeline.pages.appendChild(page);
+						
+							timeline.@width = ((singleton._defaultCoverWidth + singleton._defaultCoverWrap  + singleton._defaultCoverBleed) * 2) + singleton.CalculateSpine(singleton._numPages);
+							timeline.@height = singleton._defaultCoverHeight + ((singleton._defaultCoverBleed + singleton._defaultCoverWrap) * 2);
+							timeline.@totalWidth = ((singleton._defaultCoverWidth + singleton._defaultCoverWrap  + singleton._defaultCoverBleed) * 2) + singleton.CalculateSpine(singleton._numPages);
+							timeline.@totalHeight = singleton._defaultCoverHeight + ((singleton._defaultCoverBleed + singleton._defaultCoverWrap) * 2);
+							timeline.@singlepage = "false";
+							timeline.@backgroundAlpha = "1";
+							timeline.@backgroundColor = "-1";
+						
+						} else { //PageBlock
+							
+							timeline = <spread/>;
+							timeline.@spreadID = UIDUtil.createUID();
+							timeline.@status = "new";
+							timeline.pages = <pages/>;
+							timeline.elements = <elements/>;
+							
+							singleton.albumtimelineXML.appendChild(timeline);
+							
+							var singlepage:Boolean = false;
+							var singlepageFirst:Boolean = false;
+							var singlepageLast:Boolean = false;
+							
+							if (firstPage) {
+								firstPage = false;
+								singlepage = true;
+								singlepageFirst = true;
+							}
+							
+							if (lastPage) {
+								singlepageLast = true;
+							}
+							
+							if (singlepageFirst) { //First empty page
+								
+								timeline.@width = singleton._defaultPageWidth;
+								timeline.@height = singleton._defaultPageHeight;
+								timeline.@totalWidth = singleton._defaultPageWidth + (2 * singleton._defaultPageBleed);
+								timeline.@totalHeight = singleton._defaultPageHeight + (2 * singleton._defaultPageBleed);
+								timeline.@singlepage = "true";
+								timeline.@backgroundAlpha = "1";
+								timeline.@backgroundColor = "-1";
+								
+								page = <page/>;
+								page.@type = "empty";
+								page.@pagenum = "Binnenzijde omslag";
+								page.@side = "left";
+								timeline.pages.appendChild(page);
+								
+							} else {
+								
+								timeline.@width = singleton._defaultPageWidth;
+								timeline.@height = singleton._defaultPageHeight;
+								timeline.@totalWidth = singleton._defaultPageWidth + singleton._defaultPageBleed;
+								timeline.@totalHeight = singleton._defaultPageHeight + singleton._defaultPageBleed;
+								timeline.@singlepage = "false";
+								timeline.@backgroundAlpha = "1";
+								timeline.@backgroundColor = "-1";
+								
+								//Single left page
+								page = <page/>;
+								page.@pageID = UIDUtil.createUID();
+								page.@type = PageType.NORMAL;
+								page.@pagenum = "Pagina " + pageNum;
+								pageNum++;
+								page.@side = "left";
+								page.@pageLeftRight = page.@side;
+								page.elements = <elements/>;
+								page.@timelineID = timeline.@spreadID;
+								margin = 0;
+								
+								page.@spreadID = timeline.@spreadID;
+								page.@width = singleton._defaultPageWidth;
+								page.@height = singleton._defaultPageHeight;
+								page.@pageType = page.@type;
+								page.@pageWidth = page.@width;
+								page.@pageHeight = page.@height;
+								page.@horizontalBleed = singleton._defaultPageBleed;
+								page.@verticalBleed = singleton._defaultPageBleed;
+								page.@horizontalWrap = 0;
+								page.@verticalWrap = 0;
+								page.@backgroundColor = "-1";
+								page.@backgroundAlpha = "1";
+								page.@singlepage = "false";
+								page.@singlepageFirst = "false";
+								page.@singlepageLast = "false";
+								
+								timeline.pages.appendChild(page);
+								
+								//Add elements
+								numPhotos = photoarray[pagecounter];
+								pagecounter++;
+								
+								pagelayout = singleton.GetRandomPagelayoutOnFixedNumPhotos(numPhotos, 0) as Object;
+								autoElements = XML(pagelayout.layout)..item;
+								pageWidth = singleton._defaultPageWidth + singleton._defaultPageBleed;
+								pageHeight = singleton._defaultPageHeight + (2 * singleton._defaultPageBleed);
+								counter = 0;
+								
+								for (p=0; p < numPhotos; p++) {
+									
+									newphoto = <element/>;
+									newphoto.@id = UIDUtil.createUID();
+									newphoto.@pageID = page.@pageID;
+									newphoto.@type = "photo";
+									newphoto.@usedinstoryboard = true;
+									
+									photo = null;
+									refImg = null;
+									if (photoindex < singleton.userphotosforupload.length) {
+										
+										photo = singleton.userphotosforupload.getItemAt(photoindex) as Object;
+										photoindex++;
+										
+										if (singleton._autofill == true) {
+											refImg = singleton.GetOriginalImageData(photo.id);
+										}
+										
+									}
+									
+									if (refImg) {
+										
+										newphoto.@origin = photo.origin;
+										newphoto.@original_image_id = photo.id;
+										//Get original info
+										newphoto.@originalWidth = refImg.originalWidth;
+										newphoto.@originalHeight = refImg.originalHeight;
+										newphoto.@status = refImg.status;
+										newphoto.@fullPath = refImg.fullPath;
+										newphoto.@path = refImg.path;
+										newphoto.@bytesize = refImg.bytesize;
+										newphoto.@hires = refImg.hires;
+										newphoto.@hires_url = refImg.hires_url;
+										newphoto.@lowres = refImg.lowres;
+										newphoto.@lowres_url = refImg.lowres_url;
+										newphoto.@thumb = refImg.thumb;
+										newphoto.@thumb_url = refImg.thumb_url;
+										if (refImg.exif) {
+											newphoto.exif = refImg.exif.copy();
+										} else {
+											newphoto.exif = <exif/>;
+										}
+									} else {
+										
+										newphoto.@origin = "";
+										newphoto.@original_image_id = "";
+										//Get original info
+										newphoto.@originalWidth = "0";
+										newphoto.@originalHeight = "0";
+										newphoto.@status = "empty";
+										newphoto.@fullPath = "";
+										newphoto.@path = "";
+										newphoto.@bytesize = "";
+										newphoto.@hires = "";
+										newphoto.@hires_url = "";
+										newphoto.@lowres = "";
+										newphoto.@lowres_url = "";
+										newphoto.@thumb = "";
+										newphoto.@thumb_url = "";
+										newphoto.exif = <exif/>;
+									}
+									
+									newphoto.@mask_original_id = "";
+									newphoto.@mask_original_width = "";
+									newphoto.@mask_original_height = "";
+									newphoto.@mask_hires = "";
+									newphoto.@mask_hires_url = "";
+									newphoto.@mask_lowres = "";
+									newphoto.@mask_lowres_url = "";
+									newphoto.@mask_thumb = "";
+									newphoto.@mask_thumb_url = "";
+									newphoto.@mask_path = "";
+									newphoto.@overlay_hires =  "";
+									newphoto.@overlay_hires_url = "";
+									newphoto.@overlay_lowres = "";
+									newphoto.@overlay_lowres_url = "";
+									newphoto.@overlay_thumb = "";
+									newphoto.@overlay_thumb_url = "";
+									newphoto.@overlay_original_height = "";
+									newphoto.@overlay_original_width = "";
+									newphoto.@userID = singleton._userID;	
+									newphoto.@shadow = "";
+									
+									newphoto.@imageAlpha = "1";
+									newphoto.@imageFilter = "";
+									newphoto.@index = page..element.length();
+									newphoto.@borderalpha = "1";
+									newphoto.@bordercolor = "#000000";
+									newphoto.@borderweight = "0";
+									newphoto.imageRotation = 0;
+									newphoto.@scaling = 1;
+									
+									auto = autoElements[counter].copy();
+									newphoto.@objectX = margin + ((parseFloat(auto.@left.toString()) / 100) * pageWidth);
+									newphoto.@objectY = (parseFloat(auto.@top.toString()) / 100) * pageHeight;
+									newphoto.@objectWidth = pageWidth - ((parseFloat(auto.@right.toString()) / 100) * pageWidth) - parseFloat(newphoto.@objectX) + margin;
+									newphoto.@objectHeight = pageHeight - ((parseFloat(auto.@bottom.toString()) / 100) * pageHeight) - parseFloat(newphoto.@objectY);
+									newphoto.@rotation = auto.@r;
+									
+									//Calculate
+									if (refImg) {
+										
+										singleton.CalculateImageZoomAndPosition(newphoto);
+										
+										// Get the other info from the original image
+										newphoto.@refOffsetX = newphoto.@offsetX;
+										newphoto.@refOffsetY = newphoto.@offsetY;
+										newphoto.@refWidth = newphoto.@imageWidth;
+										newphoto.@refHeight = newphoto.@imageHeight;
+										newphoto.@refScale = newphoto.@scaling;
+										
+									} else {
+										
+										newphoto.@refOffsetX = "";
+										newphoto.@refOffsetY = "";
+										newphoto.@refWidth = "";
+										newphoto.@refHeight = "";
+										newphoto.@refScale = "";
+									}
+									
+									counter++;
+									
+									page.elements.appendChild(newphoto);
+									timeline.elements.appendChild(newphoto.copy());
+									
+								}
+								
+							}
+							
+							if (singlepageLast) {
+								
+								timeline.@width = singleton._defaultPageWidth;
+								timeline.@height = singleton._defaultPageHeight;
+								timeline.@totalWidth = singleton._defaultPageWidth + (2 * singleton._defaultPageBleed);
+								timeline.@totalHeight = singleton._defaultPageHeight + (2 * singleton._defaultPageBleed);
+								timeline.@singlepage = "true";
+								timeline.@backgroundAlpha = "1";
+								timeline.@backgroundColor = "-1";
+								
+								page = <page/>;
+								page.@type = "empty";
+								page.@pagenum = "Binnenzijde omslag";
+								page.@side = "right";
+								timeline.pages.appendChild(page);
+								
+							} else {
+							
+								timeline.@width = singleton._defaultPageWidth;
+								timeline.@height = singleton._defaultPageHeight;
+								timeline.@totalWidth = singleton._defaultPageWidth + singleton._defaultPageBleed;
+								timeline.@totalHeight = singleton._defaultPageHeight + singleton._defaultPageBleed;
+								timeline.@singlepage = "false";
+								timeline.@backgroundAlpha = "1";
+								timeline.@backgroundColor = "-1";
+								
+								page = <page/>;
+								page.@pageID = UIDUtil.createUID();
+								page.@type = PageType.NORMAL;
+								page.@side = "right";
+								page.@pageLeftRight = "right";
+								margin = singleton._defaultPageWidth + singleton._defaultPageBleed;
+								page.elements = <elements/>;
+								page.@pagenum = "Pagina " + pageNum;
+								page.@pageNumber = pageNum;
+								page.@timelineID = timeline.@spreadID;
+								pageNum++;
+								
+								page.@spreadID = timeline.@spreadID;
+								page.@width = singleton._defaultPageWidth;
+								page.@height = singleton._defaultPageHeight;
+								page.@pageType = page.@type;
+								page.@pageWidth = page.@width;
+								page.@pageHeight = page.@height;
+								page.@horizontalBleed = singleton._defaultPageBleed;
+								page.@verticalBleed = singleton._defaultPageBleed;
+								page.@horizontalWrap = 0;
+								page.@verticalWrap = 0;
+								page.@backgroundColor = "-1";
+								page.@backgroundAlpha = "1";
+								page.@singlepage = singlepage;
+								page.@singlepageFirst = singlepageFirst;
+								page.@singlepageLast = singlepageLast;
+								
+								timeline.pages.appendChild(page);
+								
+								//Add elements
+								numPhotos = photoarray[pagecounter];
+								pagecounter++;
+								
+								pagelayout = singleton.GetRandomPagelayoutOnFixedNumPhotos(numPhotos, 0) as Object;
+								autoElements = XML(pagelayout.layout)..item;
+								pageWidth = singleton._defaultPageWidth + singleton._defaultPageBleed;
+								pageHeight = singleton._defaultPageHeight + (2 * singleton._defaultPageBleed);
+								counter = 0;
+								
+								for (p=0; p < numPhotos; p++) {
+									
+									newphoto = <element/>;
+									newphoto.@id = UIDUtil.createUID();
+									newphoto.@pageID = page.@pageID;
+									newphoto.@type = "photo";
+									newphoto.@usedinstoryboard = true;
+
+									photo = null;
+									refImg = null;
+									if (photoindex < singleton.userphotosforupload.length) {
+										
+										photo = singleton.userphotosforupload.getItemAt(photoindex) as Object;
+										photoindex++;
+										
+										if (singleton._autofill == true) {
+											refImg = singleton.GetOriginalImageData(photo.id);
+										}
+										
+									}
+									
+									if (refImg) {
+										
+										newphoto.@origin = photo.origin;
+										newphoto.@original_image_id = photo.id;
+										//Get original info
+										newphoto.@originalWidth = refImg.originalWidth;
+										newphoto.@originalHeight = refImg.originalHeight;
+										newphoto.@status = refImg.status;
+										newphoto.@fullPath = refImg.fullPath;
+										newphoto.@path = refImg.path;
+										newphoto.@bytesize = refImg.bytesize;
+										newphoto.@hires = refImg.hires;
+										newphoto.@hires_url = refImg.hires_url;
+										newphoto.@lowres = refImg.lowres;
+										newphoto.@lowres_url = refImg.lowres_url;
+										newphoto.@thumb = refImg.thumb;
+										newphoto.@thumb_url = refImg.thumb_url;
+										if (refImg.exif) {
+											newphoto.exif = refImg.exif.copy();
+										} else {
+											newphoto.exif = <exif/>;
+										}
+									} else {
+										
+										newphoto.@origin = "";
+										newphoto.@original_image_id = "";
+										//Get original info
+										newphoto.@originalWidth = "0";
+										newphoto.@originalHeight = "0";
+										newphoto.@status = "empty";
+										newphoto.@fullPath = "";
+										newphoto.@path = "";
+										newphoto.@bytesize = "";
+										newphoto.@hires = "";
+										newphoto.@hires_url = "";
+										newphoto.@lowres = "";
+										newphoto.@lowres_url = "";
+										newphoto.@thumb = "";
+										newphoto.@thumb_url = "";
+										newphoto.exif = <exif/>;
+									}
+									
+									newphoto.@mask_original_id = "";
+									newphoto.@mask_original_width = "";
+									newphoto.@mask_original_height = "";
+									newphoto.@mask_hires = "";
+									newphoto.@mask_hires_url = "";
+									newphoto.@mask_lowres = "";
+									newphoto.@mask_lowres_url = "";
+									newphoto.@mask_thumb = "";
+									newphoto.@mask_thumb_url = "";
+									newphoto.@mask_path = "";
+									newphoto.@overlay_hires =  "";
+									newphoto.@overlay_hires_url = "";
+									newphoto.@overlay_lowres = "";
+									newphoto.@overlay_lowres_url = "";
+									newphoto.@overlay_thumb = "";
+									newphoto.@overlay_thumb_url = "";
+									newphoto.@overlay_original_height = "";
+									newphoto.@overlay_original_width = "";
+									newphoto.@userID = singleton._userID;	
+									newphoto.@shadow = "";
+									
+									newphoto.@imageAlpha = "1";
+									newphoto.@imageFilter = "";
+									newphoto.@index = page..element.length();
+									newphoto.@borderalpha = "1";
+									newphoto.@bordercolor = "#000000";
+									newphoto.@borderweight = "0";
+									newphoto.imageRotation = 0;
+									newphoto.@scaling = 1;
+									
+									auto = autoElements[counter].copy();
+									newphoto.@objectX = margin + ((parseFloat(auto.@left.toString()) / 100) * pageWidth);
+									newphoto.@objectY = (parseFloat(auto.@top.toString()) / 100) * pageHeight;
+									newphoto.@objectWidth = pageWidth - ((parseFloat(auto.@right.toString()) / 100) * pageWidth) - parseFloat(newphoto.@objectX) + margin;
+									newphoto.@objectHeight = pageHeight - ((parseFloat(auto.@bottom.toString()) / 100) * pageHeight) - parseFloat(newphoto.@objectY);
+									newphoto.@rotation = auto.@r;
+									
+									//Calculate
+									if (refImg) {
+										
+										singleton.CalculateImageZoomAndPosition(newphoto);
+										
+										// Get the other info from the original image
+										newphoto.@refOffsetX = newphoto.@offsetX;
+										newphoto.@refOffsetY = newphoto.@offsetY;
+										newphoto.@refWidth = newphoto.@imageWidth;
+										newphoto.@refHeight = newphoto.@imageHeight;
+										newphoto.@refScale = newphoto.@scaling;
+										
+									} else {
+										
+										newphoto.@refOffsetX = "";
+										newphoto.@refOffsetY = "";
+										newphoto.@refWidth = "";
+										newphoto.@refHeight = "";
+										newphoto.@refScale = "";
+									}
+									
+									counter++;
+									
+									page.elements.appendChild(newphoto);
+									timeline.elements.appendChild(newphoto.copy());
+									
+								}
+							}
+						
+							timeline.@width = (singleton._defaultPageWidth + singleton._defaultPageBleed) * 2;
+							timeline.@height = singleton._defaultPageHeight + (2 * singleton._defaultPageBleed);
+							timeline.@totalWidth = timeline.@width;
+							timeline.@totalHeight = timeline.@height;
+							timeline.@singlepage = "false";
+							timeline.@backgroundAlpha = "1";
+							timeline.@backgroundColor = "-1";
+							
+						}
+					}
+					
+					if (!singleton.userphotos) {
+						singleton.userphotos = new ArrayCollection();
+					}
+					
+					singleton.needupload = false;
+					
+					if (singleton.userphotosforupload) {
+						for each (photo in singleton.userphotosforupload) {
+							if (photo.origin_type == "Fotoalbum") {
+								singleton.userphotos.addItem(FlexGlobals.topLevelApplication.GetPhotoObject(photo.guid));
+							} else {
+								singleton.needupload = true;
+								singleton.userphotos.addItem(FlexGlobals.topLevelApplication.GetPhotoObject(photo.id));
+							}
+						}
+					}
+					
+					singleton.userphotosfromhdu = new ArrayCollection();
+					singleton.userphotosforupload = new ArrayCollection();
+					
+					arrHidden = new Array();
+					
+					singleton.albumtimeline = new XMLListCollection(singleton.albumtimelineXML..spread);
+					singleton.albumpreviewtimeline = new XMLListCollection(singleton.albumtimelineXML..spread);
+					
+					FlexGlobals.topLevelApplication.menuside.SortPhotos();
+					
+					//Close the popup and go to the storyboard
+					FlexGlobals.topLevelApplication.CreateStoryBoard();
+					
+				} 
+			}
+			
+			private function SelectAllFacebookPhotos():void {
+				
+				if (!singleton.userphotosforupload) {
+					singleton.userphotosforupload = new ArrayCollection();
+				}
+				
+				if (singleton.facebookCollection) {
+					
+					for (var x:int=0; x < singleton.facebookCollection.length; x++) {
+						if (singleton.facebookCollection.getItemAt(x).selectedforupload == false) {
+							singleton.facebookCollection.getItemAt(x).selectedforupload = true;
+							//Add the photo to the selection
+							var selected:Object = new Object();
+							selected.id = singleton.facebookCollection.getItemAt(x).id;
+							selected.source = singleton.facebookCollection.getItemAt(x).source.bitmapData.clone();
+							singleton.userphotosforupload.addItem(selected);
+							FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, selected.id, true));
+						}
+					}
+					
+					singleton.facebookCollection.refresh();
+					singleton.userphotosforupload.refresh();
+				}
+				
+			}
+			
+			private function DeSelectAllFacebookPhotos():void {
+				
+				if (singleton.facebookCollection) {
+					
+					for (var x:int=0; x < singleton.facebookCollection.length; x++) {
+						if (singleton.facebookCollection.getItemAt(x).selectedforupload == true) {
+							singleton.facebookCollection.getItemAt(x).selectedforupload = false;
+							//Remove the photo from the selection
+							for (var y:int=0; y < singleton.userphotosforupload.length; y++) {
+								if (singleton.userphotosforupload.getItemAt(y).id == singleton.facebookCollection.getItemAt(x).id) {
+									FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.userphotosfromalbum.getItemAt(x).id, false));
+									singleton.userphotosforupload.removeItemAt(y);
+								}
+							}
+						}
+					}
+					
+					singleton.facebookCollection.refresh();
+					singleton.userphotosforupload.refresh();
+				}
+			}
+			
+			private function SelectAllInstagramPhotos():void {
+				
+				if (!singleton.userphotosforupload) {
+					singleton.userphotosforupload = new ArrayCollection();
+				}
+				
+				if (singleton.instagramCollection) {
+					
+					for (var x:int=0; x < singleton.instagramCollection.length; x++) {
+						if (singleton.instagramCollection.getItemAt(x).selectedforupload == false) {
+							singleton.instagramCollection.getItemAt(x).selectedforupload = true;
+							//Add the photo to the selection
+							var selected:Object = new Object();
+							selected.id = singleton.instagramCollection.getItemAt(x).id;
+							selected.source = singleton.instagramCollection.getItemAt(x).source.bitmapData.clone();
+							singleton.userphotosforupload.addItem(selected);
+							FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, selected.id, true));
+						}
+					}
+					
+					singleton.instagramCollection.refresh();
+					singleton.userphotosforupload.refresh();
+				}
+			}
+			
+			private function DeSelectAllInstagramPhotos():void {
+				
+				if (singleton.instagramCollection) {
+					
+					for (var x:int=0; x < singleton.instagramCollection.length; x++) {
+						if (singleton.instagramCollection.getItemAt(x).selectedforupload == true) {
+							singleton.instagramCollection.getItemAt(x).selectedforupload = false;
+							//Remove the photo from the selection
+							for (var y:int=0; y < singleton.userphotosforupload.length; y++) {
+								if (singleton.userphotosforupload.getItemAt(y).id == singleton.instagramCollection.getItemAt(x).id) {
+									FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.userphotosfromalbum.getItemAt(x).id, false));
+									singleton.userphotosforupload.removeItemAt(y);
+								}
+							}
+						}
+					}
+					
+					singleton.instagramCollection.refresh();
+					singleton.userphotosforupload.refresh();
+				}
+			}
+			
+			private function SelectAllGooglePhotos():void {
+				
+				if (!singleton.userphotosforupload) {
+					singleton.userphotosforupload = new ArrayCollection();
+				}
+				
+				if (singleton.googleCollection) {
+					
+					for (var x:int=0; x < singleton.googleCollection.length; x++) {
+						if (singleton.googleCollection.getItemAt(x).selectedforupload == false) {
+							singleton.googleCollection.getItemAt(x).selectedforupload = true;
+							//Add the photo to the selection
+							var selected:Object = new Object();
+							selected.id = singleton.googleCollection.getItemAt(x).id;
+							selected.source = singleton.googleCollection.getItemAt(x).source.bitmapData.clone();
+							singleton.userphotosforupload.addItem(selected);
+							FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, selected.id, true));
+						}
+					}
+					
+					singleton.googleCollection.refresh();
+					singleton.userphotosforupload.refresh();
+				}
+			}
+			
+			private function DeSelectAllGooglePhotos():void {
+				
+				if (singleton.googleCollection) {
+					
+					for (var x:int=0; x < singleton.googleCollection.length; x++) {
+						if (singleton.googleCollection.getItemAt(x).selectedforupload == true) {
+							singleton.googleCollection.getItemAt(x).selectedforupload = false;
+							//Remove the photo from the selection
+							for (var y:int=0; y < singleton.userphotosforupload.length; y++) {
+								if (singleton.userphotosforupload.getItemAt(y).id == singleton.googleCollection.getItemAt(x).id) {
+									FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.userphotosfromalbum.getItemAt(x).id, false));
+									singleton.userphotosforupload.removeItemAt(y);
+								}
+							}
+						}
+					}
+					
+					singleton.googleCollection.refresh();
+					singleton.userphotosforupload.refresh();
+				}
+			}
+			
+			protected function btnBackToPhotoSelection_clickHandler(event:MouseEvent):void
+			{
+				
+				vsMain.selectedIndex = 1;
+				
+				//Add the invisible used photos to the visible selection
+				btnContinueAuto.label = "VERDER";
+				
+			}
+			
+			protected function btnBackToTitle_click(event:Event):void {
+				
+				vsMain.selectedIndex = 0;
+				vsPhotos.selectedIndex = 0;
+				
+				btnCloseWindow.visible = false;
+				
+			}
+			
+			private function GetPhotos(event:Event):void {
+				
+				singleton._bookTitle = edAlbumTitle.text;
+				
+				btnCloseWindow.visible = true;
+				
+				if (singleton._bookTitle == "") {
+					singleton._bookTitle = "Mijn " + singleton.platform_name;
+				}
+				
+				singleton._currentAlbumName = singleton._bookTitle;
+				
+				if (btnAutoFill.selected) {
+					singleton._autofill = true;
+					lblAverage.height = 20;
+					averagePhotosPerPage.height = 40;
+					lblAverage.visible = true;
+					averagePhotosPerPage.visible = true;
+				} else {
+					singleton._autofill = false;
+					lblAverage.height = 0;
+					averagePhotosPerPage.height = 0;
+					lblAverage.visible = false;
+					averagePhotosPerPage.visible = false;
+				}
+				
+				vsMain.selectedIndex = 1;
+				vsPhotos.selectedIndex = 0;
+				
+				/*
+				//Wait for a product to be send GetProduct();
+				if (ExternalInterface.available) {
+					var wrapperFunction:String = "showPhotoSelector";
+					ExternalInterface.call(wrapperFunction, true);
+				}
+				
+				FlexGlobals.topLevelApplication.CloseSettingsPopup();
+				*/
+				
+			}
+			
+			protected function btnAutoFill_clickHandler(event:MouseEvent):void
+			{
+				btnSelf.selected = false;
+				btnAutoFill.selected = true;
+				
+			}
+			
+			protected function btnSelf_clickHandler(event:MouseEvent):void
+			{
+				btnSelf.selected = true;
+				btnAutoFill.selected = false;
+			}
+			
+			private function GetDataTipPages(val:String):String {
+				return String(parseInt(val)) + " pagina's";
+			}
+			
+			private function GetDataTipPhotos(val:String):String {
+				return String(parseInt(val)) + " foto's per pagina";
+			}
+			
+			protected function help1_rollOverHandler(event:MouseEvent):void
+			{
+				helpText1.visible = true;
+			}
+			
+			protected function help1_rollOutHandler(event:MouseEvent):void
+			{
+				helpText1.visible = false;
+			}
+			
+			protected function help2_rollOverHandler(event:MouseEvent):void
+			{
+				helpText2.visible = true;
+			}
+			
+			protected function help2_rollOutHandler(event:MouseEvent):void
+			{
+				helpText2.visible = false;
+			}
+			
+			protected function lstUserPhotos_mouseWheelHandler(event:MouseEvent):void
+			{
+				if (lstUserPhotos.scroller.visible) {
+					lstUserPhotos.scroller.viewport.verticalScrollPosition += (event.delta * -20);
+				}
+				
+				event.stopPropagation();
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:RadioButtonGroup id="photoorder"/>
+		<s:RadioButtonGroup id="startChoice"/>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Style source="styles/oem_stylesheet.css" />
+	
+	<s:BorderContainer width="100%" height="45" backgroundColor="{singleton.popupHeader}" borderVisible="false">
+		<s:layout>
+			<s:HorizontalLayout gap="0" verticalAlign="middle" paddingLeft="10" paddingRight="10" />
+		</s:layout>
+		
+		<s:HGroup width="100%" horizontalAlign="center">
+			<s:Label color="0xFFFFFF" fontSize="20"
+					 text="Waar haal jij je foto's vandaan?"/>
+		</s:HGroup>
+		
+	</s:BorderContainer>
+	
+	<mx:ViewStack id="vsMain" width="100%" height="100%" top="45" creationPolicy="all">
+		
+		<s:NavigatorContent width="100%" height="100%" label="Firstpage">
+			
+			<s:Image id="appBackground" top="-50" bottom="-5" left="-5" right="-5" scaleMode="stretch" smooth="true" />
+			
+			<s:TextArea right="60" top="25" borderVisible="false" contentBackgroundAlpha="0.0"
+						editable="false" fontSize="34" lineHeight="45" mouseEnabled="false"
+						selectable="false" color="{singleton.labelColor}"
+						text="Leg nu al je mooie&#xd;momenten vast in&#xd;een {singleton.platform_name}"
+						textAlign="right"/>
+			
+			<s:Group left="100" width="280" verticalCenter="0" clipAndEnableScrolling="false">
+			
+				<s:Label fontSize="24" mouseEnabled="false" top="-34"
+							text="Hoe maak jij je {singleton.platform_name}?"
+							horizontalCenter="0" />
+				
+				<s:BorderContainer width="280" backgroundAlpha=".7" backgroundColor="0xFFFFFF"
+								   borderVisible="false" height="160" top="0">
+					<s:layout>
+						<s:VerticalLayout gap="30" horizontalAlign="center" paddingBottom="20"
+										  paddingTop="20"/>
+					</s:layout>
+					
+					<s:Group width="240" height="50">
+						
+						<s:ToggleButton id="btnAutoFill" width="240" height="50"
+										label="Laat ons een voorstel&#xd;maken"
+										uid="Wij zetten al je foto's alvast voor je in het {singleton.platform_name}"
+										click="btnAutoFill_clickHandler(event)" fontSize="14"
+										selected="true" skinClass="skins.btnToggleMenuFill"/>
+							
+						<s:Button id="help1" right="3" top="3" width="20" height="20" label="?"
+								  color="#1483CC" skinClass="skins.btnSmallHelp"
+								  rollOver="help1_rollOverHandler(event)"
+								  rollOut="help1_rollOutHandler(event)"/>
+						
+					</s:Group>
+					
+					<s:Group width="240" height="50">
+						
+						<s:ToggleButton id="btnSelf" width="240" height="50" 
+										label="Maak zelf je {singleton.platform_name}"
+										uid="Upload je foto's en maak zelf je hele {singleton.platform_name}"
+										click="btnSelf_clickHandler(event)" fontSize="14"
+										skinClass="skins.btnToggleMenuFill"/>
+						
+						<s:Button id="help2" right="3" top="3" width="20" height="20" label="?"
+								  color="#1483CC" skinClass="skins.btnSmallHelp"
+								  rollOver="help2_rollOverHandler(event)"
+								  rollOut="help2_rollOutHandler(event)"/>
+						
+					</s:Group>
+					
+				</s:BorderContainer>
+				
+				<s:BorderContainer id="helpText1" width="260" right="-300" top="-5" height="90"
+								   backgroundAlpha=".7" backgroundColor="0xFFFFFF"
+								   borderVisible="false" visible="false">
+					
+					<s:Group clipAndEnableScrolling="true" width="20" height="50" verticalCenter="0" left="-20" >
+						<s:Rect width="45" height="45" verticalCenter="0" rotation="-45">
+							<s:fill>
+								<s:SolidColor color="#FFFFFF" 
+											  alpha=".6" />
+							</s:fill>
+						</s:Rect>
+					</s:Group>	
+					
+					<s:TextArea left="10" right="10" top="10" bottom="10"
+								borderVisible="false" contentBackgroundAlpha="0.0" textAlign="left"
+								editable="false" fontSize="14" lineHeight="20" mouseEnabled="false" selectable="false"
+								text="Wij vullen je {singleton.platform_name} met alle foto's die je hebt geupload. Daarna kun je zelf alles nog aanpassen." />
+					
+				</s:BorderContainer>
+				
+				<s:BorderContainer id="helpText2" width="260" right="-300" top="80" height="90" backgroundAlpha=".7" backgroundColor="0xFFFFFF"
+								   borderVisible="false" visible="false">
+					
+					<s:Group clipAndEnableScrolling="true" width="20" height="50" verticalCenter="0" left="-20" >
+						<s:Rect width="45" height="45" verticalCenter="0" rotation="-45">
+							<s:fill>
+								<s:SolidColor color="#FFFFFF" 
+											  alpha=".6" />
+							</s:fill>
+						</s:Rect>
+					</s:Group>	
+					
+					<s:TextArea left="10" right="10" top="10" bottom="10" 
+								borderVisible="false" contentBackgroundAlpha="0.0" textAlign="left"
+								editable="false" fontSize="14" lineHeight="20" mouseEnabled="false" selectable="false"
+								text="Open een leeg {singleton.platform_name} en plaats al je foto's zelf." />
+					
+				</s:BorderContainer>
+				
+				<s:Group clipAndEnableScrolling="true" width="100%" height="50" top="160">
+				
+					<s:Rect width="45" height="45" horizontalCenter="0" top="-45" rotation="-45">
+						<s:fill>
+							<s:SolidColor color="#FFFFFF" 
+										  alpha=".6" />
+						</s:fill>
+					</s:Rect>
+					
+				</s:Group>
+				
+				<s:BorderContainer width="100%" backgroundAlpha=".7" backgroundColor="0xFFFFFF"
+								   borderVisible="false" top="205" height="100">
+					<s:layout>
+						<s:VerticalLayout gap="15" horizontalAlign="center" paddingBottom="15"
+										  paddingTop="10"/>
+					</s:layout>
+					
+					<s:Label color="0x58595B" fontSize="16" paddingTop="10"
+							 text="Titel van je {singleton.platform_name}"/>
+					
+					<s:TextInput id="edAlbumTitle" width="220" height="30" borderColor="#D2D2D2"
+								 color="#1383CB" fontSize="14" prompt="Mijn {singleton.platform_name}"
+								 textAlign="center" restrict="a-zA-Z0-9\ "/>
+					
+				</s:BorderContainer>
+				
+				<s:Group clipAndEnableScrolling="true" width="100%" height="45" top="305">
+					
+					<s:Rect width="45" height="45" horizontalCenter="0" top="-45" rotation="-45">
+						<s:fill>
+							<s:SolidColor color="#FFFFFF" 
+										  alpha=".6" />
+						</s:fill>
+					</s:Rect>
+					
+				</s:Group>
+				
+				<s:BorderContainer top="350" horizontalCenter="0" backgroundColor="0xFFFFFF" backgroundAlpha=".7">
+					<s:layout>
+						<s:VerticalLayout gap="30" paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10" />
+					</s:layout>
+					
+					<s:Button id="btnContinue" width="160"
+							  skinClass="skins.btnGreenSkin" label="Ga verder" 
+							  click="{GetPhotos(event)}" />
+					
+				</s:BorderContainer>
+				
+			</s:Group>
+			
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent label="PhotoChooser" width="100%" height="100%">
+			
+			<mx:HDividedBox left="20" right="20" top="20" bottom="50">
+				
+				<s:Group width="70%" height="100%">
+					
+					<s:BorderContainer width="100%" height="100%" top="34" borderColor="{singleton.baseColor}">
+						
+						<mx:ViewStack id="vsPhotos" width="100%" height="100%">
+							
+							<s:NavigatorContent width="100%" height="100%" label="Mijn Computer">
+								
+								<mx:ViewStack id="vsPhotoUpload" width="100%" height="100%">
+									
+									<s:NavigatorContent width="100%" height="100%">
+										
+										<s:VGroup gap="20" horizontalAlign="center" horizontalCenter="0"
+												  verticalCenter="0">
+											
+											<s:SWFLoader source="@Embed('assets/iconset/foto-uploaden.swf')" width="128" height="128"
+														 verticalAlign="middle" horizontalAlign="center" smoothBitmapContent="true"/>
+											
+											<s:Label text="Kies foto's uit folders op je computer." fontSize="14" color="#1383CB" />
+											
+											<s:Label text="Selecteer daarna welke je wil gebruiken in je {singleton.platform_name}." fontSize="14" color="#1383CB" />
+											
+											<s:Button id="btnSelectPhotosFirst" left="10" top="10" label="FOTO'S SELECTEREN" 
+													  skinClass="skins.btnGreenSkin" click="{SelectPhotosFromHDU(event)}"/>
+											
+										</s:VGroup>
+										
+									</s:NavigatorContent>
+									
+									<s:NavigatorContent width="100%" height="100%">
+										
+										<s:Button id="btnSelectPhotos" left="10" top="45" label="Meer foto's selecteren" 
+												  skinClass="skins.btnGreenSkin" click="{SelectPhotosFromHDU(event)}"/>
+										
+										<s:HGroup right="10" top="45" height="30" gap="2" verticalAlign="middle">
+											<s:Label text="Fotoselectie voor je {singleton.platform_name}:" fontSize="12" color="0x58595B" />
+											<s:Button label="Alles" click="{SelectAllPhotos()}" skinClass="skins.btnBlueSkin" />
+											<s:Button label="Geen" click="{DeSelectAllPhotos()}" skinClass="skins.btnGraySkin" />
+										</s:HGroup>
+										
+										<mx:HRule width="100%" height="1" top="80" />
+										
+										<s:List id="lstUserPhotos" left="10" right="10" top="85" bottom="10"
+												borderVisible="false" contentBackgroundAlpha="0"
+												horizontalScrollPolicy="off"
+												useVirtualLayout="true"
+												mouseWheel="lstUserPhotos_mouseWheelHandler(event)"
+												dataProvider="{singleton.userphotosfromhdu}"
+												itemRenderer="itemrenderers.userPhotoUploadRenderer">
+											<s:layout>
+												<s:TileLayout columnWidth="100" horizontalAlign="center"
+															  horizontalGap="10" orientation="rows" paddingLeft="0"
+															  paddingTop="0" rowHeight="100" paddingBottom="10"
+															  verticalAlign="middle" verticalGap="10"/>
+											</s:layout>
+										</s:List>
+										
+										<s:BorderContainer id="msg" visible="{FlexGlobals.topLevelApplication.loadingstatus}" 
+														   left="0" right="0" top="0" bottom="0"
+														   backgroundColor="{singleton.baseColor}" backgroundAlpha=".7">
+											<s:Label color="#FFFFFF" fontSize="24" horizontalCenter="0" 
+													 text="Foto's worden voor je klaargezet... {FlexGlobals.topLevelApplication.thumbcounter}"
+													 verticalCenter="0"/>
+										</s:BorderContainer>
+										
+									</s:NavigatorContent>
+									
+								</mx:ViewStack>
+								
+							</s:NavigatorContent>
+							
+							<s:NavigatorContent width="100%" height="100%" label="Fotoalbum.nl">
+								
+								<mx:ViewStack id="vsMyAlbums" width="100%" height="100%">
+									
+									<s:NavigatorContent width="100%" height="100%">
+										
+										<s:BorderContainer backgroundAlpha="0.0" borderColor="#58595B"
+														   borderVisible="false"
+														   dropShadowVisible="false" horizontalCenter="0"
+														   verticalCenter="0">
+											<s:layout>
+												<s:VerticalLayout gap="20" horizontalAlign="center"/>
+											</s:layout>
+											
+										
+											<s:Image source="@Embed('assets/iconset/Download-icon.png')" width="128" height="128"
+													 verticalAlign="middle" horizontalAlign="center" smooth="true"/>
+											
+											<s:Label text="Kies foto's die je al eerder bij {singleton.platform_name} hebt gebruikt." fontSize="14" color="#1383CB" />
+											
+											<s:Label text="Log in om je opgeslagen foto's te gebruiken." fontSize="14" color="#1383CB" />
+											
+											<s:Button id="btnLogin" left="10" top="10" label="KLIK HIER OM IN TE LOGGEN" 
+													  skinClass="skins.btnGreenSkin" click="{Login()}" />
+											
+										</s:BorderContainer>
+										
+									</s:NavigatorContent>
+									
+									<s:NavigatorContent width="100%" height="100%">
+										
+										<s:VGroup top="45" width="100%" height="100%" gap="0">
+											
+											<s:HGroup width="100%" height="35" gap="5"
+													  paddingLeft="5" paddingRight="10"
+													  verticalAlign="middle" horizontalAlign="right">
+												
+												<!--
+												<s:SWFLoader id="btnShareFolder" buttonMode="true"
+															 width="25" height="25"
+															 enabled="false"
+															 scaleContent="true" maintainAspectRatio="true"
+															 horizontalAlign="center" verticalAlign="middle"
+															 source="@Embed('assets/iconset/map-delen.swf')"/>
+												-->
+												
+												<s:Label text="Fotoselectie voor je {singleton.platform_name}:" fontSize="12" color="0x58595B" />
+												
+												<s:Button label="Alles" click="{SelectAllAlbumPhotos()}" skinClass="skins.btnGreenSkin" 
+														  enabled="{singleton.photosfromalbums &amp;&amp; singleton.photosfromalbums.length &gt; 0}"/>
+												
+												<s:Button label="Geen" click="{DeSelectAllAlbumPhotos()}" skinClass="skins.btnGraySkin"
+														  enabled="{singleton.photosfromalbums &amp;&amp; singleton.photosfromalbums.length &gt; 0}"/>
+												
+											</s:HGroup>
+											
+											<mx:HRule width="100%" depth="1" />
+											
+											<mx:HDividedBox width="100%" height="100%" horizontalGap="0">
+												
+												<s:HGroup width="30%" minWidth="200" height="100%" gap="0">
+													
+													<s:Scroller width="100%" height="100%">
+														
+														<s:VGroup id="userFolders" width="100%" gap="-1" />
+														
+													</s:Scroller>
+													
+													<mx:VRule depth="1" height="100%" />
+													
+												</s:HGroup>
+												
+												<s:List id="lstUserFolderPhotos" width="70%" height="100%"
+														minWidth="300"
+														borderVisible="false" contentBackgroundAlpha="0"
+														dataProvider="{singleton.photosfromalbums}"
+														horizontalScrollPolicy="off"
+														itemRenderer="itemrenderers.userAlbumPhotoRenderer"
+														useVirtualLayout="true">
+													<s:layout>
+														<s:TileLayout columnWidth="100" horizontalAlign="center"
+																	  horizontalGap="10" orientation="rows" paddingLeft="10"
+																	  paddingTop="10" rowHeight="100" paddingBottom="10"
+																	  verticalAlign="middle" verticalGap="10"/>
+													</s:layout>
+												</s:List>
+												
+											</mx:HDividedBox>
+									
+										</s:VGroup> 
+										
+									</s:NavigatorContent>
+									
+								</mx:ViewStack>
+								
+							</s:NavigatorContent>
+							
+							<s:NavigatorContent width="100%" height="100%" label="Facebook">
+								
+								<mx:HDividedBox left="10" top="45" bottom="10" right="10">
+									
+									<s:VGroup width="30%" height="100%">
+										
+										<mx:Tree id="treeFoldersFacebook" left="10" top="10" width="100%"
+												 height="100%" borderVisible="false" color="#000000"
+												 contentBackgroundAlpha="0.0"
+												 dataProvider="{singleton.facebookTree}"
+												 itemClick="{treeFoldersFacebook_itemClickHandler(event)}"
+												 itemRenderer="itemrenderers.treeNodeFacebook"
+												 labelFunction="treeLabelFacebook"></mx:Tree>
+										
+									</s:VGroup>
+									
+									<s:VGroup width="70%" height="100%" gap="10" paddingTop="45">
+										
+										<s:List id="lstFacebookPhotos" width="100%" height="100%"
+												borderVisible="false" contentBackgroundAlpha="0"
+												horizontalScrollPolicy="off"
+												useVirtualLayout="false"
+												dataProvider="{singleton.facebookCollectionSelected}"
+												itemRenderer="itemrenderers.userPhoto3rdPartyUploadRenderer">
+											<s:layout>
+												<s:TileLayout columnWidth="100" horizontalAlign="center"
+															  horizontalGap="10" orientation="rows" paddingLeft="0"
+															  paddingTop="0" rowHeight="100" paddingBottom="10"
+															  verticalAlign="middle" verticalGap="10"/>
+											</s:layout>
+										</s:List>
+										
+									</s:VGroup>
+										
+								</mx:HDividedBox>
+								
+								<s:HGroup right="10" top="45" height="30" gap="2" verticalAlign="middle"
+										  visible="{singleton.facebookCollectionSelected &amp;&amp; singleton.facebookCollectionSelected.length > 0}">
+									<s:Label id="facebookFolderName" width="100%" fontSize="12" />
+									<s:Label color="#FFFFFF" fontSize="12" text="Selecteer:"/>
+									<s:Label click="{SelectAllFacebookPhotos()}" color="#D5ECFF"
+											 styleName="hyperLink" text="Alles" useHandCursor="true"/>
+									<mx:VRule height="10" />
+									<s:Label click="{DeSelectAllFacebookPhotos()}" color="#D5ECFF"
+											 styleName="hyperLink" text="Geen" useHandCursor="true"/>
+								</s:HGroup>
+								
+							</s:NavigatorContent>
+							
+							<s:NavigatorContent width="100%" height="100%" label="Instagram">
+								
+								<s:HGroup right="10" top="10" height="30" gap="2" verticalAlign="middle"
+										  visible="{singleton.instagramCollectionSelected &amp;&amp; singleton.instagramCollectionSelected.length > 0}">
+									<s:Label color="#FFFFFF" fontSize="12" text="Selecteer:"/>
+									<s:Label click="{SelectAllInstagramPhotos()}" color="#D5ECFF"
+											 styleName="hyperLink" text="Alles" useHandCursor="true"/>
+									<mx:VRule height="10" />
+									<s:Label click="{DeSelectAllInstagramPhotos()}" color="#D5ECFF"
+											 styleName="hyperLink" text="Geen" useHandCursor="true"/>
+								</s:HGroup>
+								
+								<s:List id="lstInstagramPhotos" left="10" right="10" top="45" bottom="10"
+										borderVisible="false" contentBackgroundAlpha="0"
+										horizontalScrollPolicy="off"
+										useVirtualLayout="false"
+										dataProvider="{singleton.instagramTree}"
+										itemRenderer="itemrenderers.userPhoto3rdPartyUploadRenderer">
+									<s:layout>
+										<s:TileLayout columnWidth="100" horizontalAlign="center"
+													  horizontalGap="10" orientation="rows" paddingLeft="0"
+													  paddingTop="0" rowHeight="100" paddingBottom="10"
+													  verticalAlign="middle" verticalGap="10"/>
+									</s:layout>
+								</s:List>
+								
+							</s:NavigatorContent>
+							
+							<s:NavigatorContent width="100%" height="100%" label="Google+/Picasa">
+								
+								<mx:HDividedBox left="10" top="10" bottom="10" right="10">
+									
+									<s:VGroup width="30%" height="100%">
+										
+										<mx:Tree id="treeFoldersGoogle" left="10" top="10" width="100%"
+												 height="100%" borderVisible="false" color="#000000"
+												 contentBackgroundAlpha="0.0"
+												 dataProvider="{singleton.googleTree}"
+												 itemClick="{treeFoldersGoogle_itemClickHandler(event)}"
+												 itemRenderer="itemrenderers.treeNodeGoogle"
+												 labelFunction="treeLabelFacebook"></mx:Tree>
+										
+									</s:VGroup>
+									
+									<s:VGroup width="70%" height="100%" gap="10" paddingTop="45">
+										
+										<s:List id="lstGooglePhotos" width="100%" height="100%"
+												borderVisible="false" contentBackgroundAlpha="0"
+												horizontalScrollPolicy="off"
+												useVirtualLayout="false"
+												dataProvider="{singleton.googleCollectionSelected}"
+												itemRenderer="itemrenderers.userPhoto3rdPartyUploadRenderer">
+											<s:layout>
+												<s:TileLayout columnWidth="100" horizontalAlign="center"
+															  horizontalGap="10" orientation="rows" paddingLeft="0"
+															  paddingTop="0" rowHeight="100" paddingBottom="10"
+															  verticalAlign="middle" verticalGap="10"/>
+											</s:layout>
+										</s:List>
+										
+									</s:VGroup>
+									
+								</mx:HDividedBox>
+								
+								<s:HGroup right="10" top="10" height="30" gap="2" verticalAlign="middle"
+										  visible="{singleton.googleCollectionSelected &amp;&amp; singleton.googleCollectionSelected.length > 0}">
+									<s:Label id="googleFolderName" width="100%" fontSize="12" />
+									<s:Label color="#FFFFFF" fontSize="12" text="Selecteer:"/>
+									<s:Label click="{SelectAllFacebookPhotos()}" color="#D5ECFF"
+											 styleName="hyperLink" text="Alles" useHandCursor="true"/>
+									<mx:VRule height="10" />
+									<s:Label click="{DeSelectAllFacebookPhotos()}" color="#D5ECFF"
+											 styleName="hyperLink" text="Geen" useHandCursor="true"/>
+								</s:HGroup>
+								
+							</s:NavigatorContent>
+							
+						</mx:ViewStack>
+						
+					</s:BorderContainer>
+					
+					<s:Label width="100%" height="35" color="#58595B" fontSize="14"
+							 text="Selecteer foto's vanuit verschillende bronnen en gebruik deze in je {singleton.platform_name}" textAlign="left"
+							 verticalAlign="middle"/>
+					
+					<s:BorderContainer width="100%" height="35" top="35" backgroundColor="{singleton.baseColor}" borderVisible="false">
+						
+						<s:BorderContainer height="35" backgroundColor="0xFFFFFF" borderVisible="false">
+							
+							<s:HGroup width="100%" height="35" gap="1">
+								
+								<s:ToggleButton id="btnMenuPhotos" skinClass="skins.btnToggleMenuPhotosHorizontal" height="35" label="Mijn computer" click="{menuSelection(event)}" selected="true" />
+								<s:ToggleButton id="btnMenuFotoalbum" skinClass="skins.btnToggleMenuPhotosHorizontal" height="35" label="{singleton.platform_web}" click="{menuSelection(event)}" />
+								<!--
+								<s:ToggleButton id="btnMenuFacebook" skinClass="skins.btnToggleMenuPhotosHorizontal" height="35" label="Facebook" click="{menuSelection(event)}" />
+								<s:ToggleButton id="btnMenuInstagram" skinClass="skins.btnToggleMenuPhotosHorizontal" height="35" label="Instagram" click="{menuSelection(event)}" />
+								<s:ToggleButton id="btnMenuGoogle" skinClass="skins.btnToggleMenuPhotosHorizontal" height="35" label="Google +" click="{menuSelection(event)}" />
+								-->
+							</s:HGroup>
+							
+						</s:BorderContainer>
+							
+					</s:BorderContainer>
+				
+				</s:Group>
+				
+				<s:Group width="450" height="100%">
+					
+					<s:HGroup width="100%" height="100%" gap="0">
+						
+						<s:VGroup height="100%" verticalAlign="middle" paddingLeft="5" paddingRight="5">
+							<s:SWFLoader width="35" height="40" autoLoad="true" scaleContent="true"
+										 enabled="{!FlexGlobals.topLevelApplication.loadingstatus}" 
+										 source="@Embed('assets/iconset/pijl.swf')" buttonMode="true"
+										 click="{SelectAllPhotos()}"/>	
+						</s:VGroup>
+						
+						<s:VGroup width="100%" height="100%" gap="0">
+						
+							<s:Label width="100%" height="35" color="#58595B" fontSize="14"
+									 text="Fotoselectie voor je {singleton.platform_name}: {singleton._bookTitle}" textAlign="left"
+									 verticalAlign="middle"/>
+							
+							<s:BorderContainer width="100%" height="100%" top="35" borderColor="{singleton.baseColor}" borderWeight="1">
+								<s:layout>
+									<s:VerticalLayout gap="0" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" />
+								</s:layout>
+								
+								<s:HGroup visible="{!labelSelect.visible}" width="100%" height="35"
+										  paddingLeft="5" paddingRight="5" verticalAlign="middle">
+									
+									<s:Label width="100" color="#58595B"
+											 text="Aantal foto's: {singleton.userphotosforupload.length}"/>
+									
+									<s:HGroup verticalAlign="middle" paddingTop="-2">
+										
+										<s:Label color="#58595B"
+												 text="Sorteer op:"/>
+										
+										<s:DropDownList id="dateSort" width="80"
+														change="SortPhotos(event)"
+														dataProvider="{singleton.sortingoptions}"
+														requireSelection="true" selectedIndex="0"
+														skinClass="skins.dropDownSmallSkin"/>
+										
+									</s:HGroup>
+									
+									<s:Spacer width="100%" />
+									
+									<s:Label click="{RemoveAllSelectedPhotos()}" color="{singleton.baseColor}"
+											 mouseEnabled="true" styleName="hyperLink" text="Alles verwijderen"
+											 useHandCursor="true" 
+											 enabled="{singleton.userphotosforupload &amp;&amp; singleton.userphotosforupload.length > 0}"/>
+									
+								</s:HGroup>
+								
+								<mx:HRule width="100%" height="1" visible="{!labelSelect.visible}" />
+								
+								<s:Group width="100%" height="100%">
+									
+									<s:List id="lstSelectedUserPhotos" width="100%" height="100%"
+											borderVisible="false" contentBackgroundAlpha="0.0"
+											dataProvider="{singleton.userphotosforupload}" horizontalScrollPolicy="off"
+											itemRenderer="itemrenderers.userPhotoSelectedRenderer" 
+											useVirtualLayout="false">
+										<s:layout>
+											<s:TileLayout horizontalAlign="center"
+														  columnWidth="70" rowHeight="70"
+														  horizontalGap="30" orientation="rows" 
+														  paddingLeft="5" paddingTop="10" paddingBottom="10"
+														  verticalAlign="middle" verticalGap="20"/>
+										</s:layout>
+									</s:List>
+									
+									<s:BorderContainer id="bcSorting" width="100%" height="100%" backgroundColor="0x000000" backgroundAlpha=".7" visible="false">
+										<s:Label text="Sorteren..." horizontalCenter="0" verticalCenter="0" color="0xFFFFFF" fontSize="18" />
+									</s:BorderContainer>
+									
+								</s:Group>
+								
+								
+								<s:VGroup id="GroupPagesAndAveragePhotos" width="100%"
+										  paddingBottom="10" paddingTop="10">
+								
+									<mx:HRule id="hRulePages" width="100%" height="1" />
+									
+									<s:Label color="#58595B" paddingBottom="5" text="Aantal pagina's"/>
+									
+									<mx:HSlider id="numPagesSelection" width="100%"
+												allowTrackClick="true" includeInLayout="true"
+												labelOffset="30"
+												maximum="{singleton._maxPages}" minimum="{singleton._minPages}" 
+												showTrackHighlight="true"
+												snapInterval="{snapInterval}" tickInterval="{tickerInterval}" 
+												tickLength="10" dataTipFormatFunction="GetDataTipPages"
+												tickOffset="9" tickThickness="1" value="26"/>
+									
+									<s:Label id="lblAverage" height="20" color="#58595B"
+											 paddingBottom="5"
+											 text="Gemiddeld aantal foto's per pagina:"/>
+									
+									<mx:HSlider id="averagePhotosPerPage" width="100%" height="40"
+												allowTrackClick="true" toolTip=""
+												enabled="{singleton.userphotosforupload.length &gt; 0}"
+												includeInLayout="true" labelOffset="30"
+												labels="[1, 2, 3, 4]" maximum="4" minimum="1"
+												showTrackHighlight="true" snapInterval="1"
+												tickInterval="1" tickLength="14" tickOffset="11"
+												dataTipFormatFunction="GetDataTipPhotos"
+												tickThickness="2" value="2"/>
+									
+								</s:VGroup>
+								
+							</s:BorderContainer>
+						</s:VGroup>
+						
+					</s:HGroup>
+					
+					<s:TextArea id="labelSelect"
+								visible="{singleton.userphotosforupload.length == 0 || !singleton.userphotosforupload}"
+								left="55" right="10" height="80" borderVisible="false" color="#1383CB"
+								contentBackgroundAlpha="0.0" editable="false" fontSize="16"
+								selectable="false"
+								text="Klik links op de foto's om ze te selecteren voor je {singleton.platform_name}"
+								textAlign="center" verticalAlign="middle" verticalCenter="-100"/>
+					
+					<s:Button id="btnSelectAllPhotos" label="Gebruik alle foto's"
+							  visible="{singleton.userphotosforupload.length == 0 || !singleton.userphotosforupload}"
+							  skinClass="skins.btnGreenSkin" click="{SelectAllPhotos()}"
+							  enabled="{singleton.userphotosfromhdu.length > 0}"
+							  horizontalCenter="0" top="{labelSelect.y + 80}"/>
+					
+				</s:Group>
+				
+			</mx:HDividedBox>
+			
+			<s:HGroup right="20" bottom="10">
+				
+				<s:Button id="btnBackToTitel" label="Terug" skinClass="skins.btnGraySkin" 
+						  click="{btnBackToTitle_click(event)}" width="150" height="30" />
+				
+				<s:Button id="btnContinueAuto" label="Maak je Fotoalbum" skinClass="skins.btnGreenSkin" 
+						  click="{CreateStoryBoard(event)}"
+						  enabled="{singleton.userphotosforupload &amp;&amp; singleton.userphotosforupload.length > 0 &amp;&amp; !FlexGlobals.topLevelApplication.loadingstatus}"/>
+				
+				<s:Button id="btnCancelAdd" width="0" visible="false" label="Annuleren" skinClass="skins.btnGraySkin" />
+				
+				<s:Button id="btnFinishedAdd" width="0" visible="false" label="OK" skinClass="skins.btnGreenSkin" />
+				
+			</s:HGroup>
+			
+		</s:NavigatorContent>
+		
+	</mx:ViewStack>
+	
+	<s:Label id="btnCloseWindow" right="5" top="5"
+			 fontFamily="_AppFontEnjoy" fontSize="18" color="#FFFFFF" text="&#xe614;" />
+	
+</s:BorderContainer>

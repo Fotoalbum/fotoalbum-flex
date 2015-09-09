@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				mouseUp="_mouseUpHandler(event)">
+	
+	<fx:Declarations>
+		<s:Fade id="showEff" alphaFrom="0.0" alphaTo="1.0" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.barMenuEvent;
+			import events.dragdropExposeEvent;
+			import events.selectPhotoEvent;
+			import events.showPhotoMenuEvent;
+			
+			import mx.core.DragSource;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.DragEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.managers.DragManager;
+			import mx.utils.ObjectUtil;
+			
+			import spark.components.Group;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void 
+			{
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			protected function _creationCompleteHandler():void
+			{
+			
+				if (data) {
+			
+					FlexGlobals.topLevelApplication.addEventListener(selectPhotoEvent.SELECTBACKGROUNDPHOTO, SelectBackgroundPhoto);
+					
+					var request:URLRequest = new URLRequest(encodeURI(singleton.assets_url + data.thumb_url));
+					var context:LoaderContext = new LoaderContext();
+					context.checkPolicyFile = true;
+					if (Capabilities.isDebugger == false) {
+						context.securityDomain = SecurityDomain.currentDomain;
+						context.applicationDomain = ApplicationDomain.currentDomain;
+					}
+					
+					var loader:Loader = new Loader();
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+					loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+					loader.load(request, context);
+					
+					
+				}
+			}
+			
+			private function SelectBackgroundPhoto(event:selectPhotoEvent):void {
+				
+				selectedOverlay.graphics.clear();
+				
+				if (!event.isColor && event.photoID == data.id) {
+					selectedOverlay.graphics.lineStyle(2  * FlexGlobals.topLevelApplication.photozoom_value, 0xFFFFFF, 1);
+					selectedOverlay.graphics.drawRect(0, 0, 55 * FlexGlobals.topLevelApplication.photozoom_value, 55 * FlexGlobals.topLevelApplication.photozoom_value);
+				}
+				
+			}
+			
+			private function onComplete(e:Event):void 
+			{
+				
+				img.source = e.target.content;
+				if (data.hasOwnProperty("imageRotation")) {
+					img.rotation = data.imageRotation || 0;
+				}
+				img.horizontalCenter = 0;
+				img.verticalCenter = 0;
+				img.visible = true;
+				
+			}
+			
+			private function onError(e:Event):void {
+				//trace(e);
+			}
+			
+			protected function img_mouseDownHandler(event:MouseEvent):void
+			{
+				FlexGlobals.topLevelApplication.explodedView.removeAllElements();
+				FlexGlobals.topLevelApplication.explodedView.visible = false;
+				
+				event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.addEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+			}
+			
+			private function DragItem(event:MouseEvent):void 
+			{
+				//Start drag
+				var ds:DragSource = new DragSource();
+				
+				ds.addData("BACKGROUND", "type");
+				
+				var bmdata:BitmapData;
+				var o:Object = img.source as Object;
+				if (o.constructor.toString() == "[class ByteArray]") {
+					bmdata = img.bitmapData.clone();
+				} else {
+					bmdata = Bitmap(img.source).bitmapData;
+				}
+				
+				var bitmap:Bitmap = new Bitmap(bmdata);
+				var clone:Image = new Image();
+				clone.scaleMode = BitmapScaleMode.ZOOM;
+				clone.verticalCenter = 0;
+				clone.horizontalCenter = 0;
+				clone.source = bitmap;
+				clone.validateNow();
+				
+				//Start dragging
+				var xOffset:int = -1 * mouseX + (img.width / 2);
+				var yOffset:int = -1 * mouseY + (img.height / 2);
+				
+				ds.addData(clone, "snap");
+				
+				var dataClone:Object = new Object();
+				dataClone = singleton.CloneObject(data);
+				ds.addData(dataClone, "data");
+				
+				DragManager.doDrag(event.currentTarget as UIComponent, ds, event, clone, xOffset, yOffset, 0.5, false);
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+				//Call the viewer page to expose the background
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.BACKGROUNDS));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARDISABLED));
+				
+			}
+			
+			private function dragComplete(event:DragEvent):void {
+				
+				event.currentTarget.removeEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+			}
+			
+			protected function img_mouseUpHandler(event:MouseEvent):void
+			{
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+			}
+			
+			protected function img_rollOverHandler(event:MouseEvent):void
+			{
+				//Show exploded example
+				var bitmap:Bitmap = new Bitmap(img.bitmapData.clone());
+				var clone:Image = new Image();
+				var gr:Group = new Group();
+				gr.width = 150;
+				gr.height = 150;
+				gr.filters = [FlexGlobals.topLevelApplication.dropShadow];
+				
+				clone.scaleMode = BitmapScaleMode.ZOOM;
+				clone.width = 150;
+				clone.height = 150;
+				clone.rotation = data.imageRotation || 0;
+				clone.horizontalCenter = 0;
+				clone.verticalCenter = 0;
+				clone.source = bitmap;
+				clone.mouseEnabled = false;
+				clone.cacheAsBitmap = true;
+				clone.validateNow();
+				
+				gr.addElement(clone);
+				
+				FlexGlobals.topLevelApplication.explodedView.removeAllElements();
+				FlexGlobals.topLevelApplication.explodedView.addElement(gr);
+				FlexGlobals.topLevelApplication.explodedView.x = FlexGlobals.topLevelApplication.mouseX;
+				FlexGlobals.topLevelApplication.explodedView.y = FlexGlobals.topLevelApplication.mouseY;
+				
+				if ((FlexGlobals.topLevelApplication.explodedView.y + 150) > FlexGlobals.topLevelApplication.height) {
+					FlexGlobals.topLevelApplication.explodedView.y = FlexGlobals.topLevelApplication.mouseY - 150;
+				}
+				
+				FlexGlobals.topLevelApplication.explodedView.visible = true;
+				FlexGlobals.topLevelApplication.explodedView.mouseEnabled = false;
+				
+			}
+			
+			protected function img_rollOutHandler(event:MouseEvent):void
+			{
+				//Hide exploded example
+				FlexGlobals.topLevelApplication.explodedView.removeAllElements();
+				FlexGlobals.topLevelApplication.explodedView.visible = false;
+			}
+			
+			protected function _mouseUpHandler(event:MouseEvent):void
+			{
+				FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTBACKGROUNDPHOTO, data.id, true));
+				
+				singleton.selected_userphoto = null;
+				
+				singleton.selected_background = data;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Image id="img" width="55" height="55" scaleMode="zoom" visible="false" showEffect="{showEff}"
+			 mouseDown="img_mouseDownHandler(event)" mouseUp="img_mouseUpHandler(event)"
+			 rollOver="img_rollOverHandler(event)" rollOut="img_rollOutHandler(event)" />
+	
+	<s:SpriteVisualElement id="selectedOverlay" width="55" height="55" mouseEnabled="false" />
+	
+</s:ItemRenderer>

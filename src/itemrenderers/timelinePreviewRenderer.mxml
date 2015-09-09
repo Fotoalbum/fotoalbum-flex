@@ -1,0 +1,1055 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				xmlns:st="library://ns.tink.ws/flex/spark"
+				clipAndEnableScrolling="false"
+				initialize="_creationCompleteHandler()">
+	
+	<fx:Declarations>
+		<mx:GlowFilter id="myGlow" color="0x64AADD" alpha=".7" blurX="10" blurY="10" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.PageType;
+			import classes.Singleton;
+			import classes.userphotoclass;
+			
+			import events.updateTimelineEvent;
+			import events.updateTimelineHeightEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.core.IVisualElement;
+			import mx.core.mx_internal;
+			import mx.events.FlexEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.utils.UIDUtil;
+			
+			import spark.components.Image;
+			import spark.components.Label;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var data:Object;
+			[Bindable] public var spreadContainerVisible:Boolean = false;
+			public function _creationCompleteHandler():void
+			{
+				if (data) {
+					
+					FlexGlobals.topLevelApplication.addEventListener(updateTimelineHeightEvent.SETNEWTIMELINEHEIGHT, SetNewHeight);
+					FlexGlobals.topLevelApplication.addEventListener(updateTimelineHeightEvent.SETNEWTIMELINEWIDTH, SetNewWidth);
+					FlexGlobals.topLevelApplication.addEventListener(updateTimelineEvent.UPDATETIMELINEPREVIEW, UpdateTimelinePreview);
+					
+				}
+			}	
+			
+			public function SetNewHeight(event:updateTimelineHeightEvent):void {
+				
+				if (event._id == data.@spreadID && event._height > 0 && this.width > 0) {
+					
+					if (this.height != event._height) {
+						var pageheight:Number = event._height;
+						this.width = event._previewWidth;
+						this.height = pageheight;
+						CreatePageContent();
+					}
+				}
+			}
+			
+			public function SetNewWidth(event:updateTimelineHeightEvent):void {
+				
+				if (this.width != event._previewWidth) {
+					this.width = event._previewWidth;
+					CreatePageContent();
+				}
+			}
+			
+			
+			public function CreatePageContent():void {
+				
+				var optimumScaleX:Number = 0;
+				var optimumScaleY:Number = 0;
+				
+				var bookH:Number = 0;
+				var bookW:Number = 0;
+				
+				spreadContainerVisible = false;
+				
+				spreadcontainer.graphics.clear();
+				
+				//Calculate the scale
+				var maxWidth:Number = this.width - 40;
+				var maxHeight:Number = 280;
+				
+				var found:Boolean = false;
+				while (!found) {
+					
+					var w:Number = 0;
+					if (data.@singlepage.toString() == "true") {
+						w = (parseFloat(data.@totalWidth) *  2) * optimumScaleX;
+					} else {
+						w = parseFloat(data.@totalWidth) * optimumScaleX;
+					}
+					var h:Number = parseFloat(data.@totalHeight) * optimumScaleX;
+					
+					if (w >= maxWidth || h >= maxHeight) {
+						optimumScaleX -= 0.01;
+						found = true;
+					} else {
+						optimumScaleX += 0.01;
+					}
+				}
+				
+				master.width = maxWidth;
+				master.height = maxHeight;
+				master.scaleX = optimumScaleX;
+				master.scaleY = optimumScaleX;
+				
+				if (data.background.toXMLString() != "") {
+					
+					if (data.background.@id.toString() != "") {
+						
+						var src:String = "";
+						
+						spreadContainerVisible = true;
+						
+						imgSpreadBackground.visible = true;
+						imgSpreadBackground.x = data.background.@x;
+						imgSpreadBackground.y = data.background.@y;
+						imgSpreadBackground.width = data.background.@width;
+						imgSpreadBackground.height = data.background.@height;
+						imgSpreadBackground.rotation = data.background.@imageRotation;
+						imgSpreadBackground.scaleMode = BitmapScaleMode.STRETCH;
+						
+						//Set the background
+						if (data.background.@status == "new") {
+							
+							imgSpreadBackground.source = singleton.GetOriginalBitmapData(data.background.@original_image_id);
+							
+						} else {
+							
+							if (data.background.@origin == "3rdparty") {
+								
+								src = data.background.@lowres_url;
+				
+							} else {
+							
+								if (data.background.@lowres_url.toString() != "") {
+									
+									src = singleton.assets_url + data.background.@lowres_url;
+								
+								}
+								
+							}
+							
+							var request:URLRequest = new URLRequest(src);
+							var context:LoaderContext = new LoaderContext();
+							context.checkPolicyFile = true;
+							if (Capabilities.isDebugger == false) {
+								context.securityDomain = SecurityDomain.currentDomain;
+								context.applicationDomain = ApplicationDomain.currentDomain;
+							}
+							
+							var loader:Loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onSpreadBackgroundComplete);
+							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+							loader.load(request, context);
+							
+						}
+						
+					}
+				}
+				
+				var pages:XMLListCollection = new XMLListCollection(data.pages..page);
+				
+				if (pages.getItemAt(0).@type == "coverback") {
+					
+					bookW = singleton._defaultCoverWidth + singleton._defaultCoverBleed + singleton._defaultCoverWrap;
+					bookH = singleton._defaultCoverHeight + (2 * singleton._defaultCoverWrap) + (2 * singleton._defaultCoverBleed);
+					
+					pageLeft.width = singleton._defaultCoverWidth + singleton._defaultCoverBleed + singleton._defaultCoverWrap;
+					pageLeft.height = bookH;
+					pageLeft.visible = true;
+					
+					pageSpine.width = singleton._defaultCoverSpine;
+					pageSpine.height = bookH;
+					pageSpine.visible = true;
+					
+					pageRight.width = singleton._defaultCoverWidth + singleton._defaultCoverBleed + singleton._defaultCoverWrap;
+					pageRight.height = bookH;
+					pageRight.visible = true;
+					
+					backgroundLeft.visible = false;
+					backgroundSpine.visible = false;
+					backgroundRight.visible = false;
+					
+					backgroundColorLeft.width = pageLeft.width;
+					backgroundColorLeft.height = pageLeft.height;
+					backgroundColorSpine.width = pageSpine.width;
+					backgroundColorSpine.height = pageSpine.height;
+					backgroundColorRight.width = pageRight.width;
+					backgroundColorRight.height = pageRight.height;
+					
+					backgroundColorLeft.graphics.clear();
+					backgroundColorSpine.graphics.clear();
+					backgroundColorRight.graphics.clear();
+					
+					if (pages.getItemAt(0).@backgroundColor.toString() != "-1") {
+						backgroundColorLeft.graphics.beginFill(pages.getItemAt(0).@backgroundColor, pages.getItemAt(0).@backgroundAlpha);
+						backgroundColorLeft.graphics.drawRect(0, 0, backgroundColorLeft.width, backgroundColorLeft.height);
+						backgroundColorLeft.graphics.endFill();
+					} 
+					
+					if (pages.getItemAt(0).background.@id.toString() != "") {
+						
+						backgroundLeft.visible = true;
+						backgroundLeft.x = pages.getItemAt(0).background.@x;
+						backgroundLeft.y = pages.getItemAt(0).background.@y;
+						backgroundLeft.width = pages.getItemAt(0).background.@width;
+						backgroundLeft.height = pages.getItemAt(0).background.@height;
+						backgroundLeft.rotation = pages.getItemAt(0).background.@imageRotation;
+						backgroundLeft.mouseEnabled = false;
+						backgroundLeft.scaleMode = BitmapScaleMode.STRETCH;
+						backgroundLeft.cacheAsBitmap = true;
+						
+						src = "";
+						
+						//Set the background
+						if (pages.getItemAt(0).background.@status == "new") {
+							
+							backgroundLeft.source = singleton.GetOriginalBitmapData(pages.getItemAt(0).background.@original_image_id);
+							
+						} else {
+							
+							if (pages.getItemAt(0).background.@origin == "3rdparty") {
+								src = pages.getItemAt(0).background.@lowres_url;
+							} else {
+								if (pages.getItemAt(0).background.@lowres_url.toString() != "") {
+									src = singleton.assets_url + pages.getItemAt(0).background.@lowres_url;
+								}
+							}
+							
+							request = new URLRequest(src);
+							context = new LoaderContext();
+							context.checkPolicyFile = true;
+							if (Capabilities.isDebugger == false) {
+								context.securityDomain = SecurityDomain.currentDomain;
+								context.applicationDomain = ApplicationDomain.currentDomain;
+							}
+							
+							loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundLeftComplete);
+							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+							loader.load(request, context);
+						}
+					}
+					
+					if (pages.length == 3) {// spine is included
+						
+						if (pages.getItemAt(1).@backgroundColor.toString() != "-1") {
+							backgroundColorSpine.graphics.beginFill(pages.getItemAt(1).@backgroundColor, pages.getItemAt(1).@backgroundAlpha);
+							backgroundColorSpine.graphics.drawRect(0, 0, backgroundColorSpine.width, backgroundColorSpine.height);
+							backgroundColorSpine.graphics.endFill();
+						} 
+						
+						if (pages.getItemAt(1).background.@id.toString() != "") {
+							
+							backgroundSpine.visible = true;
+							backgroundSpine.x = pages.getItemAt(1).background.@x;
+							backgroundSpine.y = pages.getItemAt(1).background.@y;
+							backgroundSpine.width = pages.getItemAt(1).background.@width;
+							backgroundSpine.height = pages.getItemAt(1).background.@height;
+							backgroundSpine.rotation = pages.getItemAt(1).background.@imageRotation;
+							backgroundSpine.mouseEnabled = false;
+							backgroundSpine.scaleMode = BitmapScaleMode.STRETCH;
+							backgroundSpine.cacheAsBitmap = true;
+							
+							src = "";
+							
+							//Set the background
+							if (pages.getItemAt(1).background.@status == "new") {
+								
+								backgroundRight.source = singleton.GetOriginalBitmapData(pages.getItemAt(1).background.@original_image_id);
+								
+							} else {
+								
+								if (pages.getItemAt(1).background.@origin == "3rdparty") {
+									src = pages.getItemAt(1).background.@lowres_url;
+								} else {
+									if (pages.getItemAt(1).background.@lowres_url.toString() != "") {
+										src = singleton.assets_url + pages.getItemAt(1).background.@lowres_url;
+									}
+								}
+							
+								request = new URLRequest(src);
+								context = new LoaderContext();
+								context.checkPolicyFile = true;
+								if (Capabilities.isDebugger == false) {
+									context.securityDomain = SecurityDomain.currentDomain;
+									context.applicationDomain = ApplicationDomain.currentDomain;
+								}
+								
+								loader = new Loader();
+								loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundSpineComplete);
+								loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+								loader.load(request, context);
+							}
+						}
+						
+						if (pages.getItemAt(2).@backgroundColor.toString() != "-2") {
+							backgroundColorRight.graphics.beginFill(pages.getItemAt(2).@backgroundColor, pages.getItemAt(2).@backgroundAlpha);
+							backgroundColorRight.graphics.drawRect(0, 0, backgroundColorRight.width, backgroundColorRight.height);
+							backgroundColorRight.graphics.endFill();
+						} 
+						
+						if (pages.getItemAt(2).background.@id.toString() != "") {
+							
+							backgroundRight.visible = true;
+							backgroundRight.x = pages.getItemAt(2).background.@x;
+							backgroundRight.y = pages.getItemAt(2).background.@y;
+							backgroundRight.width = pages.getItemAt(2).background.@width;
+							backgroundRight.height = pages.getItemAt(2).background.@height;
+							backgroundRight.rotation = pages.getItemAt(2).background.@imageRotation;
+							backgroundRight.mouseEnabled = false;
+							backgroundRight.scaleMode = BitmapScaleMode.STRETCH;
+							backgroundRight.cacheAsBitmap = true;
+							
+							src = "";
+							
+							//Set the background
+							if (pages.getItemAt(2).background.@status == "new") {
+								
+								backgroundRight.source = singleton.GetOriginalBitmapData(pages.getItemAt(2).background.@original_image_id);
+								
+							} else {
+							
+								if (pages.getItemAt(2).background.@origin == "3rdparty") {
+									src = pages.getItemAt(2).background.@lowres_url;
+								} else {
+									if (pages.getItemAt(2).background.@lowres_url.toString() != "") {
+										src = singleton.assets_url + pages.getItemAt(2).background.@lowres_url;
+									}
+								}
+							
+								request = new URLRequest(src);
+								context = new LoaderContext();
+								context.checkPolicyFile = true;
+								if (Capabilities.isDebugger == false) {
+									context.securityDomain = SecurityDomain.currentDomain;
+									context.applicationDomain = ApplicationDomain.currentDomain;
+								}
+								
+								loader = new Loader();
+								loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundRightComplete);
+								loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+								loader.load(request, context);
+							}
+						}
+					
+					} else { //no spine
+						
+						if (pages.getItemAt(1).@backgroundColor.toString() != "-1") {
+							backgroundColorRight.graphics.beginFill(pages.getItemAt(1).@backgroundColor, pages.getItemAt(1).@backgroundAlpha);
+							backgroundColorRight.graphics.drawRect(1, 1, backgroundColorRight.width, backgroundColorRight.height);
+							backgroundColorRight.graphics.endFill();
+						} 
+						
+						if (pages.getItemAt(1).background.@id.toString() != "") {
+							
+							backgroundRight.visible = true;
+							backgroundRight.x = pages.getItemAt(1).background.@x;
+							backgroundRight.y = pages.getItemAt(1).background.@y;
+							backgroundRight.width = pages.getItemAt(1).background.@width;
+							backgroundRight.height = pages.getItemAt(1).background.@height;
+							backgroundRight.rotation = pages.getItemAt(1).background.@imageRotation;
+							backgroundRight.mouseEnabled = false;
+							backgroundRight.scaleMode = BitmapScaleMode.STRETCH;
+							backgroundRight.cacheAsBitmap = true;
+							
+							src = "";
+							
+							//Set the background
+							if (pages.getItemAt(1).background.@status == "new") {
+								
+								backgroundRight.source = singleton.GetOriginalBitmapData(pages.getItemAt(1).background.@original_image_id);
+								
+							} else {
+								
+								if (pages.getItemAt(1).background.@origin == "3rdparty") {
+									src = pages.getItemAt(1).background.@lowres_url;
+								} else {
+									if (pages.getItemAt(1).background.@lowres_url.toString() != "") {
+										src = singleton.assets_url + pages.getItemAt(1).background.@lowres_url;
+									}
+								}
+								
+								request = new URLRequest(src);
+								context = new LoaderContext();
+								context.checkPolicyFile = true;
+								if (Capabilities.isDebugger == false) {
+									context.securityDomain = SecurityDomain.currentDomain;
+									context.applicationDomain = ApplicationDomain.currentDomain;
+								}
+								
+								loader = new Loader();
+								loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundRightComplete);
+								loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+								loader.load(request, context);
+							}
+						}
+					}
+					
+				} else {
+					
+					bookW = singleton._defaultPageWidth + singleton._defaultPageBleed;
+					bookH = singleton._defaultPageHeight + (singleton._defaultPageBleed * 2);
+					
+					pageLeft.width = bookW;
+					pageLeft.height = bookH;
+					pageLeft.visible = true;
+					pageLeft.validateNow();
+					
+					pageRight.width = bookW;
+					pageRight.height = bookH;
+					pageRight.visible = true;
+					pageRight.validateNow();
+					
+					backgroundColorLeft.width = pageLeft.width;
+					backgroundColorLeft.height = pageLeft.height;
+					backgroundColorRight.width = pageRight.width;
+					backgroundColorRight.height = pageRight.height;
+					
+					backgroundColorLeft.graphics.clear();
+					backgroundColorSpine.graphics.clear();
+					backgroundColorRight.graphics.clear();
+					
+					if (pages.getItemAt(0).@type == "empty") {
+						
+						//Set the empty label
+						pageLeft.removeAllElements();
+						
+						var label:Label = new Label();
+						label.text = "Binnenzijde omslag";
+						label.setStyle("color", "#58595B");
+						label.horizontalCenter = 0;
+						label.verticalCenter = 0;
+						label.scaleX = 1 / (1 - container.scaleX);
+						label.scaleY = 1 / (1 - container.scaleX);
+						pageLeft.setStyle("backgroundColor", "#D2D2D2");
+						pageLeft.addElement(label);
+						pageLeftWizard.visible = false;
+					
+					} else {
+					
+						pageLeftWizard.visible = true;
+						
+						//Check for background, if not, put backgroundLines
+						backgroundLeft.visible = false;
+						
+						if (pages.getItemAt(0).@backgroundColor.toString() != "-1") {
+							backgroundColorLeft.graphics.beginFill(pages.getItemAt(0).@backgroundColor, pages.getItemAt(0).@backgroundAlpha);
+							backgroundColorLeft.graphics.drawRect(0, 0, backgroundColorLeft.width, backgroundColorLeft.height);
+							backgroundColorLeft.graphics.endFill();
+						} 
+						
+						if (pages.getItemAt(0).background.@id.toString() != "") {
+							
+							backgroundLeft.visible = true;
+							backgroundLeft.x = pages.getItemAt(0).background.@x;
+							backgroundLeft.y = pages.getItemAt(0).background.@y;
+							backgroundLeft.width = pages.getItemAt(0).background.@width;
+							backgroundLeft.height = pages.getItemAt(0).background.@height;
+							backgroundLeft.rotation = pages.getItemAt(0).background.@imageRotation;
+							backgroundLeft.mouseEnabled = false;
+							backgroundLeft.scaleMode = BitmapScaleMode.STRETCH;
+							backgroundLeft.cacheAsBitmap = true;
+							
+							src = "";
+							
+							//Set the background
+							if (pages.getItemAt(0).background.@status == "new") {
+								
+								backgroundLeft.source = singleton.GetOriginalBitmapData(pages.getItemAt(0).background.@original_image_id);
+								
+							} else {
+								
+								if (pages.getItemAt(0).background.@origin == "3rdparty") {
+									src = pages.getItemAt(0).background.@lowres_url;
+								} else {
+									if (pages.getItemAt(0).background.@lowres_url.toString() != "") {
+										src = singleton.assets_url + pages.getItemAt(0).background.@lowres_url;
+									}
+								}
+								
+								request = new URLRequest(src);
+								context = new LoaderContext();
+								context.checkPolicyFile = true;
+								if (Capabilities.isDebugger == false) {
+									context.securityDomain = SecurityDomain.currentDomain;
+									context.applicationDomain = ApplicationDomain.currentDomain;
+								}
+								
+								loader = new Loader();
+								loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundLeftComplete);
+								loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+								loader.load(request, context);
+								
+							}
+						}
+					}
+				
+					if (pages.length > 1) {
+						
+						if (pages.getItemAt(1).@type == "empty") {
+							
+							//Set the empty label
+							pageRight.removeAllElements();
+							
+							label = new Label();
+							label.text = "Binnenzijde omslag";
+							label.setStyle("color", "#58595B");
+							label.horizontalCenter = 0;
+							label.verticalCenter = 0;
+							pageRight.setStyle("backgroundColor", "#D2D2D2");
+							pageRight.addElement(label);
+							pageRightWizard.visible = false;
+						
+						} else {
+							
+							pageRightWizard.visible = true;
+							
+							//Check for background, if not, put backgroundLines
+							backgroundRight.visible = false;
+							
+							if (pages.getItemAt(pages.length - 1).@backgroundColor.toString() != "-1") {
+								backgroundColorRight.graphics.beginFill(pages.getItemAt(pages.length - 1).@backgroundColor, pages.getItemAt(pages.length - 1).@backgroundAlpha);
+								backgroundColorRight.graphics.drawRect(0, 0, backgroundColorRight.width, backgroundColorRight.height);
+								backgroundColorRight.graphics.endFill();
+							} 
+							
+							if (pages.getItemAt(pages.length - 1).background.@id.toString() != "") {
+								
+								backgroundRight.visible = true;
+								backgroundRight.x = pages.getItemAt(pages.length - 1).background.@x;
+								backgroundRight.y = pages.getItemAt(pages.length - 1).background.@y;
+								backgroundRight.width = pages.getItemAt(pages.length - 1).background.@width;
+								backgroundRight.height = pages.getItemAt(pages.length - 1).background.@height;
+								backgroundRight.rotation = pages.getItemAt(pages.length - 1).background.@imageRotation;
+								backgroundRight.mouseEnabled = false;
+								backgroundRight.scaleMode = BitmapScaleMode.STRETCH;
+								backgroundRight.cacheAsBitmap = true;
+								
+								src = "";
+								
+								//Set the background
+								if (pages.getItemAt(pages.length - 1).background.@status == "new") {
+									
+									backgroundRight.source = singleton.GetOriginalBitmapData(pages.getItemAt(pages.length - 1).background.@original_image_id);
+									
+								} else {
+									
+									if (pages.getItemAt(pages.length - 1).background.@origin == "3rdparty") {
+										src = pages.getItemAt(pages.length - 1).background.@lowres_url;
+									} else {
+										if (pages.getItemAt(pages.length - 1).background.@lowres_url.toString() != "") {
+											src = singleton.assets_url + pages.getItemAt(pages.length - 1).background.@lowres_url;
+										}
+									}
+									
+									request = new URLRequest(src);
+									context = new LoaderContext();
+									context.checkPolicyFile = true;
+									if (Capabilities.isDebugger == false) {
+										context.securityDomain = SecurityDomain.currentDomain;
+										context.applicationDomain = ApplicationDomain.currentDomain;
+									}
+									
+									loader = new Loader();
+									loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundRightComplete);
+									loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+									loader.load(request, context);
+									
+								}
+							}
+						}
+					}
+				}
+				
+				container.width = pageLeft.width + pageSpine.width + pageRight.width;
+				container.height = bookH;
+				
+				elementContainer.width = container.width;
+				elementContainer.height = bookH;
+				
+				elementContainer.horizontalCenter = 0;
+				elementContainer.verticalCenter = 0;
+				
+				spreadcontainer.width = container.width;
+				spreadcontainer.height = container.height;
+				spreadcontainer.horizontalCenter = 0;
+				spreadcontainer.verticalCenter = 0;
+				
+				container.horizontalCenter = 0;
+				
+				if (data.@backgroundColor.toString() != "-1") {
+					
+					spreadcontainer.graphics.beginFill(data.@backgroundColor, data.@backgroundAlpha);
+					spreadcontainer.graphics.drawRect(0, 0, spreadcontainer.width, spreadcontainer.height);
+					spreadcontainer.graphics.endFill();
+					
+					spreadContainerVisible = true;
+					imgSpreadBackground.source = null;
+					imgSpreadBackground.visible = false;
+					
+				}
+				
+				AddContent();
+				
+			}
+			
+			private function onBackgroundLeftComplete(event:Event):void 
+			{
+				
+				backgroundLeft.source = event.target.content;
+			}
+			
+			private function onBackgroundSpineComplete(event:Event):void 
+			{
+				
+				backgroundSpine.source = event.target.content;
+			}
+			
+			
+			private function onBackgroundRightComplete(event:Event):void 
+			{
+				
+				backgroundRight.source = event.target.content;
+			}
+			
+			private function onSpreadBackgroundComplete(event:Event):void 
+			{
+				
+				imgSpreadBackground.source = event.target.content;
+				imgSpreadBackground.visible = true;
+				
+			}
+			
+			private function ErrorImageLoad(event:IOErrorEvent):void 
+			{
+				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n " + event.text);
+			}
+			
+			public function UpdateTimelinePreview(event:updateTimelineEvent):void {
+			
+				if (event.spreadID == data.@spreadID) {
+					
+					CreatePageContent();
+					
+				}
+				
+			}
+			
+			public function AddContent():void {
+				
+				if (data) {
+					
+					var elements:XMLListCollection = new XMLListCollection(data.elements..element);
+					elementContainer.removeAllElements();
+					
+					if (elements.length > 0) {
+						
+						CreatePageLayout(elements);
+						
+					}
+				}
+			}
+			
+			private function CreatePageLayout(elements:XMLListCollection):void {
+				
+				for (var x:int=0; x < elements.length; x++) {
+					
+					var element:Object = elements.getItemAt(x);
+					
+					if (element.@type == "photo") {
+						
+						var photo:timeLinePhotoPreviewRenderer = new timeLinePhotoPreviewRenderer();
+						photo.x = parseFloat(element.@objectX.toString());
+						photo.y = parseFloat(element.@objectY.toString());
+						photo.width = element.@objectWidth;
+						photo.height = element.@objectHeight;
+						photo.rotation = element.@rotation;
+						photo.data = element;
+						
+						elementContainer.addElement(photo);
+						
+					}
+					
+					if (element.@type == "text") {
+						
+						var text:timeLineTextPreviewRenderer = new timeLineTextPreviewRenderer();
+						text.x = parseFloat(element.@objectX.toString());
+						text.y = parseFloat(element.@objectY.toString());
+						text.width = element.@objectWidth;
+						text.height = element.@objectHeight;
+						text.rotation = element.@rotation;
+						text.data = element;
+						
+						elementContainer.addElement(text);
+						
+					}
+					
+					if (element.@type == "clipart") {
+						
+						var clipart:timeLineClipartPreviewRenderer = new timeLineClipartPreviewRenderer();
+						clipart.x = parseFloat(element.@objectX.toString());
+						clipart.y = parseFloat(element.@objectY.toString());
+						clipart.width = element.@objectWidth;
+						clipart.height = element.@objectHeight;
+						clipart.rotation = element.@rotation;
+						clipart.data = element;
+						
+						elementContainer.addElement(clipart);
+						
+					}
+					
+					if (element.@type == "rectangle") {
+						
+						var rectangle:timeLineRectanglePreviewRenderer = new timeLineRectanglePreviewRenderer();
+						rectangle.x = parseFloat(element.@objectX.toString());
+						rectangle.y = parseFloat(element.@objectY.toString());
+						rectangle.width = element.@objectWidth;
+						rectangle.height = element.@objectHeight;
+						rectangle.rotation = element.@rotation;
+						rectangle.data = element;
+						
+						elementContainer.addElement(rectangle);
+						
+					}
+					
+					if (element.@type == "circle") {
+						
+						var circle:timeLineCirclePreviewRenderer = new timeLineCirclePreviewRenderer();
+						circle.x = parseFloat(element.@objectX.toString());
+						circle.y = parseFloat(element.@objectY.toString());
+						circle.width = element.@objectWidth;
+						circle.height = element.@objectHeight;
+						circle.rotation = element.@rotation;
+						circle.data = element;
+						
+						elementContainer.addElement(circle);
+						
+					}
+					
+					if (element.@type == "line") {
+						
+						var line:timeLineLinePreviewRenderer = new timeLineLinePreviewRenderer();
+						line.x = parseFloat(element.@objectX.toString());
+						line.y = parseFloat(element.@objectY.toString());
+						line.width = element.@objectWidth;
+						line.height = element.@objectHeight;
+						line.rotation = element.@rotation;
+						line.data = element;
+						
+						elementContainer.addElement(line);
+						
+					}
+					
+					elementContainer.validateNow();
+					
+				}
+			
+			}
+			
+			private function UpdatePageLayout(target:Object, auto:Object, photo:timeLinePhotoPreviewRenderer):void {
+				
+				var pageWidth:Number = target.width;
+				var pageHeight:Number = target.height;
+				photo.x = ((parseFloat(auto.@left.toString()) / 100) * pageWidth);
+				photo.y = (parseFloat(auto.@top.toString()) / 100) * pageHeight;
+				photo.width = pageWidth - ((parseFloat(auto.@right.toString()) / 100) * pageWidth) - photo.x;
+				photo.height = pageHeight - ((parseFloat(auto.@bottom.toString()) / 100) * pageHeight) - photo.y;
+				photo.rotation = auto.@r;
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateTimelineEvent(updateTimelineEvent.UPDATETIMELINEPHOTOORIGINAL, id, null, photo));
+				
+				target.addElement(photo);
+				
+			}
+			
+			protected function pageLeftWizard_clickHandler(event:MouseEvent):void
+			{
+				
+				//Get the number of photos on the left page
+				var numPhotos:int = 0;
+				var numText:int = 0;
+				var pageWidth:Number = 0;
+				var pageHeight:Number = 0;
+				var counter:int = 0;
+				
+				if (data.pages..page[0].@type == "coverback") {
+					for each (var element:XML in data.pages..page[0].elements..element) {
+						if (element.@type == "photo") {
+							numPhotos++;
+						}
+						if (element.@type == "text") {
+							numText++;
+						}
+					}
+					pageWidth = singleton._defaultCoverWidth + singleton._defaultCoverWrap + singleton._defaultCoverBleed;
+					pageHeight = singleton._defaultCoverHeight + (2 * (singleton._defaultCoverBleed + singleton._defaultCoverWrap));
+				}
+				
+				if (data.pages..page[0].@type == PageType.NORMAL || data.pages..page[0].@type == PageType.NORMAL) {
+					for each (element in data.pages..page[0].elements..element) {
+						if (element.@type == "photo") {
+							numPhotos++;
+						}
+						if (element.@type == "text") {
+							numText++;
+						}
+					}
+					pageWidth = singleton._defaultPageWidth + singleton._defaultPageBleed;
+					pageHeight = singleton._defaultPageHeight + (2 * singleton._defaultPageBleed);
+				}
+				
+				var pagelayout:Object = singleton.GetRandomPagelayoutOnFixedNumPhotos(numPhotos, numText) as Object;
+				var autoElements:XMLList = XML(pagelayout.layout)..item;
+				
+				//Update all the photos on this page
+				for (var q:int=0; q < data.pages..page[0].elements..element.length(); q++) {
+					
+					if (counter < (numPhotos + numText)) {
+						
+						var auto:XML = autoElements[counter].copy();
+					
+						if (data.pages..page[0].elements..element[q].@type == "photo") {
+							
+							data.pages..page[0].elements..element[q].@objectX = (parseFloat(auto.@left.toString()) / 100) * pageWidth;
+							data.pages..page[0].elements..element[q].@objectY = (parseFloat(auto.@top.toString()) / 100) * pageHeight;
+							data.pages..page[0].elements..element[q].@objectWidth = pageWidth - ((parseFloat(auto.@right.toString()) / 100) * pageWidth) - parseFloat(data.pages..page[0].elements..element[q].@objectX);
+							data.pages..page[0].elements..element[q].@objectHeight = pageHeight - ((parseFloat(auto.@bottom.toString()) / 100) * pageHeight) - parseFloat(data.pages..page[0].elements..element[q].@objectY);
+							data.pages..page[0].elements..element[q].@rotation = auto.@r;
+							
+							//Calculate
+							singleton.CalculateImageZoomAndPosition(data.pages..page[0].elements..element[q]);
+							
+							/* Get the other info from the original image */
+							data.pages..page[0].elements..element[q].@refOffsetX = data.pages..page[0].elements..element[q].@offsetX;
+							data.pages..page[0].elements..element[q].@refOffsetY = data.pages..page[0].elements..element[q].@offsetY;
+							data.pages..page[0].elements..element[q].@refWidth = data.pages..page[0].elements..element[q].@imageWidth;
+							data.pages..page[0].elements..element[q].@refHeight = data.pages..page[0].elements..element[q].@imageHeight;
+							data.pages..page[0].elements..element[q].@refScale = data.pages..page[0].elements..element[q].@scaling;
+							
+							counter++;
+						}
+						
+						if (data.pages..page[0].elements..element[q].@type == "text") {
+							
+							data.pages..page[0].elements..element[q].@objectX = (parseFloat(auto.@left.toString()) / 100) * pageWidth;
+							data.pages..page[0].elements..element[q].@objectY = (parseFloat(auto.@top.toString()) / 100) * pageHeight;
+							data.pages..page[0].elements..element[q].@objectWidth = pageWidth - ((parseFloat(auto.@right.toString()) / 100) * pageWidth) - parseFloat(data.pages..page[0].elements..element[q].@objectX);
+							data.pages..page[0].elements..element[q].@objectHeight = pageHeight - ((parseFloat(auto.@bottom.toString()) / 100) * pageHeight) - parseFloat(data.pages..page[0].elements..element[q].@objectY);
+							data.pages..page[0].elements..element[q].@rotation = auto.@r;
+							
+							counter++;
+						}
+					}
+				}
+				
+				data.elements.setChildren(data.pages..element.copy());
+				
+				AddContent();
+				
+			}
+			
+			protected function pageRightWizard_clickHandler(event:MouseEvent):void
+			{
+				
+				//Get the number of photos on the left page
+				var numPhotos:int = 0;
+				var numText:int = 0;
+				var pageWidth:Number = 0;
+				var pageHeight:Number = 0;
+				var counter:int = 0;
+				var spinewidth:Number = 0;
+				
+				if (data.pages..page[data.pages..page.length() - 1].@type == "coverfront") {
+					for each (var element:XML in data.pages..page[data.pages..page.length() - 1].elements..element) {
+						if (element.@type == "photo") {
+							numPhotos++;
+						}
+						if (element.@type == "text") {
+							numText++;
+						}
+					}
+					pageWidth = singleton._defaultCoverWidth + singleton._defaultCoverWrap + singleton._defaultCoverBleed;
+					pageHeight = singleton._defaultCoverHeight + (2 * (singleton._defaultCoverBleed + singleton._defaultCoverWrap));
+					spinewidth = singleton._defaultCoverSpine;
+				} else {
+					spinewidth = 0;
+				}
+			
+				if (data.pages..page[data.pages..page.length() - 1].@type == PageType.NORMAL || data.pages..page[data.pages..page.length() - 1].@type == PageType.NORMAL) {
+					for each (element in data.pages..page[data.pages..page.length() - 1].elements..element) {
+						if (element.@type == "photo") {
+							numPhotos++;
+						}
+						if (element.@type == "text") {
+							numText++;
+						}
+					}
+					pageWidth = singleton._defaultPageWidth + singleton._defaultPageBleed;
+					pageHeight = singleton._defaultPageHeight + (2 * singleton._defaultPageBleed);
+					spinewidth = 0;
+				}
+				
+				var pagelayout:Object = singleton.GetRandomPagelayoutOnFixedNumPhotos(numPhotos, numText) as Object;
+				var autoElements:XMLList = XML(pagelayout.layout)..item;
+				
+				//Update all the photos on this page
+				for (var q:int=0; q < data.pages..page[data.pages..page.length() - 1].elements..element.length(); q++) {
+					
+					if (counter < (numPhotos + numText)) {
+					
+						if (data.pages..page[data.pages..page.length() - 1].elements..element[q].@type == "photo") {
+							
+							var auto:XML = autoElements[counter].copy();
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectX = (parseFloat(auto.@left.toString()) / 100) * pageWidth + pageWidth + spinewidth;
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectY = (parseFloat(auto.@top.toString()) / 100) * pageHeight;
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectWidth = (pageWidth * 2) + spinewidth - ((parseFloat(auto.@right.toString()) / 100) * pageWidth) - parseFloat(data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectX);
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectHeight = pageHeight - ((parseFloat(auto.@bottom.toString()) / 100) * pageHeight) - parseFloat(data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectY);
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@rotation = auto.@r;
+						
+							//Calculate
+							singleton.CalculateImageZoomAndPosition(data.pages..page[data.pages..page.length() - 1].elements..element[q]);
+							
+							/* Get the other info from the original image */
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@refOffsetX = data.pages..page[data.pages..page.length() - 1].elements..element[q].@offsetX;
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@refOffsetY = data.pages..page[data.pages..page.length() - 1].elements..element[q].@offsetY;
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@refWidth = data.pages..page[data.pages..page.length() - 1].elements..element[q].@imageWidth;
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@refHeight = data.pages..page[data.pages..page.length() - 1].elements..element[q].@imageHeight;
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@refScale = data.pages..page[data.pages..page.length() - 1].elements..element[q].@scaling;
+							
+							counter++;
+						}
+						
+						if (data.pages..page[data.pages..page.length() - 1].elements..element[q].@type == "text") {
+							
+							auto = autoElements[counter].copy();
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectX = (parseFloat(auto.@left.toString()) / 100) * pageWidth + pageWidth + spinewidth;
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectY = (parseFloat(auto.@top.toString()) / 100) * pageHeight;
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectWidth = (pageWidth * 2) + spinewidth - ((parseFloat(auto.@right.toString()) / 100) * pageWidth) - parseFloat(data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectX);
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectHeight = pageHeight - ((parseFloat(auto.@bottom.toString()) / 100) * pageHeight) - parseFloat(data.pages..page[data.pages..page.length() - 1].elements..element[q].@objectY);
+							data.pages..page[data.pages..page.length() - 1].elements..element[q].@rotation = auto.@r;
+							
+							counter++;
+						}
+					
+					}
+				}
+				
+				data.elements.setChildren(data.pages..element.copy());
+				
+				AddContent();
+				 
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Group id="master" horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="false">
+		
+		<s:Group id="container" horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="false" >
+			
+			<s:BorderContainer id="spreadcontainer" borderVisible="false" 
+							   horizontalCenter="0" verticalCenter="0"
+							   backgroundAlpha="0" visible="{spreadContainerVisible}">
+				<s:layout>
+					<s:BasicLayout clipAndEnableScrolling="true" />
+				</s:layout>
+				
+				<s:BitmapImage id="imgSpreadBackground" visible="false" />
+				
+			</s:BorderContainer>
+			
+			<s:HGroup id="pageGroup" gap="-1" visible="{!spreadContainerVisible}"
+					  horizontalCenter="0" verticalCenter="0">
+				
+				<s:BorderContainer id="pageLeft" visible="true" width="0" height="0"
+								   backgroundColor="#FFFFFF"
+								   dropShadowVisible="false">
+					<s:layout>
+						<s:BasicLayout clipAndEnableScrolling="true" />
+					</s:layout>
+					
+					<s:Group id="backgroundColorLeft" />
+					
+					<s:Image id="backgroundLeft" visible="false" />
+					
+				</s:BorderContainer>
+				
+				<s:BorderContainer id="pageSpine" width="0" height="0" visible="false"
+								   backgroundColor="#FFFFFF"
+								   dropShadowVisible="false">
+					<s:layout>
+						<s:BasicLayout clipAndEnableScrolling="true" />
+					</s:layout>
+					
+					<s:Group id="backgroundColorSpine" />
+					
+					<s:Image id="backgroundSpine" visible="false" />
+					
+				</s:BorderContainer>
+					
+				<s:BorderContainer id="pageRight" width="0" height="0" visible="false"
+								   backgroundColor="#FFFFFF"
+								   dropShadowVisible="false">
+					<s:layout>
+						<s:BasicLayout clipAndEnableScrolling="true" />
+					</s:layout>
+					
+					<s:Group id="backgroundColorRight" />
+					
+					<s:Image id="backgroundRight" visible="false" />
+					
+				</s:BorderContainer>
+				
+			</s:HGroup>
+			
+			<s:Group id="elementContainer" clipAndEnableScrolling="true"
+					 mouseEnabled="false" />
+			
+			
+			<s:SWFLoader id="pageLeftWizard"
+						 left="{-40 / master.scaleX}"
+						 width="{100 / master.scaleX}" height="{100 / master.scaleY}"
+						 source="@Embed('assets/iconset/toverstaf-links.swf')"
+						 click="pageLeftWizard_clickHandler(event)"
+						 autoLoad="true"
+						 horizontalAlign="left"
+						 verticalAlign="top"
+						 scaleContent="true"
+						 rollOverEffect="myGlow"
+						 buttonMode="true" />
+				
+			<s:SWFLoader id="pageRightWizard"
+						 right="{-50 / master.scaleX}" top="0"
+						 width="{100 / master.scaleX}" height="{100 / master.scaleY}"
+						 autoLoad="true"
+						 horizontalAlign="left"
+						 verticalAlign="top"
+						 scaleContent="true"
+						 source="@Embed('assets/iconset/toverstaf-rechts.swf')" 
+						 click="pageRightWizard_clickHandler(event)"
+						 rollOverEffect="myGlow"
+						 buttonMode="true" />
+			
+		</s:Group>
+
+	</s:Group>
+	
+</s:Group>

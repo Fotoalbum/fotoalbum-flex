@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:components="components.*"
+		 creationComplete="_creationCompleteHandler(event)"
+		 width="30" height="30" minWidth="0" minHeight="0" currentState="basic"
+		 mouseDown="_mouseDownHandler(event)"
+		 height.full="90"
+		 height.spread="60">
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.pageobject;
+			import classes.undoActions;
+			
+			import events.barMenuEvent;
+			import events.updateBackgroundEvent;
+			import events.updateElementsEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.utils.ObjectUtil;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			protected function _mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();
+			}
+			
+			protected function btnSettings_clickHandler(event:MouseEvent):void
+			{
+				//Show or hide the effect toolbar!
+				if (settingsBar.visible) {
+					settingsBar.visible = false;
+					settingsBar.width = 0;
+				} else {
+					settingsBar.x = 30;
+					if (this.x + 200 > singleton.selected_spread_editor.width) {
+						settingsBar.x = -200;
+					}
+					settingsBar.visible = true;
+					settingsBar.width = 200;
+				}
+				
+			}
+			
+			[Bindable] private var oldData:Object;
+			[Bindable] private var oldAlpha:Number;
+			protected function slider_mouseDownHandler(event:MouseEvent):void
+			{
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldAlpha = slider.value/100;
+				
+				slider.addEventListener(MouseEvent.MOUSE_UP, UpdateUndoObjectAlpha);
+				singleton.selected_spread_editor.addEventListener(MouseEvent.MOUSE_UP, UpdateUndoObjectAlpha);
+				
+			}
+			
+			private function UpdateUndoObjectAlpha(event:MouseEvent):void {
+				
+				slider.removeEventListener(MouseEvent.MOUSE_UP, UpdateUndoObjectAlpha);
+				singleton.selected_spread_editor.removeEventListener(MouseEvent.MOUSE_UP, UpdateUndoObjectAlpha);
+				
+				if (oldAlpha != singleton.selected_spread.backgroundAlpha) {
+					singleton.oldbackgrounddata = singleton.deepclone(singleton.selected_spread);
+					singleton.oldbackgrounddata.backgroundAlpha = oldAlpha;
+					
+					if (singleton.selected_page_object) {
+						FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.UPDATE, singleton.selected_page_object.pageID, singleton.selected_page_object.data, singleton.selected_page_object.data.backgroundColor, slider.value/100));
+					} else if (singleton.selected_spread_editor) {
+						FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDSPREAD, singleton.selected_spread.spreadID, singleton.selected_spread, -1, slider.value/100));
+					}
+				}
+			}
+			
+			protected function slider_changeHandler(event:Event):void
+			{
+				
+				//Update the alpha
+				if (singleton.selected_page_object) {
+					singleton.selected_page_object.data.backgroundAlpha = slider.value / 100;
+					singleton.selected_page_object.background.alpha = slider.value / 100;
+				} else if(singleton.selected_spread_editor) {
+					singleton.selected_spread_editor.spreadData.backgroundAlpha = slider.value / 100;
+					singleton.selected_spread_editor.spreadbackgroundcontainer.alpha = slider.value / 100;
+				}
+				
+			}
+			
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				FlexGlobals.topLevelApplication.addEventListener(barMenuEvent.SETBARENABLED, EnableBar);
+				FlexGlobals.topLevelApplication.addEventListener(barMenuEvent.SETBARDISABLED, DisableBar);
+			}
+			
+			private function EnableBar(event:barMenuEvent):void {
+				this.enabled = true;
+				this.mouseEnabled = true;
+			}
+			
+			private function DisableBar(event:barMenuEvent):void {
+				this.enabled = false;
+				this.mouseEnabled = false;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="full"/>
+		<s:State name="basic"/>
+		<s:State name="spread"/>
+	</s:states>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Button id="btnWizard" includeIn="basic,full" x="0" y="0" width="30" height="30"
+			  click="{singleton.selected_page_object.ChangePageLayout(event)}"
+			  icon="@Embed('assets/icons/magicwand.png')" skinClass="skins.btnSkin"/>
+	
+	<s:Button id="btnDelete" includeIn="full,spread" x="0" y="30" width="30" height="30"
+			  icon="@Embed('assets/icons/prullenbak.png')" skinClass="skins.btnSkin"
+			  y.spread="0"/>
+	
+	<s:Button id="btnSettings" includeIn="full,spread" x="0" y="60" width="30" height="30"
+			  click="btnSettings_clickHandler(event)" icon="@Embed('assets/icons/settings.png')"
+			  skinClass="skins.btnSkin"
+			  y.spread="30"/>
+	
+	<s:BorderContainer id="settingsBar" x="30" y="60" y.spread="30" width="0" visible="false" 
+					   backgroundColor="{singleton.baseColor}" borderVisible="false">
+		<s:layout>
+			<s:HorizontalLayout paddingLeft="5" paddingRight="5" gap="3" verticalAlign="middle" />
+		</s:layout>
+		
+		<s:SWFLoader source="@Embed('assets/icons/border_transparency.swf')" autoLoad="true" />	
+		
+		<s:Label color="#D2D2D2" text="0%"/>
+		
+		<s:HSlider id="slider" width="100%" maximum="100" minimum="0" skinClass="skins.ZoomSlider"
+				   mouseDown="slider_mouseDownHandler(event)" uid="55"
+				   stepSize="1" value="100" change="slider_changeHandler(event)"/>
+		
+		<s:Label color="#D2D2D2" text="100%"/>
+		
+	</s:BorderContainer>
+	
+</s:Group>

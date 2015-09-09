@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				filters="{dropShadow}"
+				width="70" height="85">
+	
+	<fx:Declarations>
+		<s:Fade id="showEff" alphaFrom="0.0" alphaTo="1.0" />
+		<s:DropShadowFilter id="dropShadow" distance="5" color="0" alpha=".6" angle="45" blurX="10" blurY="10" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.photoclass;
+			
+			import mx.graphics.BitmapScaleMode;
+			
+			import spark.components.Image;
+		
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			public function _creationCompleteHandler():void
+			{
+			
+				if (data) {
+					
+					var request:URLRequest = new URLRequest(encodeURI(data.lowres_url));
+					var context:LoaderContext = new LoaderContext();
+					context.checkPolicyFile = true;
+					if (Capabilities.isDebugger == false) {
+						context.securityDomain = SecurityDomain.currentDomain;
+						context.applicationDomain = ApplicationDomain.currentDomain;
+					}
+					
+					var loader:Loader = new Loader();
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+					loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+					loader.load(request, context);
+					
+					labelDate.text = data.dateCreated;
+				}
+			}
+			
+			private function onError(e:IOErrorEvent):void{
+				singleton.ReportError(e.text);
+			}
+			
+			private function onComplete(e:Event):void 
+			{
+				
+				img.source = e.target.content;
+				img.smooth = true;
+				img.scaleMode = BitmapScaleMode.ZOOM;
+				img.width = 66;
+				img.height = 68;
+				img.validateNow();
+				
+				//update the data bytesize
+				data.bytesize = e.target.content.loaderInfo.bytesTotal;
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Rect width="100%" height="100%">
+		<s:fill>
+			<s:SolidColor color="0xFFFFFF" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Image id="img" width="66" height="68" cacheAsBitmap="true"
+				   horizontalAlign="center" horizontalCenter="0"
+				   verticalAlign="middle" top="2"/>
+	
+	<s:Label id="labelDate" bottom="2" width="100%" height="18" color="0" fontSize="9"
+			 maxDisplayedLines="1" textAlign="center" verticalAlign="bottom"/>
+	
+</s:ItemRenderer>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="400" height="300"
+		 clipAndEnableScrolling="true">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import flashx.textLayout.formats.TextAlign;
+			
+			import spark.components.TextArea;
+			import spark.layouts.VerticalAlign;
+			
+			public function CreateLines():void {
+				
+				var w:Number = this.width;
+				var h:Number = this.height;
+				
+				var done:Boolean = false;
+				var y:int = 0;
+				
+				this.graphics.clear();
+				
+				//Set the background color if we have it
+				this.graphics.beginFill(0xFFFFFF, 1);
+				
+				this.graphics.lineStyle(1, 0xD2D2D2, .8);
+				
+				while (!done) {
+					
+					if (y < (h + 20)) {
+						this.graphics.moveTo(0, y);
+						this.graphics.lineTo(w, y - 25);
+						y+=10;
+					} else {
+						done = true;
+					}
+				}
+				
+				this.graphics.moveTo(w - 1, 0);
+				this.graphics.lineTo(w - 1, h);
+				this.graphics.endFill();
+				
+				var l:TextArea = new TextArea();
+				l.text = "A\nC\nH\nT\nE\nR\nG\nR\nO\nN\nD";
+				l.mouseEnabled = false;
+				l.editable = false;
+				l.selectable = false;
+				l.percentWidth = 100;
+				l.percentHeight = 100;
+				l.setStyle("horizontalScrollPolicy", "off");
+				l.setStyle("verticalScrollPolicy", "off");
+				l.setStyle("borderVisible", false);
+				l.setStyle("fontSize", 8);
+				l.setStyle("color", 0x58595B);
+				l.setStyle("textAlign", TextAlign.CENTER);
+				l.setStyle("verticalAlign", VerticalAlign.MIDDLE);
+				this.addElement(l);
+				
+			}
+		]]>
+	</fx:Script>
+</s:Group>

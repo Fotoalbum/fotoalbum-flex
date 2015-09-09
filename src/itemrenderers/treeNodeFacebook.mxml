@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXTreeItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	<fx:Script>
+		<![CDATA[
+			import events.selectPhotoEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			[Embed(source="/assets/icons/folder_icon.png")] 
+			[Bindable] public var folderIcon:Class;
+			[Embed(source="/assets/icons/photo_icon.png")] 
+			[Bindable] public var photoIcon:Class;
+			[Embed(source="/assets/icons/photo_checked_icon.png")] 
+			[Bindable] public var photoCheckedIcon:Class;
+			
+			override protected function createChildren():void {
+				
+				super.createChildren();
+				
+				FlexGlobals.topLevelApplication.addEventListener(selectPhotoEvent.SELECTPHOTOFORIMPORT, onSelectPhoto);
+				
+			}
+			
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void {
+				
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				
+				if (data) {
+				
+					if (data.localName() == "folder") {
+						labelField.setStyle("fontSize", 10);
+						icon.source = folderIcon;
+					} else if (data.localName() == "photo") {
+						labelField.setStyle("fontSize", 10);
+						if (data.@selectedforupload.toString() == "true") {
+							icon.source = photoCheckedIcon;
+						} else {
+							icon.source = photoIcon;
+						}
+					} else if (data.localName() == "empty") {
+						icon.source = photoIcon;
+					}
+				}
+			}
+			
+			private function onSelectPhoto(event:selectPhotoEvent):void {
+				
+				if (data) {
+					
+					if (event.photoID == data.@id) {
+						if (event.selected) {
+							icon.source = photoCheckedIcon;
+							data.@selectedforupload = true;
+						} else {
+							icon.source = photoIcon;
+							data.@selectedforupload = false;
+						}
+					}
+					
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal" />            
+		<s:State name="hovered" />
+		<s:State name="selected" />
+	</s:states>
+	
+	<s:HGroup left="0" right="0" top="0" bottom="0" verticalAlign="middle">
+		<s:Rect id="indentationSpacer" width="{treeListData.indent}" percentHeight="100" alpha="0">
+			<s:fill>
+				<s:SolidColor color="0xFFFFFF" />
+			</s:fill>
+		</s:Rect>
+		
+		<s:Group id="disclosureGroup">
+			<s:BitmapImage source="{treeListData.disclosureIcon}" visible="{treeListData.hasChildren}" />
+		</s:Group>
+		
+		<s:BitmapImage id="icon" />
+		
+		<s:Label id="labelField" text="{treeListData.label}" paddingTop="2" />
+		
+	</s:HGroup>
+</s:MXTreeItemRenderer>

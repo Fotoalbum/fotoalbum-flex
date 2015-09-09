@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				filters="{dropShadow}"
+				mouseUp="_mouseUpHandler(event)"
+				width="100" height="100">
+	
+	<fx:Declarations>
+		<s:Fade id="showEff" alphaFrom="0.0" alphaTo="1.0" />
+		<s:DropShadowFilter id="dropShadow" distance="2" color="0" alpha=".6" angle="45" blurX="5" blurY="5" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.photoclass;
+			
+			import events.selectPhotoEvent;
+			
+			import fox.photo.ExifExtractor;
+			import fox.photo.jpeg.Exif;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.controls.Image;
+			import mx.core.FlexGlobals;
+			import mx.graphics.BitmapScaleMode;
+			import mx.graphics.BitmapSmoothingQuality;
+			
+			import org.osmf.layout.ScaleMode;
+			
+			import spark.components.Image;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			public function _creationCompleteHandler():void
+			{
+				
+				spriteSelection.graphics.clear();
+			
+				img_overlay.visible = false;
+				
+				if (data) {
+					
+					//Check if this one is selected?
+					var selected:Boolean = false;
+					var excist:Boolean = false;
+					for (var x:int=0; x < FlexGlobals.topLevelApplication.menuside.passepartout_selected.length; x++) {
+						if (FlexGlobals.topLevelApplication.menuside.passepartout_selected.getItemAt(x).id == data.id) {
+							if (FlexGlobals.topLevelApplication.menuside.passepartout_selected.getItemAt(x).used) {
+								excist = true;
+							} else {
+								selected = true;
+							}
+							break;
+						}
+					}
+					
+					if (excist) {
+						
+						spriteSelection.graphics.beginFill(0x90ff6e, .7);
+						spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+						spriteSelection.graphics.endFill();
+						
+						img.alpha = .6;
+						
+						this.enabled = false;
+						
+					} else {
+						
+						if (selected) {
+							spriteSelection.graphics.beginFill(singleton.baseColor, 1);
+							spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+							spriteSelection.graphics.endFill();
+						} else {
+							spriteSelection.graphics.beginFill(0xdddddd, 1);
+							spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+							spriteSelection.graphics.endFill();
+						}
+					
+						this.enabled = true;
+						img.alpha = 1;
+						
+					}
+						
+					if (data.thumb_url && data.hires != "") {
+						
+						var request:URLRequest = new URLRequest(singleton.assets_url + data.thumb_url);
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+					
+					} else {
+						
+						if (data.overlay_thumb_url && data.overlay_hires != "") {
+							
+							request = new URLRequest(singleton.assets_url + data.overlay_thumb_url);
+							context = new LoaderContext();
+							context.checkPolicyFile = true;
+							if (Capabilities.isDebugger == false) {
+								context.securityDomain = SecurityDomain.currentDomain;
+								context.applicationDomain = ApplicationDomain.currentDomain;
+							}
+							
+							loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+							loader.load(request, context);
+						}
+					}
+						
+				}
+					
+			}
+			
+			private function onComplete(e:Event):void 
+			{
+				
+				img.source = e.target.content;
+				
+				if (data) {
+					
+					if (data.overlay_thumb_url && data.overlay_hires != "" ) {
+						
+						var request:URLRequest = new URLRequest(singleton.assets_url + data.overlay_thumb_url);
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteOverlay);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+					}
+				}
+				
+			}
+			
+			private function onCompleteOverlay(e:Event):void 
+			{
+				
+				img_overlay.source = e.target.content;
+				img_overlay.visible = true;
+				
+			}			
+			
+			private function onError(e:Event):void {
+				trace(e);
+			}
+			
+			private function onIOError(error:IOErrorEvent):void {
+				trace(error.text);
+			}
+			
+			protected function _mouseUpHandler(event:MouseEvent):void
+			{
+			
+				var selected:Boolean = false;
+				spriteSelection.graphics.clear();
+				
+				for (var x:int=0; x < FlexGlobals.topLevelApplication.menuside.passepartout_selected.length; x++) {
+					
+					if (FlexGlobals.topLevelApplication.menuside.passepartout_selected.getItemAt(x).id == data.id) {
+						
+						//Remove it from the selection
+						selected = true;
+						
+						FlexGlobals.topLevelApplication.menuside.passepartout_selected.removeItemAt(x);
+						FlexGlobals.topLevelApplication.menuside.passepartout_selected.refresh();
+						
+						spriteSelection.graphics.beginFill(0xdddddd, 1);
+						spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+						spriteSelection.graphics.endFill();
+						break;
+					}
+					
+				}
+				
+				if (!selected) {
+					
+					//Select it 
+					FlexGlobals.topLevelApplication.menuside.passepartout_selected.addItem(data);
+					spriteSelection.graphics.beginFill(singleton.baseColor, 1);
+					spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+					spriteSelection.graphics.endFill();
+				}
+				
+			}
+
+			
+		]]>
+	</fx:Script>
+	
+	<s:SpriteVisualElement id="spriteSelection" width="100%" height="100%" />
+		
+	<s:Image id="img" width="90" height="90" cacheAsBitmap="true"
+				   horizontalAlign="center" horizontalCenter="0"
+				   verticalCenter="0" scaleMode="letterbox"
+				   verticalAlign="middle" top="2"/>
+	
+	<s:Image id="img_overlay" width="90" height="90" cacheAsBitmap="true"
+			 horizontalAlign="center" horizontalCenter="0"
+			 verticalCenter="0" scaleMode="letterbox"
+			 visible="false"
+			 verticalAlign="middle" top="2"/>
+	
+</s:ItemRenderer>

@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:components="components.*"
+			   xmlns:popups="popups.*"
+			   xmlns:classes="classes.*"
+			   creationComplete="{onCreationComplete()}"
+			   resize="resizeApp()"
+			   backgroundAlpha="0"
+			   keyDown="app_keyDownHandler(event)"
+			   keyUp="app_keyUpHandler(event)"
+			   mouseDown="{app_mouseDown(event)}">
+	
+	<fx:Declarations>
+		
+		<mx:RemoteObject id="api" 
+						 showBusyCursor="true" 
+						 destination="amfphp" 
+						 concurrency="multiple"
+						 source="{singleton.app_source}">
+			<mx:method name="api_getConfig" />
+			<mx:method name="api_getProductById" />
+			<mx:method name="api_getUserProductById" />
+			<mx:method name="api_saveUserProductById" />
+			<mx:method name="api_getUserPhotoFolders" />
+			<mx:method name="api_updateUserDocumentsByField" />
+			<mx:method name="api_updateUserDocumentsByGuid" />
+		</mx:RemoteObject>
+		
+		<mx:RemoteObject id="api_user" 
+						 showBusyCursor="true" 
+						 destination="amfphp" 
+						 concurrency="multiple"
+						 source="{singleton.user_source}" >
+			<mx:method name="register" />
+			<mx:method name="login" />
+		</mx:RemoteObject>
+		
+		<mx:RemoteObject id="api_cms" 
+						 showBusyCursor="true" 
+						 destination="amfphp" 
+						 concurrency="multiple"
+						 source="{singleton.cms_source}" >
+			<mx:method name="api_get" />
+			<mx:method name="api_tree" />		
+			<mx:method name="api_delete" />
+			<mx:method name="api_view" />
+			<mx:method name="api_save" />
+			<mx:method name="api_add" />
+			<mx:method name="api_categorized" />
+			<mx:method name="api_search" />
+		</mx:RemoteObject>
+		
+		<mx:CurrencyFormatter id="priceFormatter" precision="2"
+							  rounding="none"
+							  decimalSeparatorTo=","
+							  thousandsSeparatorTo="."
+							  useThousandsSeparator="true"
+							  useNegativeSign="true"
+							  currencySymbol="€ "
+							  alignSymbol="left" />
+		
+		<s:DropShadowFilter id="dropShadow" distance="5" angle="90" blurX="10" blurY="10" alpha=".7" color="0" />
+		
+		<s:DropShadowFilter id="menuShadow" distance="3" angle="90" blurX="5" blurY="5" alpha=".7" color="0" />
+		
+		<s:DropShadowFilter id="leftShadowFilter" distance="3" color="0" alpha=".6" angle="135" blurX="8" blurY="8" />
+		
+		<s:DropShadowFilter id="rightShadowFilter" distance="3" color="0" alpha=".6" angle="45" blurX="8" blurY="8" />
+		
+		<s:DropShadowFilter id="bottomShadowFilter" distance="3" color="0" alpha=".6" angle="90" blurX="8" blurY="8" />
+		
+		<s:Fade id="FadeIn" alphaFrom="0.0" alphaTo="1.0" />
+		
+		<s:Fade id="FadeOut" alphaFrom="1.0" alphaTo="0.0" />
+		
+	</fx:Declarations>
+	
+	<fx:Script source="functions/general.as" />
+	<fx:Script source="functions/cms.as" />
+	<fx:Script source="functions/external.as" />
+	<fx:Script source="functions/embeddedfonts.as" />
+	<fx:Script source="functions/userfonts.as" />
+	<fx:Script source="functions/preview.as" />
+	<fx:Script source="functions/storyboard.as" />
+	<fx:Style source="styles/stylesheet.css" />
+	<fx:Style source="styles/oem_stylesheet.css" />
+	
+	<!-- **********************************
+	EDITOR VIEWSTACK
+	*************************************** -->
+	<mx:ViewStack id="vsEditor" width="100%" height="100%" creationPolicy="all">
+		
+		<!-- ***** EDITOR CONTENT ***** -->
+		<s:NavigatorContent>
+			
+			<mx:ViewStack id="vsView" x="75" top="0" bottom="0" width="100%" borderVisible="false">
+				
+				<s:NavigatorContent width="100%" height="100%">
+					
+					<s:BorderContainer id="bcViewer" left="0" right="0" top="0" bottom="120" borderVisible="false"
+									   dropShadowVisible="true" backgroundColor="#E9E9E9">
+						
+						<s:Rect width="100%" height="100%">
+							<s:fill>
+								<s:SolidColor color="#FFFFFF" alpha="1" />
+							</s:fill>
+						</s:Rect>
+						
+						<s:Group id="viewer" left="0" right="0" top="0" bottom="35" clipAndEnableScrolling="true" />
+						
+						<s:HGroup id="uploadingGroup" visible="true" bottom="40" gap="5"
+								  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"
+								  verticalAlign="middle">
+							
+							<s:Label id="themeBuilderLabel" visible="true" text="" />
+							
+							<s:HGroup id="uploadprogressGroup" verticalAlign="middle" visible="false" gap="0">
+								
+								<mx:ProgressBar id="uploadprogress" height="23"
+												label="Uploaden voorbereiden ..."
+												chromeColor="#64AADD" color="#FFFFFF"
+												fontSize="10" indeterminate="false"
+												labelPlacement="center" maximum="100"
+												minimum="0" mode="manual" />
+								
+								<s:Label width="25" height="25"
+										 mouseUp="{uploadprogress_mouseUpHandler(event)}"
+										 color="0x1483CC" fontSize="23" text="&#xf05a;"
+										 fontFamily="_AppFontAwesome"
+										 textAlign="center" toolTip="Informatie over de upload"
+										 verticalAlign="bottom"/>
+							</s:HGroup>
+							
+						</s:HGroup>
+						
+						<s:BorderContainer id="toolBar" left="0" right="0" bottom="0" borderVisible="false" backgroundColor="#f8f8f8" backgroundAlpha="1">
+							
+							<s:HGroup id="pageTools" width="100%" height="100%" verticalAlign="middle" horizontalAlign="left"
+									  paddingLeft="10" paddingRight="10">
+								
+								<s:Label text="Pagina's:" fontFamily="_AppFontBold" />
+								
+								<s:HGroup height="100%" gap="0" paddingLeft="10" paddingRight="10" paddingTop="0" paddingBottom="0"
+										  verticalAlign="middle">
+									<mx:VRule height="40" />
+									<classes:pageControlButton id="btnAddSpread" 
+															   width="110" height="40"
+															   buttonFont="_AppFontEnjoy"
+															   mouseDown="{AddSpreadToAlbum()}"
+															   buttonTypeLabel="&#xe616;"
+															   buttonLabel="Toevoegen"/>
+									<mx:VRule height="40" />
+									<classes:pageControlButton id="btnDeleteSpread"  
+															   width="110" height="40"
+															   buttonFont="_AppFontEnjoy"
+															   buttonTypeLabel="&#xe615;"
+															   mouseDown="{DeleteSpreadFromAlbum()}"
+															   enabled="{singleton.selected_spread_item != null}"
+															   buttonLabel="Verwijderen"/>
+									<mx:VRule height="40" />
+									<!--
+									<classes:pageControlButton id="btnDuplicateSpread"  
+															   width="100" height="40"
+															   buttonFont="_AppFontAwesome"
+															   buttonTypeLabel="&#xf0c5;"
+															   mouseDown="{DuplicateSpreadInAlbum()}"
+															   enabled="{singleton.selected_spread_item != null}"
+															   buttonLabel="Dupliceren"/>
+									<mx:VRule height="40" />
+									-->
+									<classes:pageControlButton id="btnEditPages"  
+															   width="100" height="40"
+															   buttonFont="_AppFontEnjoy"
+															   buttonTypeLabel="&#xe617;"
+															   mouseDown="{EditPages()}"
+															   buttonLabel="Beheren"/>
+									<mx:VRule height="40" />
+									<classes:pageControlButton id="btnPreview"  
+															   width="100" height="40"
+															   buttonFont="_AppFontAwesome"
+															   buttonTypeLabel="&#xf0b2;"
+															   mouseDown="{CreatePreview()}"
+															   buttonLabel="Preview"/>
+									<mx:VRule height="40" />
+								</s:HGroup>
+								
+								<s:HGroup width="100%" horizontalAlign="center" verticalAlign="middle">
+									<mx:LinkButton id="btnPreviousSpread" label="&#xf104;" 
+												   fontFamily="_AppFontAwesomeMX" fontSize="28"
+												   click="{moveToPreviousSpread()}"
+												   color="0x58595B"
+												   enabled="{singleton.selected_spread_item.spreadIndex &gt; 0}"/>
+									
+									<s:Label id="lblCurrentPage" minWidth="50" paddingTop="2"
+											 text="{singleton.currentPageNumberLabel}" textAlign="center"
+											 verticalAlign="middle" fontFamily="_AppFontRegular" fontSize="16"/>
+									
+									<mx:LinkButton label="&#xf105;" fontFamily="_AppFontAwesomeMX" fontSize="24"
+												   click="{moveToNextSpread()}" color="0x58595B"
+												   enabled="{singleton.selected_spread_item.spreadIndex &lt; singleton.spreadcollection.length - 1}"/>
+								</s:HGroup>
+								
+								<s:HGroup horizontalAlign="center" verticalAlign="middle" right="0" verticalCenter="0" paddingRight="10">
+									
+									<s:HSlider id="zoomBar" buttonMode="true" change="ZoomStage()"
+											   maximum="3" minimum="0.2" uid="100"
+											   skinClass="skins.ZoomSliderGrayMinPlus" stepSize=".1"
+											   useHandCursor="true" value="1"/> 
+									
+								</s:HGroup>
+								
+							</s:HGroup>
+							
+						</s:BorderContainer>
+						
+						<s:BorderContainer id="zoomContainer" visible="false" 
+										   right="0" bottom="35" minWidth="180"
+										   height="110" backgroundAlpha="0.45"
+										   backgroundColor="{singleton.baseColor}" borderVisible="false" cornerRadius="0"
+										   hideEffect="{FadeOut}" showEffect="{FadeIn}">
+							<s:layout>
+								<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5"
+												  paddingTop="5" verticalAlign="middle" horizontalAlign="center"/>
+							</s:layout>
+							
+							<popups:zoomScreen id="zoomer" maxHeight="90"
+											   borderVisible="false"/>
+							
+						</s:BorderContainer>
+						
+					</s:BorderContainer>
+					
+					<s:BorderContainer id="bcNavigation" left="0" right="0" bottom="0" height="120" 
+									   backgroundColor="#707070"
+									   borderVisible="false" borderWeight="0">
+						<s:layout>
+							<s:HorizontalLayout gap="0" />
+						</s:layout>
+						
+						<s:Group width="100%" height="100%">
+							
+							<s:Scroller id="navScroller" width="100%" height="120" verticalScrollPolicy="off">
+								<s:HGroup id="lstSpreads" height="120" gap="0" clipAndEnableScrolling="true"
+										  paddingLeft="10" paddingRight="0" paddingTop="0" paddingBottom="0" />
+							</s:Scroller>
+							
+						</s:Group>
+						
+					</s:BorderContainer>
+					
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent id="ncStoryBoard" width="100%" height="100%">
+					
+					<s:Rect width="100%" height="100%">
+						<s:fill>
+							<s:SolidColor color="#e9e9e9" alpha="1" />
+						</s:fill>
+					</s:Rect>
+					
+					<s:BorderContainer id="storyBoardBox" left="322" right="0" top="10" bottom="30"
+									   borderVisible="false" backgroundColor="#f2f2f2">
+						<s:layout>
+							<s:HorizontalLayout gap="0" />
+						</s:layout>
+						
+						<s:BorderContainer width="100%" height="100%" borderVisible="false"
+										   backgroundAlpha="0">
+							<s:layout>
+								<s:VerticalLayout gap="-1" />
+							</s:layout>
+							
+							<s:BorderContainer width="100%" backgroundColor="#e9e9e9"
+											   borderVisible="false">
+								<s:layout>
+									<s:HorizontalLayout gap="30" paddingLeft="80" paddingRight="20" />
+								</s:layout>
+								
+								<s:BorderContainer width="50%" height="100%"
+												   backgroundColor="#f2f2f2" borderColor="#FFFFFF">
+									<s:layout>
+										<s:VerticalLayout gap="5" paddingTop="10" paddingBottom="10"
+														  verticalAlign="middle"/>
+									</s:layout>
+									
+									<s:Label width="100%" color="#58595B" fontSize="14"
+											 text="Verhaallijn" textAlign="center"/>
+									
+									<s:Label width="100%" color="#58595B" fontSize="10"
+											 text="Op een overzichtelijke manier foto's in je {singleton.platform_name} zetten"
+											 textAlign="center"/>
+									
+								</s:BorderContainer>
+								
+								<s:BorderContainer width="50%" height="100%"
+												   backgroundColor="#f2f2f2" borderColor="#FFFFFF">
+									<s:layout>
+										<s:VerticalLayout gap="5" paddingTop="10" paddingBottom="10"
+														  verticalAlign="middle"/>
+									</s:layout>
+									
+									<s:Label width="100%" color="#58595B" fontSize="14"
+											 text="{singleton.platform_name} weergave" textAlign="center"/>
+									
+									<s:Label width="100%" color="#58595B" fontSize="10"
+											 text="Verander de lay-out met een druk op de knop"
+											 textAlign="center"/>
+									
+								</s:BorderContainer>
+								
+							</s:BorderContainer>
+							
+							<s:BorderContainer width="100%" height="100%" borderVisible="true" 
+											   borderColor="0xFFFFFF" backgroundAlpha="0">
+								<s:layout>
+									<s:HorizontalLayout gap="0" paddingLeft="73" paddingRight="5"
+														paddingTop="15"/>
+								</s:layout>
+								
+								<s:Scroller id="scroller" width="100%" height="100%">
+									
+									<s:HGroup id="timelineGroup" width="100%">
+										
+										<s:VGroup width="50%" gap="5">
+											
+											<s:VGroup id="lstAlbumTimeline" width="100%"
+													gap="50" 
+												    paddingLeft="10" paddingRight="10" 
+												    paddingTop="0" paddingBottom="0" />
+											
+										</s:VGroup>
+										
+										<s:Rect width="4" height="{lstAlbumTimeline.height}">
+											<s:fill>
+												<s:SolidColor color="#58595B" alpha=".8" />
+											</s:fill>
+										</s:Rect>
+										
+										<s:BorderContainer width="50%" backgroundAlpha="0"
+														   borderVisible="false">
+											
+											<s:VGroup id="lstTimeLinePreview" 
+													  width="100%" height="{lstAlbumTimeline.height}"
+													  gap="50"
+													  paddingLeft="0" paddingRight="0" 
+													  paddingTop="0" paddingBottom="0" />
+											
+										</s:BorderContainer>
+										
+									</s:HGroup>
+									
+								</s:Scroller>
+								
+							</s:BorderContainer>
+							
+						</s:BorderContainer>
+						
+					</s:BorderContainer>
+					
+					<s:SWFLoader id="btnAutoFillTimeline" source="@Embed('assets/iconset/autofill.swf')"
+								 height="35" scaleContent="true" maintainAspectRatio="true" 
+								 right="25" top="65" horizontalAlign="right"
+								 toolTip="Automatisch vullen" />
+					
+					<s:HGroup id="timelineMenu" left="322" height="30" bottom="0" right="0" 
+							  horizontalAlign="right" verticalAlign="middle"
+							  gap="1" paddingLeft="5">
+						
+						<s:Label text="Weergave:" verticalAlign="middle" fontSize="12" color="#58595B" />
+						
+						<s:HGroup height="100%" verticalAlign="middle" paddingLeft="2" gap="2">
+							
+							<s:Group width="28" height="28" mouseEnabledWhereTransparent="true"
+									 click="{SetStoryBoardMode(false)}" toolTip="{singleton.platform_name} weergave">
+								<s:ToggleButton id="btnAlbumViewTimeline" width="28" height="28"
+												skinClass="skins.viewAlbumSkin" mouseEnabled="false" />
+							</s:Group>
+							
+							<s:Group width="28" height="28" mouseEnabledWhereTransparent="true"
+									 click="{SetStoryBoardMode(true)}" toolTip="Verhaallijn weergave">
+								<s:ToggleButton id="btnTimelineViewTimeline" width="28" height="28" selected="true"
+												skinClass="skins.viewTimelineSkin" mouseEnabled="false" />
+							</s:Group>
+						
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="100%" verticalAlign="middle" horizontalAlign="center">
+							
+						</s:HGroup>
+						
+						<classes:pageControlButton id="btnAddSpreadTimeline" 
+												   height="30" width="120"
+												   buttonType="add"	
+												   mouseUp="{AddSpreadToAlbum()}"
+												   buttonLabel="Toevoegen"/>
+						<classes:pageControlButton id="btnDeleteSpreadTimeline" 
+												   height="30" width="120"
+												   buttonType="delete"		
+												   mouseUp="{DeleteSpreadFromAlbum()}"
+												   enabled="{singleton.selected_timeline_spread != null}"
+												   buttonLabel="Verwijderen"/>
+						<classes:pageControlButton id="btnDuplicateSpreadTimeline" 
+												   height="30" width="120"
+												   enabled="{singleton.selected_timeline_spread != null}"
+												   mouseUp="{DuplicateSpreadInAlbum()}"
+												   buttonType="dupli"			   
+												   buttonLabel="Dupliceren"/>
+					</s:HGroup>
+					
+				</s:NavigatorContent>
+				
+			</mx:ViewStack>
+			
+			<components:sidemenu id="menuside" x="0" top="0" height="100%"
+								 mouseDown="menuside_mouseDownHandler(event)"
+								 mouseUp="menuside_mouseUpHandler(event)"/>
+			
+		</s:NavigatorContent>
+		
+		<!-- ***** PAGE OVERVIEW FOR MOVING/DELETING ***** -->
+		<s:NavigatorContent>
+			
+		</s:NavigatorContent>
+		
+		<!-- ***** COVER UPLOAD PAGE ***** -->
+		<s:NavigatorContent>
+			
+			<s:BorderContainer id="bcCoverUpload">
+				<s:layout>
+					<s:BasicLayout clipAndEnableScrolling="true" />
+				</s:layout>
+				
+			</s:BorderContainer>
+			
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="Debugger">
+		
+			<s:TextArea id="txtDebug" left="10" right="10" top="10" bottom="10"/>
+		
+		</s:NavigatorContent>
+		
+		<!-- ***** RENDER PAGE ***** -->
+		<s:NavigatorContent>
+			<s:Group id="bcRenderSpread" width="100%" height="100%" />
+		</s:NavigatorContent>
+		
+		<!-- ***** PAGE PREVIEW UPLOAD PAGE ***** -->
+		<s:NavigatorContent>
+			<s:Scroller width="100%" height="100%">
+				<s:HGroup height="100%" contentBackgroundColor="0xD2D2D2" id="lstPreviewSpreads" gap="0" paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0" />
+			</s:Scroller>
+		</s:NavigatorContent>
+		
+	</mx:ViewStack>
+	
+	<s:BorderContainer id="startup" width="100%" height="100%" backgroundColor="#000000" 
+					   borderVisible="false" visible="false" backgroundAlpha="0.8">
+	</s:BorderContainer>
+	
+	<s:Group id="explodedView" width="200" height="200" visible="false" mouseEnabled="false" />
+	
+	<s:Group id="colorOverlay" visible="false" width="100%" height="100%" />
+	
+	<s:Label text="v {singleton.version}" right="15" top="15" color="#58595B" fontSize="8" />
+	
+	<s:TabBar id="debugTabBar" dataProvider="{vsEditor}" visible="false" top="0" right="0" />
+	
+	<s:BorderContainer id="waitBox" width="100%" height="100%" backgroundColor="#000000" backgroundAlpha=".8" borderVisible="false" visible="false">
+		<s:Label id="waitMessage" horizontalCenter="0" verticalCenter="0" color="0xFFFFFF" fontSize="22" text="" textAlign="center" />
+	</s:BorderContainer>
+	
+	<s:HGroup visible="false" left="10" top="0" gap="1">
+		
+		<!--
+			<s:Button label="Copy" mouseDown="{ObjectCopy(event)}" enabled="{singleton.selected_element || (selectedObjects &amp;&amp; selectedObjects.length &gt; 0)}" skinClass="skins.btnBlueSkin" />
+			<s:Button label="Cut" mouseDown="{ObjectCut(event)}" enabled="{singleton.selected_element || (selectedObjects &amp;&amp; selectedObjects.length &gt; 0)}" skinClass="skins.btnBlueSkin" />
+			<s:Button label="Paste" mouseDown="{ObjectPaste(event)}" enabled="{(singleton.copyArray &amp;&amp; singleton.copyArray.length &gt; 0) || (singleton.cutArray &amp;&amp; singleton.cutArray.length &gt; 0)}" skinClass="skins.btnBlueSkin" />
+			<s:Button label="Delete" mouseDown="{ObjectDelete(event)}" enabled="{singleton.selected_element}" skinClass="skins.btnBlueSkin" />
+			<s:Button label="Upload Previews" click="{UploadPreviews()}" skinClass="skins.btnBlueSkin"
+					  enabled="{singleton.spreadcollection != null || singleton.albumtimeline != null}"/>
+			<s:Button label="Order from HTML" click="{OrderFromHtml()}" skinClass="skins.btnBlueSkin"
+					  enabled="{singleton.spreadcollection != null || singleton.albumtimeline != null}"/>
+			<s:Button label="Add Photoplaceholder" click="{AddPhotoPlaceholder()}" skinClass="skins.btnBlueSkin"
+					  enabled="{singleton.spreadcollection != null || singleton.albumtimeline != null}"/>
+			<s:Button label="Add Textplaceholder" click="{AddTextPlaceholder()}" skinClass="skins.btnBlueSkin"
+					  enabled="{singleton.spreadcollection != null || singleton.albumtimeline != null}"/>
+			<s:Button label="Undo" click="{Undo()}" skinClass="skins.btnBlueSkin"
+			enabled="{singleton.spreadcollection != null || singleton.albumtimeline != null}"/>
+			<s:Button label="Redo" click="{Redo()}" skinClass="skins.btnBlueSkin"
+			enabled="{singleton.spreadcollection != null || singleton.albumtimeline != null}"/>
+			<s:Button label="StartOver" click="{StartOver()}" skinClass="skins.btnBlueSkin"
+			enabled="{singleton.spreadcollection != null || singleton.albumtimeline != null}"/>
+			<s:Button label="RemoveEmptyPlaceholders" click="{RemoveEmptyPlaceholders()}" skinClass="skins.btnBlueSkin"
+			enabled="{singleton.spreadcollection != null || singleton.albumtimeline != null}"/>
+			<s:Button label="Grid" click="{ShowGrid()}" skinClass="skins.btnBlueSkin"/>
+			<s:Button label="UpdateTitle" click="{UpdateTitle()}" skinClass="skins.btnBlueSkin"/>
+		-->
+		<s:Button label="Order from HTML" click="{OrderFromHtml()}" skinClass="skins.btnBlueSkin"
+				  enabled="{singleton.spreadcollection != null || singleton.albumtimeline != null}"/>
+		<s:Button label="Save" click="{Save()}" skinClass="skins.btnBlueSkin"
+				  enabled="{singleton._changesMade}"/>
+		
+		
+	</s:HGroup>
+	
+	
+</s:Application>
+

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkButtonSkin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+                   xmlns:s="library://ns.adobe.com/flex/spark" 
+                   xmlns:fb="http://ns.adobe.com/flashbuilder/2009"
+                   minWidth="80" minHeight="25" 
+				   clipAndEnableScrolling="true"
+                   alpha.disabledStates="0.5">
+    
+    <!-- host component -->
+    <fx:Metadata>
+    <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.ToggleButton")]
+    ]]>
+    </fx:Metadata>
+    
+    <fx:Script fb:purpose="styling">
+        /* Define the skin elements that should not be colorized. 
+           For toggle button, the graphics are colorized but the label is not. */
+        static private const exclusions:Array = ["labelDisplay"];
+
+        /**
+         * @private
+         */    
+        override public function get colorizeExclusions():Array {return exclusions;}
+        
+        /**
+         * @private
+         */
+        override protected function initializationComplete():void
+        {
+            useChromeColor = true;
+            super.initializationComplete();
+        }
+        
+        /**
+         * @private
+         */
+        override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number) : void
+        {
+            super.updateDisplayList(unscaledWidth, unscaledHeight);
+        }
+        
+    </fx:Script>
+    
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+		]]>
+	</fx:Script>
+	
+    <!-- states -->
+    <s:states>
+        <s:State name="up" />
+        <s:State name="over" stateGroups="overStates" />
+        <s:State name="down" stateGroups="downStates" />
+        <s:State name="disabled" stateGroups="disabledStates" />
+        <s:State name="upAndSelected" stateGroups="selectedStates, selectedUpStates" />
+        <s:State name="overAndSelected" stateGroups="overStates, selectedStates" />
+        <s:State name="downAndSelected" stateGroups="downStates, selectedStates" />
+        <s:State name="disabledAndSelected" stateGroups="selectedUpStates, disabledStates, selectedStates" />
+    </s:states>
+    
+	<s:Rect left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#c8c8c8" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Label id="labelDisplay" left="7" right="15" color="#4E4E4E" fontSize="14" textAlign="left"
+			 verticalAlign="bottom" verticalCenter="0" maxDisplayedLines="1" />
+	
+	<!--
+	<s:Image id="btnShowProjectBackgrounds" 
+			 width="6" 
+			 width.upAndSelected="13"
+			 width.overAndSelected="13"
+			 width.downAndSelected="13"
+			 height="13"
+			 height.upAndSelected="6"
+			 height.overAndSelected="6"
+			 height.downAndSelected="6"
+			 smooth="true"
+			 source="@Embed('assets/iconset/pijl-klein-rechts.png')"
+			 source.over="@Embed('assets/iconset/pijl-klein-rechts.png')"
+			 source.down="@Embed('assets/iconset/pijl-klein-rechts.png')"
+			 source.upAndSelected="@Embed('assets/iconset/pijl-omlaag.png')"
+			 source.overAndSelected="@Embed('assets/iconset/pijl-omlaag.png')"
+			 source.downAndSelected="@Embed('assets/iconset/pijl-omlaag.png')"
+			 right="7" verticalCenter="0"
+			 buttonMode="true" />
+	-->
+	
+</s:SparkButtonSkin>

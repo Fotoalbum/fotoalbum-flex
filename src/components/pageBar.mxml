@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   currentState="wizardAndBackgroundLeft"
+				   height="{40 / singleton.selected_spread_editor.currentZoom}">
+	<s:states>
+		<s:State name="wizardAndBackgroundLeft"/>
+		<s:State name="wizardAndBackgroundRight"/>
+		<s:State name="wizardLeft"/>
+		<s:State name="wizardRight"/>
+		<s:State name="backgroundLeft"/>
+		<s:State name="backgroundRight"/>
+	</s:states>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import mx.core.FlexGlobals;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			
+			protected function btnDeleteBackground_mouseUpHandler(event:MouseEvent):void 
+			{
+				FlexGlobals.topLevelApplication.DeleteBackgroundClick(false);
+			}
+			
+			protected function btnPageLayout_mouseUpHandler(event:MouseEvent):void
+			{
+				singleton.selected_page_object.ChangePageLayout(event);
+			}
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer height="{40 / singleton.selected_spread_editor.currentZoom}"
+					   top="{-40 / singleton.selected_spread_editor.currentZoom}"
+					   backgroundColor="0x4e4e4e" borderVisible="false">
+		<s:layout>
+			<s:HorizontalLayout gap="20" 
+								paddingLeft="10" paddingRight="10" 
+								paddingTop="5" paddingBottom="5"
+								verticalAlign="middle"/>
+		</s:layout>
+		
+		<s:Group id="btnEditBackground" 
+				 includeIn="backgroundLeft,backgroundRight,wizardAndBackgroundLeft,wizardAndBackgroundRight" 
+				 width="{20 / singleton.selected_spread_editor.currentZoom}" 
+				 height="{20 / singleton.selected_spread_editor.currentZoom}" 
+				 mouseEnabledWhereTransparent="true"
+				 toolTip="Achtergrond aanpassen"
+				 mouseUp="{FlexGlobals.topLevelApplication.ShowBackgroundEditor()}"
+				 mouseChildren="true" useHandCursor="true">
+			
+			<s:Label horizontalCenter="0" verticalCenter="0"
+					 mouseEnabled="false"
+					 text="&#xf044;" 
+					 fontFamily="_AppFontAwesome"
+					 fontSize="{22 / singleton.selected_spread_editor.currentZoom}" 
+					 color="#FFFFFF" />
+		</s:Group>
+		
+		<s:Group id="btnDeleteBackground" 
+				 includeIn="backgroundLeft,backgroundRight,wizardAndBackgroundLeft,wizardAndBackgroundRight" 
+				 width="{20 / singleton.selected_spread_editor.currentZoom}" 
+				 height="{20 / singleton.selected_spread_editor.currentZoom}" 
+				 mouseEnabledWhereTransparent="true"
+				 toolTip="Achtergrond verwijderen"
+				 mouseUp="btnDeleteBackground_mouseUpHandler(event)"
+				 mouseChildren="true" useHandCursor="true">
+			
+			<s:Label horizontalCenter="0" verticalCenter="-1"
+					 mouseEnabled="false"
+					 text="&#xf014;" 
+					 fontFamily="_AppFontAwesome" 
+					 fontSize="{22 / singleton.selected_spread_editor.currentZoom}" 
+					 color="#FFFFFF" />
+			
+		</s:Group>
+		
+		<s:Group id="btnPageLayout" width="{20 / singleton.selected_spread_editor.currentZoom}" 
+				 height="{20 / singleton.selected_spread_editor.currentZoom}" 
+				 includeIn="wizardAndBackgroundLeft,wizardAndBackgroundRight,wizardLeft,wizardRight"
+				 mouseEnabledWhereTransparent="true"
+				 toolTip="Layout veranderen"
+				 mouseUp="btnPageLayout_mouseUpHandler(event)"
+				 mouseChildren="true" useHandCursor="true">
+			
+			<s:Label horizontalCenter="0" verticalCenter="-1"
+					 mouseEnabled="false"
+					 text="&#xe60f;" 
+					 fontFamily="_AppFontEnjoy" 
+					 fontSize="{24 / singleton.selected_spread_editor.currentZoom}" 
+					 color="#FFFFFF" />
+			
+		</s:Group>
+		
+		
+	</s:BorderContainer>
+	
+	
+</s:Group>

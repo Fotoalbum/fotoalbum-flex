@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   width="600" height="400"
+				   backgroundColor="#FFFFFF"
+				   borderVisible="false" 
+				   cornerRadius="0"
+				   dropShadowVisible="true">
+	
+	<fx:Declarations />
+		
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.textflowclass;
+			
+			import flashx.textLayout.container.ContainerController;
+			import flashx.textLayout.container.ScrollPolicy;
+			import flashx.textLayout.conversion.ConversionType;
+			import flashx.textLayout.conversion.TextConverter;
+			import flashx.textLayout.edit.EditManager;
+			import flashx.textLayout.elements.TextFlow;
+			import flashx.undo.UndoManager;
+		
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var tf:TextFlow = new TextFlow();
+			public function CreateTextField(data:Object):void {
+				
+				if (data) {
+					
+					
+					var tfclass:Object = singleton.GetTextFlowClassByID(data.@tfID);
+					
+					var content:String = TextConverter.export(tfclass.tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.STRING_TYPE).toString();
+					
+					tf = new TextFlow();
+					tf = TextConverter.importToFlow(content, TextConverter.TEXT_LAYOUT_FORMAT);
+					tf.invalidateAllFormats();
+					
+					tf.interactionManager = new EditManager(new UndoManager());
+					
+					var cc:ContainerController = new ContainerController(sprite, 570, 290);
+					cc.verticalScrollPolicy = ScrollPolicy.ON;
+					tf.flowComposer.addController(cc);
+					tf.flowComposer.updateAllControllers();
+					
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer width="100%" height="40" backgroundColor="{singleton.baseColor}" borderVisible="false">
+		
+		<s:Label left="10" color="#FFFFFF" fontSize="18" text="Tekst bewerken" verticalCenter="0"/>
+		
+	</s:BorderContainer>
+	
+	<s:Rect left="10" right="10" top="50" bottom="50">
+		<s:stroke>
+			<s:SolidColorStroke color="0xD2D2D2" alpha="1" />
+		</s:stroke>
+	</s:Rect>
+	
+	<s:SpriteVisualElement id="sprite" left="15" right="15" top="55" bottom="55" />
+		
+	<s:HGroup width="100%" height="40" bottom="0" gap="10" paddingRight="10" horizontalAlign="right" verticalAlign="middle">
+		<s:Button id="btnCancel" label="Annuleren" skinClass="skins.btnGraySkin" height="25"/>
+		<s:Button id="btnSave" label="Opslaan" skinClass="skins.btnBlueSkin" height="25" />
+	</s:HGroup>
+	
+</s:BorderContainer>
+

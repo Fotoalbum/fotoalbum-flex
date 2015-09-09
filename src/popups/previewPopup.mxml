@@ -1,0 +1,757 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   width="100%" height="100%" chromeColor="#FFFFFF" textAlign="right">
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:DropShadowFilter id="shadow" distance="5" color="0" alpha=".6" angle="45" blurX="10" blurY="10" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import itemrenderers.spreadItemRenderer;
+			import classes.userphotoclass;
+			import classes.userclipartclass;
+			import classes.usertextclass;
+			import classes.userline;
+			import classes.usercircle;
+			import classes.userrectangle;
+			import mx.collections.XMLListCollection;
+			import classes.PageType;
+			import classes.pageclass;
+			import mx.collections.ArrayCollection;
+			import classes.Singleton;
+			import classes.spreadclass;
+			
+			import itemrenderers.spreadEditor;
+			
+			[Bindable] public var currentIndex:int = 0;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var currentPageNumberLabel:String;
+			public function CreatePreview():void {
+				
+				if (!singleton.spreadcollection) {
+					
+					var singlePageCorrection:Number = 0;
+					
+					singleton.spreadcollection = new ArrayCollection();
+					
+					FlexGlobals.topLevelApplication.lstSpreads.removeAllElements();
+					
+					var pageNum:int = 1;
+					
+					for (var u:int=0; u < singleton.albumtimeline.length; u++) {
+						
+						var spread:Object = new Object();
+						spread.spreadID = singleton.albumtimeline.getItemAt(u).@spreadID;
+						spread.totalWidth = singleton.albumtimeline.getItemAt(u).@totalWidth;
+						spread.totalHeight = singleton.albumtimeline.getItemAt(u).@totalHeight;
+						spread.width = singleton.albumtimeline.getItemAt(u).@width;
+						spread.height = singleton.albumtimeline.getItemAt(u).@height;
+						spread.backgroundColor =  singleton.albumtimeline.getItemAt(u).@backgroundColor;
+						spread.backgroundAlpha = singleton.albumtimeline.getItemAt(u).@backgroundAlpha;
+						spread.status = singleton.albumtimeline.getItemAt(u).@status;
+						
+						if (singleton.albumtimeline.getItemAt(u).background.@id.toString() == "") {
+							spread.backgroundData = null;	
+						} else {
+							spread.backgroundData = new Object();
+							spread.backgroundData.id = singleton.albumtimeline.getItemAt(u).background.@id.toString();
+							spread.backgroundData.original_image_id = singleton.albumtimeline.getItemAt(u).background.@original_image_id.toString();
+							spread.backgroundData.exif = XML(singleton.albumtimeline.getItemAt(u).background.exif.toXMLString());
+							spread.backgroundData.bytesize = singleton.albumtimeline.getItemAt(u).background.@bytesize.toString();
+							spread.backgroundData.dateCreated = singleton.albumtimeline.getItemAt(u).background.@dateCreated.toString();
+							spread.backgroundData.fliphorizontal = singleton.albumtimeline.getItemAt(u).background.@fliphorizontal.toString();
+							spread.backgroundData.folderID = singleton.albumtimeline.getItemAt(u).background.@folderID.toString();
+							spread.backgroundData.folderName = singleton.albumtimeline.getItemAt(u).background.@folderName.toString();
+							spread.backgroundData.fullPath = singleton.albumtimeline.getItemAt(u).background.@fullPath.toString();
+							spread.backgroundData.height = singleton.albumtimeline.getItemAt(u).background.@height.toString();
+							spread.backgroundData.hires = singleton.albumtimeline.getItemAt(u).background.@hires.toString();
+							spread.backgroundData.hires_url = singleton.albumtimeline.getItemAt(u).background.@hires_url.toString();
+							spread.backgroundData.imageFilter = singleton.albumtimeline.getItemAt(u).background.@imageFilter.toString();
+							spread.backgroundData.imageRotation = singleton.albumtimeline.getItemAt(u).background.@imageRotation.toString();
+							spread.backgroundData.lowres = singleton.albumtimeline.getItemAt(u).background.@lowres.toString();
+							spread.backgroundData.lowres_url = singleton.albumtimeline.getItemAt(u).background.@lowres_url.toString();
+							spread.backgroundData.name = singleton.albumtimeline.getItemAt(u).background.@name.toString();
+							spread.backgroundData.origin = singleton.albumtimeline.getItemAt(u).background.@origin.toString();
+							spread.backgroundData.originalHeight = singleton.albumtimeline.getItemAt(u).background.@originalHeight.toString();
+							spread.backgroundData.originalWidth = singleton.albumtimeline.getItemAt(u).background.@originalWidth.toString();
+							spread.backgroundData.origin_type = singleton.albumtimeline.getItemAt(u).background.@origin_type.toString();
+							spread.backgroundData.path = singleton.albumtimeline.getItemAt(u).background.@path.toString();
+							spread.backgroundData.preview = singleton.albumtimeline.getItemAt(u).background.@preview.toString();
+							spread.backgroundData.status = singleton.albumtimeline.getItemAt(u).background.@status.toString();
+							spread.backgroundData.thumb = singleton.albumtimeline.getItemAt(u).background.@thumb.toString();
+							spread.backgroundData.thumb_url = singleton.albumtimeline.getItemAt(u).background.@thumb_url.toString();
+							spread.backgroundData.timeCreated = singleton.albumtimeline.getItemAt(u).background.@timeCreated.toString();
+							spread.backgroundData.userID = singleton.albumtimeline.getItemAt(u).background.@userID.toString();
+							spread.backgroundData.width = singleton.albumtimeline.getItemAt(u).background.@width.toString();
+							spread.backgroundData.x = singleton.albumtimeline.getItemAt(u).background.@x.toString();
+							spread.backgroundData.y = singleton.albumtimeline.getItemAt(u).background.@y.toString();
+						}
+						
+						if (singleton.albumtimeline.getItemAt(u)..page[0].@type.toString() == "coverback") {
+							
+							//This is the cover spread
+							var back:pageclass = new pageclass;
+							back.pageID = singleton.albumtimeline.getItemAt(u)..page[0].@pageID;
+							back.spreadID = spread.spreadID;
+							back.pageType = PageType.COVERBACK;
+							back.type = PageType.COVERBACK;
+							back.pageWidth = singleton.userBook.coverWidth;
+							back.pageHeight = singleton.userBook.coverHeight;
+							back.horizontalBleed = singleton.userBook.coverBleed;
+							back.verticalBleed = singleton.userBook.coverBleed;
+							back.horizontalWrap = singleton.userBook.coverWrap;
+							back.verticalWrap = singleton.userBook.coverWrap;
+							back.width = back.pageWidth + back.horizontalBleed + back.horizontalWrap;
+							back.height = back.pageHeight + (back.verticalBleed * 2) + (back.verticalWrap * 2);
+							back.pageNumber = "Achter";
+							back.singlepage = false;
+							back.backgroundColor = singleton.albumtimeline.getItemAt(u)..page[0].@backgroundColor.toString();
+							back.backgroundAlpha = singleton.albumtimeline.getItemAt(u)..page[0].@backgroundAlpha.toString();
+							back.timelineID = spread.spreadID.toString();
+							back.spreadRef = spread;
+							back.pageLeftRight = "coverback";
+							back.backgroundData = null;	
+							if (singleton.albumtimeline.getItemAt(u)..page[0].background.@id.toString() != "") {
+								back.backgroundData = new Object();
+								back.backgroundData.id = singleton.albumtimeline.getItemAt(u)..page[0].background.@id.toString();
+								back.backgroundData.original_image_id = singleton.albumtimeline.getItemAt(u)..page[0].background.@original_image_id.toString();
+								back.backgroundData.exif = XML(singleton.albumtimeline.getItemAt(u)..page[0].background.exif.toXMLString());
+								back.backgroundData.bytesize = singleton.albumtimeline.getItemAt(u)..page[0].background.@bytesize;
+								back.backgroundData.dateCreated = singleton.albumtimeline.getItemAt(u)..page[0].background.@dateCreated;
+								back.backgroundData.fliphorizontal = singleton.albumtimeline.getItemAt(u)..page[0].background.@fliphorizontal;
+								back.backgroundData.folderID = singleton.albumtimeline.getItemAt(u)..page[0].background.@folderID;
+								back.backgroundData.folderName = singleton.albumtimeline.getItemAt(u)..page[0].background.@folderName;
+								back.backgroundData.fullPath = singleton.albumtimeline.getItemAt(u)..page[0].background.@fullPath;
+								back.backgroundData.height = singleton.albumtimeline.getItemAt(u)..page[0].background.@height;
+								back.backgroundData.hires = singleton.albumtimeline.getItemAt(u)..page[0].background.@hires;
+								back.backgroundData.hires_url = singleton.albumtimeline.getItemAt(u)..page[0].background.@hires_url;
+								back.backgroundData.id = singleton.albumtimeline.getItemAt(u)..page[0].background.@id;
+								back.backgroundData.imageFilter = singleton.albumtimeline.getItemAt(u)..page[0].background.@imageFilter;
+								back.backgroundData.imageRotation = singleton.albumtimeline.getItemAt(u)..page[0].background.@imageRotation;
+								back.backgroundData.lowres = singleton.albumtimeline.getItemAt(u)..page[0].background.@lowres;
+								back.backgroundData.lowres_url = singleton.albumtimeline.getItemAt(u)..page[0].background.@lowres_url;
+								back.backgroundData.name = singleton.albumtimeline.getItemAt(u)..page[0].background.@name;
+								back.backgroundData.origin = singleton.albumtimeline.getItemAt(u)..page[0].background.@origin;
+								back.backgroundData.originalHeight = singleton.albumtimeline.getItemAt(u)..page[0].background.@originalHeight;
+								back.backgroundData.originalWidth = singleton.albumtimeline.getItemAt(u)..page[0].background.@originalWidth;
+								back.backgroundData.origin_type = singleton.albumtimeline.getItemAt(u)..page[0].background.@origin_type;
+								back.backgroundData.path = singleton.albumtimeline.getItemAt(u)..page[0].background.@path;
+								back.backgroundData.preview = singleton.albumtimeline.getItemAt(u)..page[0].background.@preview;
+								back.backgroundData.status = singleton.albumtimeline.getItemAt(u)..page[0].background.@status;
+								back.backgroundData.thumb = singleton.albumtimeline.getItemAt(u)..page[0].background.@thumb;
+								back.backgroundData.thumb_url = singleton.albumtimeline.getItemAt(u)..page[0].background.@thumb_url;
+								back.backgroundData.timeCreated = singleton.albumtimeline.getItemAt(u)..page[0].background.@timeCreated;
+								back.backgroundData.userID = singleton.albumtimeline.getItemAt(u)..page[0].background.@userID;
+								back.backgroundData.width = singleton.albumtimeline.getItemAt(u)..page[0].background.@width;
+								back.backgroundData.x = singleton.albumtimeline.getItemAt(u)..page[0].background.@x;
+								back.backgroundData.y = singleton.albumtimeline.getItemAt(u)..page[0].background.@y;
+							}
+							
+							spread.pages.addItem(back);
+							
+							var spine:pageclass = new pageclass;
+							spine.pageID = singleton.albumtimeline.getItemAt(u)..page[1].@pageID;
+							spine.spreadID = spread.spreadID;
+							spine.pageType = PageType.COVERSPINE;
+							spine.type = PageType.COVERSPINE;
+							spine.pageWidth = singleton.userBook.coverSpine;
+							spine.pageHeight = singleton.userBook.coverHeight;
+							spine.verticalBleed = singleton.userBook.coverBleed;
+							spine.verticalWrap = singleton.userBook.coverWrap;
+							spine.width = spine.pageWidth;
+							spine.height = spine.pageHeight + (spine.verticalBleed * 2) + (spine.verticalWrap * 2);
+							spine.singlepage = false;
+							spine.pageNumber = "";
+							spine.backgroundColor = singleton.albumtimeline.getItemAt(u)..page[1].@backgroundColor.toString();
+							spine.backgroundAlpha = singleton.albumtimeline.getItemAt(u)..page[1].@backgroundAlpha.toString();
+							spine.spreadRef = spread;
+							spine.timelineID = spread.spreadID.toString();
+							spine.pageLeftRight = "coverspine";
+							spine.backgroundData = null;	
+							if (singleton.albumtimeline.getItemAt(u)..page[1].background.@id.toString() != "") {
+								spine.backgroundData = new Object();
+								spine.backgroundData.id = singleton.albumtimeline.getItemAt(u)..page[1].background.@id.toString();
+								spine.backgroundData.original_image_id = singleton.albumtimeline.getItemAt(u)..page[1].background.@original_image_id.toString();
+								spine.backgroundData.exif = XML(singleton.albumtimeline.getItemAt(u)..page[1].background.exif.toXMLString());
+								spine.backgroundData.bytesize = singleton.albumtimeline.getItemAt(u)..page[1].background.@bytesize;
+								spine.backgroundData.dateCreated = singleton.albumtimeline.getItemAt(u)..page[1].background.@dateCreated;
+								spine.backgroundData.fliphorizontal = singleton.albumtimeline.getItemAt(u)..page[1].background.@fliphorizontal;
+								spine.backgroundData.folderID = singleton.albumtimeline.getItemAt(u)..page[1].background.@folderID;
+								spine.backgroundData.folderName = singleton.albumtimeline.getItemAt(u)..page[1].background.@folderName;
+								spine.backgroundData.fullPath = singleton.albumtimeline.getItemAt(u)..page[1].background.@fullPath;
+								spine.backgroundData.height = singleton.albumtimeline.getItemAt(u)..page[1].background.@height;
+								spine.backgroundData.hires = singleton.albumtimeline.getItemAt(u)..page[1].background.@hires;
+								spine.backgroundData.hires_url = singleton.albumtimeline.getItemAt(u)..page[1].background.@hires_url;
+								spine.backgroundData.id = singleton.albumtimeline.getItemAt(u)..page[1].background.@id;
+								spine.backgroundData.imageFilter = singleton.albumtimeline.getItemAt(u)..page[1].background.@imageFilter;
+								spine.backgroundData.imageRotation = singleton.albumtimeline.getItemAt(u)..page[1].background.@imageRotation;
+								spine.backgroundData.lowres = singleton.albumtimeline.getItemAt(u)..page[1].background.@lowres;
+								spine.backgroundData.lowres_url = singleton.albumtimeline.getItemAt(u)..page[1].background.@lowres_url;
+								spine.backgroundData.name = singleton.albumtimeline.getItemAt(u)..page[1].background.@name;
+								spine.backgroundData.origin = singleton.albumtimeline.getItemAt(u)..page[1].background.@origin;
+								spine.backgroundData.originalHeight = singleton.albumtimeline.getItemAt(u)..page[1].background.@originalHeight;
+								spine.backgroundData.originalWidth = singleton.albumtimeline.getItemAt(u)..page[1].background.@originalWidth;
+								spine.backgroundData.origin_type = singleton.albumtimeline.getItemAt(u)..page[1].background.@origin_type;
+								spine.backgroundData.path = singleton.albumtimeline.getItemAt(u)..page[1].background.@path;
+								spine.backgroundData.preview = singleton.albumtimeline.getItemAt(u)..page[1].background.@preview;
+								spine.backgroundData.status = singleton.albumtimeline.getItemAt(u)..page[1].background.@status;
+								spine.backgroundData.thumb = singleton.albumtimeline.getItemAt(u)..page[1].background.@thumb;
+								spine.backgroundData.thumb_url = singleton.albumtimeline.getItemAt(u)..page[1].background.@thumb_url;
+								spine.backgroundData.timeCreated = singleton.albumtimeline.getItemAt(u)..page[1].background.@timeCreated;
+								spine.backgroundData.userID = singleton.albumtimeline.getItemAt(u)..page[1].background.@userID;
+								spine.backgroundData.width = singleton.albumtimeline.getItemAt(u)..page[1].background.@width;
+								spine.backgroundData.x = singleton.albumtimeline.getItemAt(u)..page[1].background.@x;
+								spine.backgroundData.y = singleton.albumtimeline.getItemAt(u)..page[1].background.@y;
+							}
+							spread.pages.addItem(spine);
+							
+							var front:pageclass = new pageclass;
+							front.pageID = singleton.albumtimeline.getItemAt(u)..page[2].@pageID;
+							front.spreadID = spread.spreadID;
+							front.pageType = PageType.COVERFRONT;
+							front.type = PageType.COVERFRONT;
+							front.pageWidth = singleton.userBook.coverWidth;
+							front.pageHeight = singleton.userBook.coverHeight;
+							front.horizontalBleed = singleton.userBook.coverBleed;
+							front.verticalBleed = singleton.userBook.coverBleed;
+							front.horizontalWrap = singleton.userBook.coverWrap;
+							front.verticalWrap = singleton.userBook.coverWrap;
+							front.width = front.pageWidth + front.horizontalBleed + front.horizontalWrap;
+							front.height = front.pageHeight + (front.verticalBleed * 2) + (front.verticalWrap * 2);
+							front.pageNumber = "Voor";
+							front.singlepage = false;
+							front.backgroundColor = singleton.albumtimeline.getItemAt(u)..page[2].@backgroundColor.toString();
+							front.backgroundAlpha = singleton.albumtimeline.getItemAt(u)..page[2].@backgroundAlpha.toString();
+							front.timelineID = spread.spreadID.toString();
+							front.spreadRef = spread;
+							front.pageLeftRight = "coverfront";
+							front.backgroundData = null;	
+							if (singleton.albumtimeline.getItemAt(u)..page[2].background.@id.toString() != "") {
+								front.backgroundData = new Object();
+								front.backgroundData.id = singleton.albumtimeline.getItemAt(u)..page[2].background.@id.toString();
+								front.backgroundData.original_image_id = singleton.albumtimeline.getItemAt(u)..page[2].background.@original_image_id.toString();
+								front.backgroundData.exif = XML(singleton.albumtimeline.getItemAt(u)..page[2].background.exif.toXMLString());
+								front.backgroundData.bytesize = singleton.albumtimeline.getItemAt(u)..page[2].background.@bytesize;
+								front.backgroundData.dateCreated = singleton.albumtimeline.getItemAt(u)..page[2].background.@dateCreated;
+								front.backgroundData.fliphorizontal = singleton.albumtimeline.getItemAt(u)..page[2].background.@fliphorizontal;
+								front.backgroundData.folderID = singleton.albumtimeline.getItemAt(u)..page[2].background.@folderID;
+								front.backgroundData.folderName = singleton.albumtimeline.getItemAt(u)..page[2].background.@folderName;
+								front.backgroundData.fullPath = singleton.albumtimeline.getItemAt(u)..page[2].background.@fullPath;
+								front.backgroundData.height = singleton.albumtimeline.getItemAt(u)..page[2].background.@height;
+								front.backgroundData.hires = singleton.albumtimeline.getItemAt(u)..page[2].background.@hires;
+								front.backgroundData.hires_url = singleton.albumtimeline.getItemAt(u)..page[2].background.@hires_url;
+								front.backgroundData.id = singleton.albumtimeline.getItemAt(u)..page[2].background.@id;
+								front.backgroundData.imageFilter = singleton.albumtimeline.getItemAt(u)..page[2].background.@imageFilter;
+								front.backgroundData.imageRotation = singleton.albumtimeline.getItemAt(u)..page[2].background.@imageRotation;
+								front.backgroundData.lowres = singleton.albumtimeline.getItemAt(u)..page[2].background.@lowres;
+								front.backgroundData.lowres_url = singleton.albumtimeline.getItemAt(u)..page[2].background.@lowres_url;
+								front.backgroundData.name = singleton.albumtimeline.getItemAt(u)..page[2].background.@name;
+								front.backgroundData.origin = singleton.albumtimeline.getItemAt(u)..page[2].background.@origin;
+								front.backgroundData.originalHeight = singleton.albumtimeline.getItemAt(u)..page[2].background.@originalHeight;
+								front.backgroundData.originalWidth = singleton.albumtimeline.getItemAt(u)..page[2].background.@originalWidth;
+								front.backgroundData.origin_type = singleton.albumtimeline.getItemAt(u)..page[2].background.@origin_type;
+								front.backgroundData.path = singleton.albumtimeline.getItemAt(u)..page[2].background.@path;
+								front.backgroundData.preview = singleton.albumtimeline.getItemAt(u)..page[2].background.@preview;
+								front.backgroundData.status = singleton.albumtimeline.getItemAt(u)..page[2].background.@status;
+								front.backgroundData.thumb = singleton.albumtimeline.getItemAt(u)..page[2].background.@thumb;
+								front.backgroundData.thumb_url = singleton.albumtimeline.getItemAt(u)..page[2].background.@thumb_url;
+								front.backgroundData.timeCreated = singleton.albumtimeline.getItemAt(u)..page[2].background.@timeCreated;
+								front.backgroundData.userID = singleton.albumtimeline.getItemAt(u)..page[2].background.@userID;
+								front.backgroundData.width = singleton.albumtimeline.getItemAt(u)..page[2].background.@width;
+								front.backgroundData.x = singleton.albumtimeline.getItemAt(u)..page[2].background.@x;
+								front.backgroundData.y = singleton.albumtimeline.getItemAt(u)..page[2].background.@y;
+							}
+							
+							spread.pages.addItem(front);
+							
+							singleton.spreadcollection.addItem(spread);
+							
+						} else {
+							
+							//Create the pages
+							var timeline_pages:XMLListCollection = new XMLListCollection(singleton.albumtimeline.getItemAt(u)..page);
+							
+							for (var t:int=0; t < timeline_pages.length; t++) {
+								
+								if (!singleton.selected_spread) {
+									singleton.selected_spread = spread;
+								}
+								
+								if (timeline_pages.getItemAt(t).@type != "empty") {
+									
+									var page:pageclass = new pageclass;
+									page.pageID = timeline_pages.getItemAt(t).@pageID;
+									page.spreadID = spread.spreadID;
+									page.pageType = PageType.NORMAL;
+									page.type = PageType.NORMAL;
+									page.pageWidth = singleton.userBook.pageWidth;
+									page.pageHeight = singleton.userBook.pageHeight;
+									page.horizontalBleed = singleton.userBook.pageBleed;
+									page.verticalBleed = singleton.userBook.pageBleed;
+									page.width = page.pageWidth + page.horizontalBleed;
+									page.height = page.pageHeight + (page.verticalBleed * 2);
+									page.pageNumber = pageNum.toString();
+									page.pageLeftRight = timeline_pages.getItemAt(t).@pageLeftRight;
+									page.side = timeline_pages.getItemAt(t).@side;
+									page.spreadRef = spread;
+									
+									if (pageNum == 1) {
+										page.singlepageFirst = true;
+										singlePageCorrection = singleton._defaultPageWidth + singleton._defaultPageBleed;
+									} else {
+										singlePageCorrection = 0;
+									}
+									
+									if (u == singleton.albumtimeline.length -1) {
+										page.singlepageLast = true;
+									}
+									
+									pageNum++;
+									
+									page.backgroundColor = timeline_pages.getItemAt(t).@backgroundColor.toString();
+									page.backgroundAlpha = timeline_pages.getItemAt(t).@backgroundAlpha.toString();
+									page.timelineID = spread.spreadID;
+									page.backgroundData = null;	
+									if (timeline_pages.getItemAt(t).background.@id.toString() != "") {
+										page.backgroundData = new Object();
+										page.backgroundData.id = timeline_pages.getItemAt(t).background.@id.toString();
+										page.backgroundData.original_image_id = timeline_pages.getItemAt(t).background.@original_image_id.toString();
+										page.backgroundData.exif = XML(timeline_pages.getItemAt(t).background.exif.toXMLString());
+										page.backgroundData.bytesize = timeline_pages.getItemAt(t).background.@bytesize.toString();
+										page.backgroundData.dateCreated = timeline_pages.getItemAt(t).background.@dateCreated.toString();
+										page.backgroundData.fliphorizontal = timeline_pages.getItemAt(t).background.@fliphorizontal.toString();
+										page.backgroundData.folderID = timeline_pages.getItemAt(t).background.@folderID.toString();
+										page.backgroundData.folderName = timeline_pages.getItemAt(t).background.@folderName.toString();
+										page.backgroundData.fullPath = timeline_pages.getItemAt(t).background.@fullPath.toString();
+										page.backgroundData.height = timeline_pages.getItemAt(t).background.@height.toString();
+										page.backgroundData.hires = timeline_pages.getItemAt(t).background.@hires.toString();
+										page.backgroundData.hires_url = timeline_pages.getItemAt(t).background.@hires_url.toString();
+										page.backgroundData.id = timeline_pages.getItemAt(t).background.@id.toString();
+										page.backgroundData.imageFilter = timeline_pages.getItemAt(t).background.@imageFilter.toString();
+										page.backgroundData.imageRotation = timeline_pages.getItemAt(t).background.@imageRotation.toString();
+										page.backgroundData.lowres = timeline_pages.getItemAt(t).background.@lowres.toString();
+										page.backgroundData.lowres_url = timeline_pages.getItemAt(t).background.@lowres_url.toString();
+										page.backgroundData.name = timeline_pages.getItemAt(t).background.@name.toString();
+										page.backgroundData.origin = timeline_pages.getItemAt(t).background.@origin.toString();
+										page.backgroundData.originalHeight = timeline_pages.getItemAt(t).background.@originalHeight.toString();
+										page.backgroundData.originalWidth = timeline_pages.getItemAt(t).background.@originalWidth.toString();
+										page.backgroundData.origin_type = timeline_pages.getItemAt(t).background.@origin_type.toString();
+										page.backgroundData.path = timeline_pages.getItemAt(t).background.@path.toString();
+										page.backgroundData.preview = timeline_pages.getItemAt(t).background.@preview.toString();
+										page.backgroundData.status = timeline_pages.getItemAt(t).background.@status.toString();
+										page.backgroundData.thumb = timeline_pages.getItemAt(t).background.@thumb.toString();
+										page.backgroundData.thumb_url = timeline_pages.getItemAt(t).background.@thumb_url.toString();
+										page.backgroundData.timeCreated = timeline_pages.getItemAt(t).background.@timeCreated.toString();
+										page.backgroundData.userID = timeline_pages.getItemAt(t).background.@userID.toString();
+										page.backgroundData.width = timeline_pages.getItemAt(t).background.@width.toString();
+										page.backgroundData.x = timeline_pages.getItemAt(t).background.@x.toString();
+										page.backgroundData.y = timeline_pages.getItemAt(t).background.@y.toString();
+									}
+									
+									spread.pages.addItem(page);
+									
+									if (spread.pages.length == 1) {
+										spread.singlepage = true;
+										spread.totalWidth = page.pageWidth + (page.horizontalBleed * 2);
+									} else {
+										spread.singlepage = false;
+										spread.totalWidth = (page.pageWidth * 2) + (page.horizontalBleed * 2);
+									}
+								}
+							}
+							
+							spread.totalHeight = page.pageHeight + (page.verticalBleed * 2);
+							spread.width = spread.totalWidth;
+							spread.height = spread.totalHeight;
+							
+							singleton.spreadcollection.addItem(spread);
+							
+						}
+						
+						spread.elements = new ArrayCollection();
+						
+						var cliparts:Array = new Array();
+						
+						for each (var objectXML:XML in singleton.albumtimeline.getItemAt(u).pages..page..element) {
+							
+							if (objectXML.@type == "rectangle") {
+								
+								var rectangle:userrectangle = new userrectangle();
+								rectangle.id = objectXML.@id;
+								rectangle.pageID = objectXML.@pageID;
+								rectangle.index = objectXML.@index;
+								rectangle.objectX = parseFloat(objectXML.@objectX.toString()) - singlePageCorrection;
+								rectangle.objectY = objectXML.@objectY;
+								rectangle.objectWidth = objectXML.@objectWidth;
+								rectangle.objectHeight = objectXML.@objectHeight;
+								rectangle.rotation = objectXML.@rotation;
+								rectangle.fillcolor = objectXML.@fillcolor;
+								rectangle.fillalpha = objectXML.@fillalpha;
+								rectangle.shadow = objectXML.@shadow;
+								rectangle.bordercolor = objectXML.@bordercolor;
+								rectangle.borderweight = objectXML.@borderweight;
+								
+								spread.elements.addItem(rectangle);
+								
+							}
+							
+							if (objectXML.@type == "circle") {
+								
+								var circle:usercircle = new usercircle();
+								circle.id = objectXML.@id;
+								circle.pageID = objectXML.@pageID;
+								circle.index = objectXML.@index;
+								circle.objectX = parseFloat(objectXML.@objectX.toString()) - singlePageCorrection;
+								circle.objectY = objectXML.@objectY;
+								circle.objectWidth = objectXML.@objectWidth;
+								circle.objectHeight = objectXML.@objectHeight;
+								circle.rotation = objectXML.@rotation;
+								circle.fillcolor = objectXML.@fillcolor;
+								circle.fillalpha = objectXML.@fillalpha;
+								circle.shadow = objectXML.@shadow;
+								circle.bordercolor = objectXML.@bordercolor;
+								circle.borderweight = objectXML.@borderweight;
+								
+								spread.elements.addItem(circle);
+								
+							}
+							
+							if (objectXML.@type == "line") {
+								
+								var line:userline = new userline();
+								line.id = objectXML.@id;
+								line.pageID = objectXML.@pageID;
+								line.index = objectXML.@index;
+								line.objectX = parseFloat(objectXML.@objectX.toString()) - singlePageCorrection;
+								line.objectY = objectXML.@objectY;
+								line.objectWidth = objectXML.@objectWidth;
+								line.objectHeight = objectXML.@objectHeight;
+								line.rotation = objectXML.@rotation;
+								line.fillcolor = objectXML.@fillcolor;
+								line.fillalpha = objectXML.@fillalpha;
+								line.shadow = objectXML.@shadow;
+								line.lineweight = objectXML.@lineweight;
+								
+								spread.elements.addItem(line);
+							}
+							
+							if (objectXML.@type == "text") {
+								
+								var text:usertextclass = new usertextclass();
+								text.id = objectXML.@id;
+								text.pageID = objectXML.@pageID;
+								text.index = objectXML.@index;
+								text.objectX = parseFloat(objectXML.@objectX.toString()) - singlePageCorrection;
+								text.objectY = objectXML.@objectY;
+								text.objectWidth = objectXML.@objectWidth;
+								text.objectHeight = objectXML.@objectHeight;
+								text.rotation = objectXML.@rotation;
+								text.shadow = objectXML.@shadow;
+								text.tfID = objectXML.@tfID;
+								text.borderalpha = objectXML.@borderalpha;
+								text.bordercolor = objectXML.@bordercolor;
+								text.borderweight = objectXML.@borderweight;
+								
+								spread.elements.addItem(text);
+							}
+							
+							if (objectXML.@type == "clipart") {
+								
+								var clipart:userclipartclass = new userclipartclass();
+								clipart.id = objectXML.@id;
+								clipart.pageID = objectXML.@pageID;
+								clipart.original_image_id = objectXML.@original_image_id;
+								clipart.objectX = parseFloat(objectXML.@objectX.toString()) - singlePageCorrection;
+								clipart.objectY = objectXML.@objectY;
+								clipart.objectWidth = objectXML.@objectWidth;
+								clipart.objectHeight = objectXML.@objectHeight;
+								clipart.rotation = objectXML.@rotation;
+								clipart.origin = objectXML.@origin;
+								
+								/* Get the other info from the original image */
+								clipart.refOffsetX = objectXML.@refOffsetX;
+								clipart.refOffsetY = objectXML.@refOffsetY;
+								clipart.refWidth = objectXML.@refWidth;
+								clipart.refHeight = objectXML.@refHeight;
+								clipart.refScale = objectXML.@refScale;
+								clipart.imageWidth = objectXML.@imageWidth;
+								clipart.imageHeight = objectXML.@imageHeight;
+								clipart.offsetX = objectXML.@offsetX;
+								clipart.offsetY = objectXML.@offsetY;
+								clipart.imageRotation = objectXML.@imageRotation;
+								clipart.originalWidth = objectXML.@originalWidth;
+								clipart.originalHeight = objectXML.@originalHeight;
+								clipart.fullPath = objectXML.@status;
+								clipart.path = objectXML.@path;
+								clipart.userID = singleton._userID;
+								clipart.bytesize = objectXML.@bytesize;
+								clipart.hires = objectXML.@hires;
+								clipart.hires_url = objectXML.@hires_url;
+								clipart.lowres = objectXML.@lowres;
+								clipart.lowres_url = objectXML.@lowres_url;
+								clipart.thumb = objectXML.@thumb;
+								clipart.thumb_url = objectXML.@thumb_url;
+								clipart.shadow = objectXML.@shadow;
+								clipart.imageAlpha = objectXML.@imageAlpha;
+								clipart.index = objectXML.@index;
+								clipart.borderalpha = objectXML.@borderalpha;
+								clipart.bordercolor = objectXML.@bordercolor;
+								clipart.borderweight = objectXML.@borderweight;
+								
+								//Add later so allways on top!
+								cliparts.push(clipart);
+								
+							}
+							
+							if (objectXML.@type == "photo") {
+								
+								var photo:userphotoclass = new userphotoclass();
+								photo.id = objectXML.@id;
+								photo.pageID = objectXML.@pageID;
+								photo.original_image_id = objectXML.@original_image_id;
+								photo.usedinstoryboard = objectXML.@usedinstoryboard;
+								photo.objectX = parseFloat(objectXML.@objectX.toString()) - singlePageCorrection;
+								photo.objectY = objectXML.@objectY;
+								photo.objectWidth = objectXML.@objectWidth;
+								photo.objectHeight = objectXML.@objectHeight;
+								photo.rotation = objectXML.@rotation;
+								photo.origin = objectXML.@origin;
+								
+								/* Get the other info from the original image */
+								photo.refOffsetX = objectXML.@refOffsetX;
+								photo.refOffsetY = objectXML.@refOffsetY;
+								photo.refWidth = objectXML.@refWidth;
+								photo.refHeight = objectXML.@refHeight;
+								photo.refScale = objectXML.@refScale;
+								photo.imageWidth = objectXML.@imageWidth;
+								photo.imageHeight = objectXML.@imageHeight;
+								photo.offsetX = objectXML.@offsetX;
+								photo.offsetY = objectXML.@offsetY;
+								photo.imageRotation = objectXML.@imageRotation;
+								photo.scaling = objectXML.@scaling;
+								
+								photo.originalWidth = objectXML.@originalWidth;
+								photo.originalHeight = objectXML.@originalHeight;
+								
+								photo.mask_original_id = objectXML.@mask_original_id;
+								photo.mask_original_width = objectXML.@mask_original_width;
+								photo.mask_original_height = objectXML.@mask_original_height;
+								photo.mask_hires = objectXML.@mask_hires;
+								photo.mask_hires_url = objectXML.@mask_hires_url;
+								photo.mask_lowres = objectXML.@mask_lowres;
+								photo.mask_lowres_url = objectXML.@mask_lowres_url;
+								photo.mask_thumb = objectXML.@mask_thumb;
+								photo.mask_thumb_url = objectXML.@mask_thumb_url;
+								photo.mask_path = objectXML.@mask_path;
+								photo.overlay_hires = objectXML.@overlay_hires;
+								photo.overlay_hires_url = objectXML.@overlay_hires_url;
+								photo.overlay_lowres = objectXML.@overlay_lowres;
+								photo.overlay_lowres_url = objectXML.@overlay_lowres_url;
+								photo.overlay_thumb = objectXML.@overlay_thumb;
+								photo.overlay_thumb_url = objectXML.@overlay_thumb_url;
+								photo.overlay_original_height = objectXML.@overlay_original_height;
+								photo.overlay_original_width = objectXML.@overlay_original_width;
+								
+								photo.status = objectXML.@status;
+								if (objectXML.@fullPath.toString() != "undefined") {
+									photo.fullPath = objectXML.@fullPath;
+								} else {
+									photo.fullPath = "";
+								}
+								if (objectXML.@path.toString() != "undefined") {
+									photo.path = objectXML.@path;
+								} else {
+									photo.path = "";
+								}
+								photo.userID = singleton._userID;
+								photo.exif = XML(objectXML.exif.toXMLString());
+								photo.bytesize = objectXML.@bytesize;
+								photo.hires = objectXML.@hires;
+								photo.hires_url = objectXML.@hires_url;
+								photo.lowres = objectXML.@lowres;
+								photo.lowres_url = objectXML.@lowres_url;
+								photo.thumb = objectXML.@thumb;
+								photo.thumb_url = objectXML.@thumb_url;
+								photo.shadow = objectXML.@shadow;
+								
+								photo.imageAlpha = objectXML.@imageAlpha;
+								photo.imageFilter = objectXML.@imageFilter;
+								photo.index = objectXML.@index;
+								photo.borderalpha = objectXML.@borderalpha;
+								photo.bordercolor = objectXML.@bordercolor;
+								photo.borderweight = objectXML.@borderweight;
+								
+								spread.elements.addItem(photo);
+								
+							}
+						}
+						
+						if (cliparts.length > 0) {
+							for (var p:int=0; p < cliparts.length; p++) {
+								spread.elements.addItem(cliparts[p]);
+							}
+						}
+						
+					} 
+					
+					singleton._startupSpread = false;
+					
+					for (var y:int=0; y < singleton.spreadcollection.length; y++) {
+						var spreadItem:spreadItemRenderer = new spreadItemRenderer();
+						FlexGlobals.topLevelApplication.lstSpreads.addElement(spreadItem);
+						spreadItem.spreadData = singleton.spreadcollection.getItemAt(y) as spreadclass;
+						spreadItem.CreateSpread(y);
+					}
+					
+				} 
+					
+				spread = singleton.spreadcollection.getItemAt(currentIndex) as Object;
+				var newSpread:spreadEditor = new spreadEditor();
+				newSpread.spreadData = spread;
+				
+				container.width = this.width;
+				container.height = this.height - 125;
+				
+				//Select the spread
+				container.removeAllElements();
+				container.scaleX = 1;
+				container.scaleY = 1;
+				container.validateNow();
+				newSpread.filters = [shadow];
+				container.addElement(newSpread);
+				
+				//Zet zoom for this itemrenderer
+				var zoom:Number = 0;
+				var found:Boolean = false;
+				while (!found) {
+					var w:Number = zoom * newSpread.spreadData.totalWidth;
+					var h:Number = zoom * newSpread.spreadData.totalHeight;
+					if (w >= (container.width - 130) || h >= (container.height - 80)) {
+						zoom -= .04;
+						found = true;
+					}
+					zoom += .01;
+				}
+				
+				container.scaleX = zoom;
+				container.scaleY = zoom;
+				
+				singleton.zoomFactor = zoom;
+				
+				newSpread.CreateSpread(currentIndex, zoom, true);
+				newSpread.horizontalCenter = 0;
+				newSpread.verticalCenter = 0;
+				
+				UpdatePageNumber(spread);
+			
+			}
+			
+			private function moveToPreviousSpread():void
+			{
+				try {
+					
+					currentIndex -= 1;
+					
+					if (currentIndex > -1) {
+						CreatePreview();
+					}
+					
+				} catch (err:Error) {
+					trace("OOPS This index is not available!");
+				}
+			}
+			
+			private function moveToNextSpread():void
+			{
+				try {
+					
+					currentIndex += 1;
+					
+					if (currentIndex < singleton.spreadcollection.length) {
+						CreatePreview();
+					}
+					
+				} catch (err:Error) {
+					trace("OOPS This index is not available!");
+				}
+				
+			}
+			
+			private function UpdatePageNumber(spread:Object):void {
+			
+				currentPageNumberLabel = "";
+				
+				for (var p:int=0; p < spread.pages.length; p++)
+				{
+					if (spread.pages[p].pageType.toString() == "coverback") {
+						currentPageNumberLabel = "Cover";
+						break;
+					} else {
+						currentPageNumberLabel += spread.pages[p].pageNumber;
+					}
+					
+					if (spread.pages.length == 2 && currentPageNumberLabel.indexOf(" - ") == -1) {
+						currentPageNumberLabel += " - ";
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Label left="10" top="10" color="#4e4e4e" fontSize="18"
+			 text="Voorbeeld weergave"/>
+	
+	<s:Label right="10" top="10" text="&#xe614;"
+				   click="{btnClose.dispatchEvent(new MouseEvent(MouseEvent.CLICK))}"
+				   color="#4e4e4e"
+				   enabled="{currentIndex &lt; singleton.spreadcollection.length - 1}"
+				   fontFamily="_AppFontEnjoy" fontSize="18" />
+	
+	<s:Group id="container" left="0" right="0" top="40" bottom="80" />
+	
+	<s:HGroup id="navigation" left="0" right="0" height="40" bottom="40" horizontalAlign="center" verticalAlign="middle">
+		
+		<mx:LinkButton id="btnPreviousSpread" label="&#xf104;" 
+					   fontFamily="_AppFontAwesomeMX" fontSize="24"
+					   click="{moveToPreviousSpread()}"
+					   color="0x58595B"
+					   enabled="{currentIndex &gt; 0}" />
+		
+		<s:Label id="lblCurrentPage" width="80" paddingTop="2"
+				 text="{currentPageNumberLabel}" textAlign="center"
+				 verticalAlign="middle" fontFamily="_AppFontRegular" fontSize="16"/>
+		
+		<mx:LinkButton label="&#xf105;" fontFamily="_AppFontAwesomeMX" fontSize="24"
+					   click="{moveToNextSpread()}" color="0x58595B"
+					   enabled="{currentIndex &lt; singleton.spreadcollection.length - 1}" />
+		
+	</s:HGroup>
+	
+	<s:Rect left="0" right="0" bottom="0" height="40">
+		<s:fill>
+			<s:SolidColor color="0xD2D2D2" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Button id="btnUploadPreview" visible="false" left="5" bottom="5" label="Preview uploaden"
+			  click="{FlexGlobals.topLevelApplication.UploadPreviews()}" color="#FFFFFF"
+			  enabled="true" fontSize="16" skinClass="skins.btnSkin"/>
+	
+	<s:Button id="btnClose" right="5" bottom="5" width="120" label="Afsluiten"
+			  color="#FFFFFF" fontSize="16" skinClass="skins.btnBlueSkin"/>
+	
+	<mx:ProgressBar id="progress" visible="false" right="10" top="14" width="300"
+					label="Uploaden voorbeeld:" chromeColor="#64AADD" color="#FFFFFF"
+					indeterminate="false" labelPlacement="left" maximum="100" minimum="0"
+					mode="manual" fontFamily="_AppFontRegularMX"/>
+	
+</s:BorderContainer>

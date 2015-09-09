@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				creationComplete="_creationCompleteHandler()">
+	<s:layout>
+		<s:VerticalLayout gap="10" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"/>
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			[Bindable] private var items:ArrayCollection;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			protected function _creationCompleteHandler():void
+			{
+				
+				if (data) {
+					
+					items = new ArrayCollection();
+					
+					
+					}				
+					
+				}
+			}
+			
+			private function onFail(e:FaultEvent):void 
+			{
+				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n clipartSetItemRenderer|onFail|" + e.fault.faultString);
+				singleton.ReportError(e.fault.faultString);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" gap="20" verticalAlign="middle">
+		<s:Label id="catName" color="0xFFFFFF" />
+		<mx:HRule width="100%" height="1" />
+	</s:HGroup>
+	
+	<s:List id="lstItems" width="100%" borderVisible="false" dataProvider="{items}" horizontalScrollPolicy="off"
+			itemRenderer="itemrenderers.clipartPhotoRenderer" labelField="id">
+		<s:layout>
+			<s:TileLayout columnWidth="100" horizontalAlign="center" horizontalGap="10" orientation="rows"
+						  requestedColumnCount="2" verticalAlign="top" />
+		</s:layout>
+	</s:List>
+	
+</s:ItemRenderer>

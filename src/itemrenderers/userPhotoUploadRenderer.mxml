@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				filters="{dropShadow}"
+				mouseUp="_mouseUpHandler(event)"
+				width="100" height="100">
+	
+	<fx:Declarations>
+		<s:Fade id="showEff" alphaFrom="0.0" alphaTo="1.0" />
+		<s:DropShadowFilter id="dropShadow" distance="2" color="0" alpha=".6" angle="45" blurX="5" blurY="5" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.photoclass;
+			
+			import events.selectPhotoEvent;
+			
+			import fox.photo.ExifExtractor;
+			import fox.photo.jpeg.Exif;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.controls.Image;
+			import mx.core.FlexGlobals;
+			import mx.graphics.BitmapScaleMode;
+			import mx.graphics.BitmapSmoothingQuality;
+			
+			import org.osmf.layout.ScaleMode;
+			
+			import spark.components.Image;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+				FlexGlobals.topLevelApplication.addEventListener(selectPhotoEvent.SELECTPHOTOFORIMPORT, onSelectPhoto);
+				
+			}
+			
+			public function _creationCompleteHandler():void
+			{
+				
+				spriteSelection.graphics.clear();
+			
+				if (data) {
+					
+					if (data.selectedforupload) {
+						spriteSelection.graphics.beginFill(0x58595B, .6);
+						spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+						spriteSelection.graphics.endFill();
+						//labelDate.setStyle("color", 0xFFFFFF);
+					} else {
+						spriteSelection.graphics.beginFill(0xFFFFFF, 1);
+						spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+						spriteSelection.graphics.endFill();
+						//labelDate.setStyle("color", 0x000000);
+					}
+				
+					var load3rdparty:Boolean = false;
+					
+					if (data.hasOwnProperty("origin")) {
+						if (data.origin == "3rdparty") {
+							load3rdparty = true;
+						} 
+					}
+					
+					if (!load3rdparty) {
+						
+						var photo:Object = data as Object;
+						
+						if (photo.source) {
+							
+							//Set background color - if available
+							img.source = photo.source;
+							img.width = 80;
+							img.height = 80;
+							img.scaleMode = BitmapScaleMode.ZOOM;
+							img.cacheAsBitmap = true;
+							img.validateNow();
+							
+							if (photo.exif) {
+								/*
+								var rot:String = photo.exif.@orientation.toString();
+								//Check for the orientation now and correct it if necessary!
+								switch (rot) {
+									case "1": //Normal orientation
+										img.rotation = 0;
+										break;
+									case "6": //Right rotation 90 degrees
+										img.rotation = 90;
+										break;
+									case "8": //Left rotation 270 degrees
+										img.rotation = -90;
+										break;
+									case "3": //180 degrees
+										img.rotation = 180;
+										break;
+								}
+								*/
+								img.validateNow();
+								
+							}
+							
+							//labelDate.text = photo.dateCreated;
+								
+						} else {
+							
+							//labelDate.text = "--";
+							
+							try 
+							{
+								
+								if (photo.otherproject) {
+									
+									var request:URLRequest = new URLRequest(singleton.assets_url + photo.thumb_url);
+									var context:LoaderContext = new LoaderContext();
+									context.checkPolicyFile = true;
+									if (Capabilities.isDebugger == false) {
+										context.securityDomain = SecurityDomain.currentDomain;
+										context.applicationDomain = ApplicationDomain.currentDomain;
+									}
+									
+									var loader:Loader = new Loader();
+									loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onOtherProjectComplete);
+									loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+									loader.load(request, context);
+									
+								}
+								
+							} catch (err:Error) 
+							{
+								singleton.ReportError(err.message);
+							}
+						}
+					} else { //Load 3rd party image
+					
+						if (data.thumb_url) {
+							
+							request = new URLRequest(data.thumb_url);
+							context = new LoaderContext();
+							context.checkPolicyFile = true;
+							if (Capabilities.isDebugger == false) {
+								context.securityDomain = SecurityDomain.currentDomain;
+								context.applicationDomain = ApplicationDomain.currentDomain;
+							}
+							
+							loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onOtherProjectComplete);
+							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+							loader.load(request, context);
+							
+						}
+					}
+				}
+			}
+			
+			private function onOtherProjectComplete(e:Event):void 
+			{
+				
+				var bmd:BitmapData = e.target.content.bitmapData;
+				if (!singleton.imageCache[data.lowres_url]) {
+					singleton.imageCache[data.lowres_url] = bmd;
+				}
+				data.source.bitmapData = bmd;
+				img.source = singleton.imageCache[data.lowres_url];
+				
+			}
+			
+			private function onError(e:Event):void {
+				trace(e);
+			}
+			
+			private function onComplete(event:Event):void {
+				
+				//trace(event);
+				img.source = event.currentTarget.content;
+			}
+			
+			private function onIOError(error:IOErrorEvent):void {
+				trace(error.text);
+			}
+			
+			protected function _mouseUpHandler(event:MouseEvent):void
+			{
+				
+				//Select this file
+				data.selectedforupload = !data.selectedforupload;
+				
+				spriteSelection.graphics.clear();
+				
+				if (!singleton.userphotosforupload) {
+					singleton.userphotosforupload = new ArrayCollection();
+				}
+				
+				if (data.selectedforupload) {
+					
+					spriteSelection.graphics.beginFill(0x58595B, .6);
+					spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+					spriteSelection.graphics.endFill();
+					//labelDate.setStyle("color", 0xFFFFFF);
+					
+					//Add the photo to the selection
+					var selected:Object = new Object();
+					selected.id = data.id;
+					selected.name = data.name;
+					selected.exif = data.exif.copy();
+					selected.dateCreated = data.dateCreated;
+					selected.timeCreated= data.timeCreated;
+					selected.source = img.bitmapData.clone();
+					if (data.hasOwnProperty("origin")) {
+						if (data.origin == "Harde schijf") {
+							if (data.status == "done") {
+								selected.origin = "platform";
+							} else {
+								selected.origin = "Harde schijf";
+							}
+						} else {
+							selected.origin = data.origin_type;
+						}
+					}
+					
+					singleton.userphotosforupload.addItem(selected);
+					singleton.userphotosforupload.refresh();
+					
+					if (FlexGlobals.topLevelApplication.settings_popup) {
+						FlexGlobals.topLevelApplication.settings_popup.SortUserPhotos();
+					}
+					
+				} else {
+					
+					spriteSelection.graphics.beginFill(0xFFFFFF, 1);
+					spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+					spriteSelection.graphics.endFill();
+					//labelDate.setStyle("color", 0x000000);
+					
+					//Remove the photo from the selection
+					for (var x:int=0; x < singleton.userphotosforupload.length; x++) {
+						if (singleton.userphotosforupload.getItemAt(x).id == data.id) {
+							singleton.userphotosforupload.removeItemAt(x);
+						}
+					}
+					
+					singleton.userphotosforupload.refresh();
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, data.id, data.selectedforupload));
+				
+			}
+			
+			private function onSelectPhoto(event:selectPhotoEvent):void {
+				
+				if (data) {
+					
+					if (event.photoID == data.id) {
+					
+						spriteSelection.graphics.clear();
+						
+						if (event.selected) {
+							data.selectedforupload = true;
+							spriteSelection.graphics.beginFill(0x58595B, .6);
+							spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+							spriteSelection.graphics.endFill();
+							//labelDate.setStyle("color", 0xFFFFFF);
+						} else {
+							data.selectedforupload = false;
+							spriteSelection.graphics.beginFill(0xFFFFFF, 1);
+							spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+							spriteSelection.graphics.endFill();
+							//labelDate.setStyle("color", 0x000000);
+						}
+					}
+					
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:SpriteVisualElement id="spriteSelection" width="100%" height="100%" />
+		
+	<s:SWFLoader source="@Embed('assets/icons/loading_img.swf')" 
+				 width="80" height="80" autoLoad="true" verticalCenter="0" horizontalCenter="0" />
+	
+	<s:Image id="img" width="80" height="80" cacheAsBitmap="true"
+				   horizontalAlign="center" horizontalCenter="0"
+				   verticalCenter="0"
+				   verticalAlign="middle" top="2"/>
+	<!--
+	<s:Label id="labelDate" bottom="2" width="100%" height="18" color="0" fontSize="9"
+			 maxDisplayedLines="1" textAlign="center" verticalAlign="bottom"/>
+	
+	<s:Label id="labelRot" bottom="2" width="100%" height="18" color="0" fontSize="9"
+			 maxDisplayedLines="1" textAlign="center" verticalAlign="bottom"/>
+	-->
+	
+</s:ItemRenderer>

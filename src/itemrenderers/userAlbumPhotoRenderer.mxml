@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				filters="{dropShadow}"
+				mouseUp="_mouseUpHandler(event)"
+				width="100" height="100">
+	
+	<fx:Declarations>
+		<s:Fade id="showEff" alphaFrom="0.0" alphaTo="1.0" />
+		<s:DropShadowFilter id="dropShadow" distance="2" color="0" alpha=".6" angle="45" blurX="5" blurY="5" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.selectPhotoEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.formatters.DateFormatter;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			public function _creationCompleteHandler():void
+			{
+				
+				spriteSelection.graphics.clear();
+			
+				if (data) {
+					
+					if (data.selectedforupload) {
+						
+						spriteSelection.graphics.beginFill(0x58595B, .6);
+						spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+						spriteSelection.graphics.endFill();
+						
+					} else {
+						
+						spriteSelection.graphics.beginFill(0xFFFFFF, 1);
+						spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+						spriteSelection.graphics.endFill();
+						
+					}
+				
+					try 
+					{
+						
+						var request:URLRequest = new URLRequest(singleton.assets_url + data.thumb_url);
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+						
+					} catch (err:Error) 
+					{
+						singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n userAlbumPhotoRenderer|_creationCompleteHandler|" + err.message);
+					}
+				}
+			}
+			
+			private function onComplete(e:Event):void 
+			{
+				img.source = e.target.content;
+			}
+			
+			private function onError(e:Event):void {
+				trace(e);
+			}
+			
+			protected function _mouseUpHandler(event:MouseEvent):void
+			{
+				
+				var currDate:Date = new Date();
+				var currDateF:DateFormatter = new DateFormatter();
+				currDateF.formatString = "YYYY/MM/DD";
+				var dateS:String = currDateF.format(currDate);
+				var currTimeF:DateFormatter = new DateFormatter();
+				currTimeF.formatString = "HH:NN:SS";
+				var timeS:String = currTimeF.format(currDate);
+				
+				//Select this file
+				data.selectedforupload = !data.selectedforupload;
+				
+				spriteSelection.graphics.clear();
+				
+				if (!singleton.userphotosforupload) {
+					singleton.userphotosforupload = new ArrayCollection();
+				}
+				
+				if (data.selectedforupload) {
+					
+					spriteSelection.graphics.beginFill(0x58595B, .6);
+					spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+					spriteSelection.graphics.endFill();
+					
+					//Add the photo to the selection
+					var selected:Object = new Object();
+					selected.id = data.id;
+					selected.guid = data.guid;
+					selected.name = data.hires;
+					selected.source = img.bitmapData.clone();
+					selected.origin = "Harde schijf";
+					selected.origin_type = "Fotoalbum";
+					selected.status = "done";
+					
+					if (data.exif && data.exif.toXMLString() != "" && data.exif.toXMLString() != <exif/>) {
+						var d:String = data.exif.@date_created.toString();
+						if (d.indexOf(" ") > -1) {
+							var arr:Array = d.split(" ");
+							selected.dateCreated = arr[0].toString().split(":").join("/");
+							selected.timeCreated = arr[1].toString();
+						} else {
+							selected.dateCreated = dateS;
+							selected.timeCreated = timeS;
+						}
+					}
+					singleton.userphotosforupload.addItem(selected);
+					singleton.userphotosforupload.refresh();
+					
+				} else {
+					
+					spriteSelection.graphics.beginFill(0xFFFFFF, 1);
+					spriteSelection.graphics.drawRect(0, 0, this.width, this.height);
+					spriteSelection.graphics.endFill();
+					
+					//Remove the photo from the selection
+					for (var x:int=0; x < singleton.userphotosforupload.length; x++) {
+						if (singleton.userphotosforupload.getItemAt(x).id == data.id) {
+							singleton.userphotosforupload.removeItemAt(x);
+						}
+					}
+					singleton.userphotosforupload.refresh();
+				}
+				
+				if (singleton.foldercollection) {
+					if (singleton.foldercollection[0]) {
+						for each (var xml:XML in singleton.foldercollection[0]..photo) {
+							if (xml.@guid == data.guid) {
+								xml.@selectedforupload = data.selectedforupload;
+							}
+						}
+					}
+				}
+				
+				if (singleton.otherprojectphotos) {
+					for each (var obj:Object in singleton.otherprojectphotos) {
+						if (obj.guid == data.guid) {
+							obj.selectedforupload = data.selectedforupload;
+						}
+					}
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, data.guid, data.selectedforupload));
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:SpriteVisualElement id="spriteSelection" width="100%" height="100%" />
+		
+	<s:Image id="img" width="80" height="80" cacheAsBitmap="true"
+				   horizontalAlign="center" horizontalCenter="0"
+				   verticalCenter="0"
+				   verticalAlign="middle" top="2"/>
+	
+</s:ItemRenderer>

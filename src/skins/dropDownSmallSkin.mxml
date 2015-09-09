@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabled=".5"
+	minWidth="40" height="16"> 
+
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			
+		]]>
+	</fx:Script>
+	
+    <!-- host component -->
+    <fx:Metadata>
+    <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.DropDownList")]
+    ]]>
+    </fx:Metadata> 
+
+    <s:states>
+        <s:State name="normal" />
+        <s:State name="open" />
+        <s:State name="disabled" />
+    </s:states>
+    
+    <s:PopUpAnchor id="popUp" displayPopUp.normal="false" displayPopUp.open="true" includeIn="open"
+        left="0" right="0" top="0" bottom="0" itemDestructionPolicy="auto"
+        popUpPosition="below" popUpWidthMatchesAnchorWidth="true">
+        
+        <s:Group id="dropDown">
+        
+            <!--- Defines the appearance of drop-down list's background fill. -->
+            <s:Rect id="background" left="0" right="0" top="0" bottom="0" >
+                <s:fill>
+                    <s:SolidColor id="bgFill" color="#f8f8f8" />
+                </s:fill>
+				<s:stroke>
+					<s:SolidColorStroke color="0x00000" alpha="1" />
+				</s:stroke>
+            </s:Rect>
+            
+            <!--- @private -->
+            <s:Scroller id="scroller" left="0" top="0" right="0" bottom="0" hasFocusableChildren="false" minViewportInset="1">
+                <!--- @copy spark.components.SkinnableDataContainer#dataGroup-->
+                <s:DataGroup id="dataGroup" itemRenderer="spark.skins.spark.DefaultItemRenderer">
+                    <s:layout>
+                        <s:VerticalLayout gap="0" horizontalAlign="contentJustify" requestedMinRowCount="1" requestedMaxRowCount="6"/>
+                    </s:layout>
+                </s:DataGroup> 
+            </s:Scroller>
+        </s:Group>
+    </s:PopUpAnchor>
+    
+    <s:Button id="openButton" left="0" right="0" top="0" bottom="0" focusEnabled="false" tabEnabled="false"
+        skinClass="skins.dropDownListButtonSkin" />  
+        
+    <!--- @copy spark.components.DropDownList#labelDisplay -->
+    <s:Label id="labelDisplay" left="3" right="11" color="0" maxDisplayedLines="1"
+			 mouseChildren="false" mouseEnabled="false" text="Select" verticalAlign="middle"
+			 verticalCenter="0" /> 
+
+</s:SparkSkin>

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				creationComplete="_creationCompleteHandler()">
+	
+	<fx:Declarations>
+		<s:Fade id="showEff" alphaFrom="0.0" alphaTo="1.0" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.barMenuEvent;
+			import events.dragdropExposeEvent;
+			
+			import mx.core.DragSource;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.core.mx_internal;
+			import mx.events.DragEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.graphics.ImageSnapshot;
+			import mx.managers.DragManager;
+			import mx.utils.ObjectUtil;
+			
+			import spark.components.Group;
+			import spark.components.Image;
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			[Bindable] private var img:Image;
+			[Bindable] private var imgOverlay:Image;
+			[Bindable] private var grabber:Group;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void 
+			{
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			protected function _creationCompleteHandler():void
+			{
+				
+				this.removeAllElements();
+			
+				img = new Image;
+				img.width = 55;
+				img.height = 55;
+				img.scaleMode = BitmapScaleMode.STRETCH;
+				img.smooth = true;
+				img.cacheAsBitmap = true;
+				
+				imgOverlay = new Image;
+				imgOverlay.width = 55;
+				imgOverlay.height = 55;
+				imgOverlay.scaleMode = BitmapScaleMode.STRETCH;
+				imgOverlay.smooth = true;
+				imgOverlay.cacheAsBitmap = true;
+				
+				grabber = new Group();
+				grabber.width = 55;
+				grabber.height = 55;
+				grabber.mouseEnabled = true;
+				grabber.mouseEnabledWhereTransparent = true;
+				grabber.horizontalCenter = 0;
+				grabber.verticalCenter = 0;
+				grabber.addEventListener(MouseEvent.MOUSE_DOWN, img_mouseDownHandler);
+				grabber.addEventListener(MouseEvent.MOUSE_UP, img_mouseUpHandler);
+				
+				if (data) {
+					
+					if (data.thumb_url) {
+						
+						var request:URLRequest = new URLRequest(encodeURI(singleton.assets_url + data.thumb_url));
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+					
+					} else {
+						
+						if (data.overlay_thumb_url && data.overlay_width != "0") {
+							
+							request = new URLRequest(encodeURI(singleton.assets_url + data.overlay_thumb_url));
+							context = new LoaderContext();
+							context.checkPolicyFile = true;
+							if (Capabilities.isDebugger == false) {
+								context.securityDomain = SecurityDomain.currentDomain;
+								context.applicationDomain = ApplicationDomain.currentDomain;
+							}
+							
+							loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteOverlay);
+							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+							loader.load(request, context);
+						}
+					}
+				}
+			
+			}
+			
+			private function onComplete(e:Event):void 
+			{
+				
+				this.addElement(img);
+				
+				img.source = e.target.content;
+				img.scaleMode = BitmapScaleMode.LETTERBOX;
+				img.horizontalAlign = HorizontalAlign.CENTER;
+				img.verticalAlign = VerticalAlign.MIDDLE;
+				
+				if (data.overlay_thumb_url && data.overlay_width != "0") {
+					
+					var request:URLRequest = new URLRequest(encodeURI(singleton.assets_url + data.overlay_thumb_url));
+					var context:LoaderContext = new LoaderContext();
+					context.checkPolicyFile = true;
+					if (Capabilities.isDebugger == false) {
+						context.securityDomain = SecurityDomain.currentDomain;
+						context.applicationDomain = ApplicationDomain.currentDomain;
+					}
+					
+					var loader:Loader = new Loader();
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteOverlay);
+					loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+					loader.load(request, context);
+				} else {
+					this.addElement(grabber);
+				}
+				
+			}
+			
+			private function onCompleteOverlay(e:Event):void 
+			{
+			
+				this.addElement(imgOverlay);
+				
+				imgOverlay.source = e.target.content;
+				imgOverlay.scaleMode = BitmapScaleMode.LETTERBOX;
+				imgOverlay.horizontalAlign = HorizontalAlign.CENTER;
+				imgOverlay.verticalAlign = VerticalAlign.MIDDLE;
+				
+				imgOverlay.visible = true;
+				
+				this.addElement(grabber);
+				
+			}
+			
+			private function onError(e:Event):void {
+				//trace(e);
+				imgOverlay.visible = false;
+			}
+			
+			protected function img_mouseDownHandler(event:MouseEvent):void
+			{
+				event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.addEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+			}
+			
+			private function DragItem(event:MouseEvent):void 
+			{
+				//Start drag
+				var ds:DragSource = new DragSource();
+				
+				ds.addData("PASSEPARTOUTS", "type");
+				
+				//Create a snapshot of the current object
+				var imageSnap:ImageSnapshot = ImageSnapshot.captureImage(this);
+				var imageByteArray:ByteArray = imageSnap.data as ByteArray;
+				
+				var clone:Image = new Image();
+				clone.scaleMode = BitmapScaleMode.LETTERBOX;
+				clone.width = 55;
+				clone.height = 55;
+				clone.source = imageByteArray;
+				clone.validateNow();
+				
+				//Start dragging
+				var xOffset:int = -1 * mouseX + (55 / 2);
+				var yOffset:int = -1 * mouseY + (55 / 2);
+				
+				ds.addData(clone, "snap");
+				
+				var dataClone:Object = new Object();
+				dataClone = singleton.CloneObject(data);
+				ds.addData(dataClone, "data");
+				
+				DragManager.doDrag(event.currentTarget as UIComponent, ds, event, clone, xOffset, yOffset, 0.5, false);
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+				//Call the viewer page to expose the background
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.PASSEPARTOUTS));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARDISABLED));
+				
+			}
+			
+			private function dragComplete(event:DragEvent):void {
+				
+				event.currentTarget.removeEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+			}
+			
+			protected function img_mouseUpHandler(event:MouseEvent):void
+			{
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer width="55" height="55" borderColor="0xD2D2D2" borderAlpha="1" 
+					   backgroundAlpha="0" cornerRadius="3" mouseEnabled="false" />
+	
+</s:ItemRenderer>

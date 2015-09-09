@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true"
+				width="22" height="22">
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.barMenuEvent;
+			import events.dragdropExposeEvent;
+			
+			import mx.containers.Canvas;
+			import mx.core.DragSource;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.DragEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.DragManager;
+			import mx.utils.ObjectUtil;
+			
+			import spark.components.Image;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			
+			override public function set data(value:Object):void 
+			{
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				creationCompleteHandler();
+				
+			}
+			
+			protected function creationCompleteHandler():void
+			{
+				
+				colorRect.setStyle("backgroundColor", uint(data));
+			}
+			
+			protected function colorRect_mouseDownHandler(event:MouseEvent):void
+			{
+			
+				event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.addEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+			}
+			
+			private function DragItem(event:MouseEvent):void 
+			{
+				//Start drag
+				var ds:DragSource = new DragSource();
+				
+				ds.addData("BACKGROUNDCOLOR", "type");
+				
+				//Start dragging
+				var xOffset:int = 0; //-1 * mouseX + (img.width / 2);
+				var yOffset:int = 0; //-1 * mouseY + (img.height / 2);
+				
+				var dataClone:Object = new Object();
+				dataClone = singleton.CloneObject(data);
+				ds.addData(dataClone, "color");
+				
+				var bmd:BitmapData = new BitmapData(100, 100, false);
+				colorRect.width = 100;
+				colorRect.height = 100;
+				colorRect.validateNow();
+				bmd.draw(colorRect);
+				var img:Image = new Image();
+				img.source  = bmd;
+				colorRect.width = 20;
+				colorRect.height = 20;
+				colorRect.validateNow();
+				
+				DragManager.doDrag(event.currentTarget as BorderContainer, ds, event, img, 0, 0, 1, false);
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+				//Call the viewer page to expose the background
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.BACKGROUNDS));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARDISABLED));
+				
+			}
+			
+			private function dragComplete(event:DragEvent):void {
+				
+				event.currentTarget.removeEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+			}
+			
+			protected function colorRect_mouseUpHandler(event:MouseEvent):void
+			{
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer id="colorRect" width="20" height="20" borderVisible="false"
+					   borderWeight="1" borderColor="0xFFFFFF" horizontalCenter="0" verticalCenter="0"
+					   mouseDown="colorRect_mouseDownHandler(event)"
+					   mouseUp="colorRect_mouseUpHandler(event)"/>
+	
+</s:ItemRenderer>

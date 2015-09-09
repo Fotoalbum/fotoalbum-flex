@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				width="680" height="380">
+	
+	<fx:Declarations>
+		
+		<s:Fade id="FadeIn" alphaFrom="0" alphaTo="1" />
+		
+	</fx:Declarations>
+	<fx:Script>
+		
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.graphics.BitmapScaleMode;
+			
+			import spark.components.Image;
+			import spark.components.Label;
+			import spark.effects.Fade;
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			
+			import classes.Singleton;
+	
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			private var timer:Timer;
+			[Bindable] private var currentSlide:int;
+			[Bindable] private var preview_xml:XML;
+			[Bindable] private var previewArr:XMLListCollection;
+			public function CreateTheme():void
+			{	
+					
+				currentSlide = 0;
+				
+				preview_xml = XML(data.preview_xml.toString());
+				previewArr = new XMLListCollection(preview_xml..spread);
+				
+				lbl.text = "Thema: " + data.name;
+				
+				LoadImageSlide();
+				
+			} 
+			
+			private function LoadImageSlide():void {
+				
+				var request:URLRequest = new URLRequest(encodeURI(singleton.assets_url + "files/" + previewArr.getItemAt(currentSlide).@file.toString()));
+				var context:LoaderContext = new LoaderContext();
+				context.checkPolicyFile = true;
+				if (Capabilities.isDebugger == false) {
+					context.securityDomain = SecurityDomain.currentDomain;
+					context.applicationDomain = ApplicationDomain.currentDomain;
+				}
+				
+				var loader:Loader = new Loader();
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+				loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+				loader.load(request, context);
+				
+				if (!timer) {
+					timer = new Timer(3000, 0);
+					timer.addEventListener(TimerEvent.TIMER, MoveToNextSlide);
+				}
+				timer.start();
+				
+			}
+			
+			[Bindable] private var begin:int;
+			private function MoveToNextSlide(event:Event):void {
+				
+				timer.stop();
+				timer.reset();
+				
+				currentSlide += 1;
+				if (currentSlide == previewArr.length) {
+					currentSlide = 0;
+				}
+				
+				if (currentSlide == 0) {
+					pages.text = "Voorbeeld omslag";
+					begin = 0;
+				} else if (currentSlide == 1) {
+					pages.text = "Voorbeeld pagina " + currentSlide;
+				} else if (currentSlide == previewArr.length - 1) {
+					pages.text = "Voorbeeld pagina " + ((previewArr.length * 2) - 4).toString();
+				} else {
+					begin += 2;
+					pages.text = "Voorbeeld pagina " + begin + " - " + (begin + 1);
+				}
+				LoadImageSlide();
+			}
+			
+			private function onComplete(event:Event):void {
+				
+				img.visible = false;
+				
+				img.source = event.target.content;
+				
+				img.visible = true;
+				
+				
+			}
+			
+			private function onError(e:Event):void {
+				trace(e);
+			}
+			
+			
+		]]>
+		
+	</fx:Script>
+	
+	<s:Image id="img" visible="false" height="290" scaleMode="letterbox" horizontalCenter="0" top="10" horizontalAlign="center" verticalAlign="middle" showEffect="{FadeIn}" />
+	
+	<s:Label id="pages" horizontalCenter="0" bottom="55" fontSize="11" text="Voorbeeld omslag" />
+	
+	<s:Label id="lbl" horizontalCenter="0" bottom="15" fontSize="24" />
+	
+</s:ItemRenderer>

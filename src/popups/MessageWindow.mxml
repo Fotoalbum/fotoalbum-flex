@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="400" backgroundColor="#FFFFFF" chromeColor="{singleton.baseColor}" color="#FFFFFF"
+			   fontSize="14" title="Message Header">
+	<s:layout>
+		<s:VerticalLayout gap="10" horizontalAlign="center" paddingBottom="10" paddingLeft="10"
+						  paddingRight="10" paddingTop="10" verticalAlign="middle"/>
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Label id="msg" text="Message" width="100%" color="{singleton.baseColor}"/>
+	
+	<s:Label id="info" text="" width="100%" color="{singleton.baseColor}"/>
+	
+	<mx:ProgressBar id="progress" visible="false" label="" width="100%"
+					chromeColor="{singleton.baseColor}" color="#FFFFFF" horizontalCenter="0" indeterminate="false"
+					maximum="100" minimum="0" mode="manual"/>
+	
+</s:TitleWindow>

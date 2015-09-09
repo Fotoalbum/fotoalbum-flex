@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:components="components.*"
+		 creationComplete="creationCompleteHandler(event)"
+		 width="400" 
+		 height="180">
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import mx.events.FlexEvent;
+			
+			import spark.filters.DropShadowFilter;
+			
+			[Bindable] private var singleton:Singleton = Singleton.getInstance();
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				var shadow:DropShadowFilter = new DropShadowFilter(5, 90, 0x000000, .5, 20, 20, 1, 1, false, false, false);
+				this.filters = [shadow];
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:NumberFormatter id="numberFormatter" precision="2" />
+	</fx:Declarations>
+	
+	<s:Rect width="100%" height="55" radiusX="8" radiusY="8">
+		<s:fill>
+			<s:SolidColor color="{singleton.baseColor}" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Label id="header" left="10" top="15" color="#FFFFFF" text="" textAlign="center"
+			 verticalAlign="middle"/>
+	
+	<s:Rect width="100%" top="45" height="100%" radiusX="0" radiusY="0">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:TextInput id="input" left="10" right="10" top="50" borderVisible="true" 
+				color="{singleton.baseColor}" contentBackgroundAlpha="0.0" fontSize="14"/>
+	
+	<s:HGroup bottom="0" width="100%" height="40" horizontalAlign="right" paddingRight="10"
+			  verticalAlign="middle">
+		<s:Button id="btnCancel" width="100" label="ANNULEREN" click="100" skinClass="skins.btnSkin"/>
+		<s:Button id="btnOk" width="100" label="OK" skinClass="skins.btnSkin"/>
+	</s:HGroup>
+		
+</s:Group>
+

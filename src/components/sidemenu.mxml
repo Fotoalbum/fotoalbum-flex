@@ -1,0 +1,2458 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:skins="skins.*"
+		 width="322" height="100%" 
+		 creationComplete="_creationCompleteHandler(event)"
+		 mouseEnabledWhereTransparent="false"
+		 currentState="album">
+	<fx:Script>
+		<![CDATA[
+			import classes.undoActions;
+			import classes.undoredoClass;
+			
+			import events.SelectPhotoMenuEvent;
+			import events.SwitchMenuEvent;
+			import events.countUsedPhotosEvent;
+			import events.selectPhotoEvent;
+			import events.updateElementsEvent;
+			
+			import itemrenderers.spreadItemRenderer;
+			
+			import mx.events.ColorPickerEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectUtil;
+			
+			import popups.FindBackgroundPopup;
+			import popups.FindClipartPopup;
+			import popups.FindPassepartoutPopup;
+			import popups.ThemeBuilderPopup;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+			import spark.events.IndexChangeEvent;
+			
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				FlexGlobals.topLevelApplication.addEventListener(SwitchMenuEvent.SELECTEDMENU, SwitchMenu);
+				
+				FlexGlobals.topLevelApplication.addEventListener(SelectPhotoMenuEvent.SELECTMENUPHOTO, SelectPhotoOptions);
+				
+				btnPhotos.selected = true;
+				btnPhotos.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+				vsMenu.selectedIndex = 0;
+				
+			}
+			
+			public function GetAdvicedBackgrounds():void {
+				
+				if (singleton.background_items_adviced.length == 0) {
+					var ast:AsyncToken = FlexGlobals.topLevelApplication.api_cms.api_categorized("Background", "52b96dc3-dd94-4d57-bb89-8bd00a01bb03");
+					ast.addResponder(new mx.rpc.Responder(onGetBackgroundByIDResult, onGetCMSFail));
+				}
+			}
+			
+			public function GetAdvicedStickers():void {
+				if (singleton.clipart_items_adviced.length == 0) {
+					var ast:AsyncToken = FlexGlobals.topLevelApplication.api_cms.api_categorized("Sticker", "52b96dc3-dd94-4d57-bb89-8bd00a01bb03");
+					ast.addResponder(new mx.rpc.Responder(onGetClipartByIDResult, onGetCMSFail));
+				}
+			}
+			
+			public function GetAdvicedMasks():void {
+				if (singleton.passepartout_items_adviced.length == 0) {
+					var ast:AsyncToken = FlexGlobals.topLevelApplication.api_cms.api_get_by_submodel("Mask", "Type", "24"); //2nd, Type or Styke
+					ast.addResponder(new mx.rpc.Responder(onGetPassepartoutByIDResult, onGetCMSFail));
+				}
+			}
+			
+			private function onGetBackgroundByIDResult(e:ResultEvent):void
+			{
+			
+				singleton._changesMade = true;
+				singleton.UpdateChangesMade();
+				
+				singleton.background_items_adviced = new ArrayCollection();
+				
+				for each (var obj:Object in e.result) {
+					if (obj.Background) {
+						if (obj.Background.id) {
+							singleton.background_items_adviced.addItem(obj.Background);
+						}
+					}
+				}
+				singleton.background_items_adviced.refresh();
+				
+			}
+			
+			private function onGetClipartByIDResult(e:ResultEvent):void
+			{
+				
+				singleton._changesMade = true;
+				singleton.UpdateChangesMade();
+				
+				singleton.clipart_items_adviced = new ArrayCollection();
+				
+				for each (var obj:Object in e.result) {
+					if (obj.Sticker) {
+						if (obj.Sticker.id) {
+							singleton.clipart_items_adviced.addItem(obj.Sticker);
+						}
+					}
+				}
+				
+				singleton.clipart_items_adviced.refresh();
+				
+			}
+			
+			private function onGetPassepartoutByIDResult(e:ResultEvent):void
+			{
+				
+				singleton._changesMade = true;
+				singleton.UpdateChangesMade();
+				
+				singleton.passepartout_items_adviced = new ArrayCollection();
+				
+				for each (var obj:Object in e.result) {
+					if (obj.id) {
+						singleton.passepartout_items_adviced.addItem(obj);
+					}
+				}
+				
+				singleton.passepartout_items_adviced.refresh();
+				lstAdvicedPassepartouts.invalidateDisplayList();
+				
+			}
+			
+			private function onGetCMSFail(e:FaultEvent):void 
+			{
+				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n sidemenu|onGetCMSFail|" + e.fault.faultString);
+			}
+			
+			private function onGetBackgroundByIDFail(e:FaultEvent):void 
+			{
+				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n sidemenu|onGetBackgroundByIDFail|" + e.fault.faultString);
+			}
+			
+			private function SwitchMenu(event:SwitchMenuEvent):void {
+				
+				switch (event.mode) {
+					case "timeline":
+						this.currentState = "timeline";
+						break;
+					case "theme":
+						this.currentState = "theme";
+						break;
+					default:
+						this.currentState = "album";
+						break;
+				}
+				
+				vsMenu.selectedIndex = 0;
+				
+			}
+			
+			protected function btnProjectBackgrounds_clickHandler(event:MouseEvent):void
+			{
+				
+				/*
+				if (btnProjectBackgrounds.selected) {
+					
+					btnProjectBackgroundsContent.percentHeight = 100;
+					lstBackgrounds.percentHeight = 100;
+					btnProjectBackgroundsContent.visible = true;
+					
+				} else {
+					
+					btnProjectBackgroundsContent.percentHeight = null;
+					btnProjectBackgroundsContent.height = 0;
+					lstBackgrounds.percentHeight = null;
+					lstBackgrounds.height = 0;
+					btnProjectBackgroundsContent.visible = false;
+				}
+				*/
+			}
+			
+			protected function btnAdvicedBackgrounds_clickHandler(event:MouseEvent):void
+			{
+				/*
+				if (btnAdvicedBackgrounds.selected) {
+					
+					btnAdvicedBackgroundsContent.percentHeight = 100;
+					lstAdvicedBackgrounds.percentHeight = 100;
+					btnAdvicedBackgroundsContent.visible = true;
+				
+				} else {
+					
+					btnAdvicedBackgroundsContent.percentHeight = null;
+					btnAdvicedBackgroundsContent.height = 0;
+					lstAdvicedBackgrounds.percentHeight = null;
+					lstAdvicedBackgrounds.height = 0; 
+					btnAdvicedBackgroundsContent.visible = false;
+					
+				}
+				*/
+			}
+			
+			[Bindable] public var findBackgroundPopup:FindBackgroundPopup;
+			protected function btnGetBackgrounds_clickHandler(event:MouseEvent):void
+			{
+				
+				findBackgroundPopup = FindBackgroundPopup(PopUpManager.createPopUp(FlexGlobals.topLevelApplication.vsEditor, popups.FindBackgroundPopup, true));
+				
+				if (FlexGlobals.topLevelApplication.vsEditor.width > 835) {
+					findBackgroundPopup.width = 835;
+					if (FlexGlobals.topLevelApplication.vsEditor.height > 580) {
+						findBackgroundPopup.height = 580;
+					} else {
+						findBackgroundPopup.height = FlexGlobals.topLevelApplication.vsEditor.height - 100;
+					}
+				} else {
+					findBackgroundPopup.width = FlexGlobals.topLevelApplication.vsEditor.width - 100;
+					findBackgroundPopup.height = FlexGlobals.topLevelApplication.vsEditor.height - 100;
+				}
+				
+				PopUpManager.centerPopUp(findBackgroundPopup);
+				
+				findBackgroundPopup.btnCloseWindow.addEventListener(MouseEvent.CLICK, CloseFindBackground);
+				findBackgroundPopup.btnCancel.addEventListener(MouseEvent.CLICK, CloseFindBackground);
+				findBackgroundPopup.btnAdd.addEventListener(MouseEvent.CLICK, AddBackgroundToProject);
+				
+				background_selected = new ArrayCollection;
+				//Add the current project photos to avoid doubles and show the selected
+				for (var x:int=0; x < singleton.background_items.length; x++) {
+					var obj:Object =  ObjectUtil.copy(singleton.background_items.getItemAt(x));
+					obj.used = true;
+					background_selected.addItem(obj);
+				}
+				
+				background_selected.refresh();
+				
+			}
+			
+			public function CloseFindBackground(event:Event = null):void {
+				
+				PopUpManager.removePopUp(findBackgroundPopup);
+				findBackgroundPopup = null;
+			}
+			
+			public function AddBackgroundToProject(event:Event):void {
+				
+				if (!singleton.background_items_adviced) {
+					singleton.background_items_adviced = new ArrayCollection();
+				}
+				
+				for (var x:int=0; x < background_selected.length; x++) {
+					
+					var excist:Boolean = false;
+					//Check if it doesn't excist yet
+					for (var y:int=0; y < singleton.background_items_adviced.length; y++) {
+						if (singleton.background_items_adviced.getItemAt(y).id == background_selected.getItemAt(x).id) {
+							excist = true;
+							break;
+						}
+					}
+					
+					if (!excist) {
+						singleton.background_items_adviced.addItem(background_selected.getItemAt(x));
+					}
+				}
+				
+				CloseFindBackground();
+			}
+			
+			
+			
+			protected function btnProjectCliparts_clickHandler(event:MouseEvent):void
+			{
+				/*
+				if (btnProjectCliparts.selected) {
+					
+					btnProjectClipartsContent.percentHeight = 100;
+					lstCliparts.percentHeight = 100;
+					btnProjectClipartsContent.visible = true;
+					
+				} else {
+					
+					btnProjectClipartsContent.percentHeight = null;
+					btnProjectClipartsContent.height = 0;
+					lstCliparts.percentHeight = null;
+					lstCliparts.height = 0;
+					btnProjectClipartsContent.visible = false;
+				}
+				*/
+			}
+			
+			protected function btnAdvicedCliparts_clickHandler(event:MouseEvent):void
+			{
+				/*
+				if (btnAdvicedCliparts.selected) {
+					
+					btnAdvicedClipartsContent.percentHeight = 100;
+					lstAdvicedCliparts.percentHeight = 100;
+					btnAdvicedClipartsContent.visible = true;
+					
+				} else {
+					
+					btnAdvicedClipartsContent.percentHeight = null;
+					btnAdvicedClipartsContent.height = 0;
+					lstAdvicedCliparts.percentHeight = null;
+					lstAdvicedCliparts.height = 0; 
+					btnAdvicedClipartsContent.visible = false;
+					
+				}
+				*/
+			}
+			
+			[Bindable] public var findClipartPopup:FindClipartPopup;
+			protected function btnGetCliparts_clickHandler(event:MouseEvent):void
+			{
+				
+				findClipartPopup = FindClipartPopup(PopUpManager.createPopUp(FlexGlobals.topLevelApplication.vsEditor, popups.FindClipartPopup, true));
+				
+				if (FlexGlobals.topLevelApplication.vsEditor.width > 835) {
+					findClipartPopup.width = 835;
+					if (FlexGlobals.topLevelApplication.vsEditor.height > 580) {
+						findClipartPopup.height = 580;
+					} else {
+						findClipartPopup.height = FlexGlobals.topLevelApplication.vsEditor.height - 100;
+					}
+				} else {
+					findClipartPopup.width = FlexGlobals.topLevelApplication.vsEditor.width - 100;
+					findClipartPopup.height = FlexGlobals.topLevelApplication.vsEditor.height - 100;
+				}
+				
+				PopUpManager.centerPopUp(findClipartPopup);
+				
+				findClipartPopup.btnCloseWindow.addEventListener(MouseEvent.CLICK, CloseFindClipart);
+				findClipartPopup.btnCancel.addEventListener(MouseEvent.CLICK, CloseFindClipart);
+				findClipartPopup.btnAdd.addEventListener(MouseEvent.CLICK, AddClipartToProject);
+				
+				clipart_selected = new ArrayCollection;
+				//Add the current project photos to avoid doubles and show the selected
+				for (var x:int=0; x < singleton.clipart_items.length; x++) {
+					var obj:Object =  ObjectUtil.copy(singleton.clipart_items.getItemAt(x));
+					obj.used = true;
+					clipart_selected.addItem(obj);
+				}
+				
+				clipart_selected.refresh();
+				
+			}
+			
+			public function CloseFindClipart(event:Event = null):void {
+				
+				PopUpManager.removePopUp(findClipartPopup);
+				findClipartPopup = null;
+			}
+			
+			public function AddClipartToProject(event:Event):void {
+				
+				if (!singleton.clipart_items_adviced) {
+					singleton.clipart_items_adviced = new ArrayCollection();
+				}
+				
+				
+				for (var x:int=0; x < clipart_selected.length; x++) {
+					
+					var excist:Boolean = false;
+					//Check if it doesn't excist yet
+					for (var y:int=0; y < singleton.clipart_items_adviced.length; y++) {
+						if (singleton.clipart_items_adviced.getItemAt(y).id == clipart_selected.getItemAt(x).id) {
+							excist = true;
+							break;
+						}
+					}
+					
+					if (!excist) {
+						singleton.clipart_items_adviced.addItem(clipart_selected.getItemAt(x));
+					}
+				}
+				
+				CloseFindClipart();
+			}
+			
+			protected function btnProjectPassepartouts_clickHandler(event:MouseEvent):void
+			{
+				/*
+				if (btnProjectPassepartouts.selected) {
+					
+					btnProjectPassepartoutsContent.percentHeight = 100;
+					lstPassepartouts.percentHeight = 100;
+					btnProjectPassepartoutsContent.visible = true;
+					
+				} else {
+					
+					btnProjectPassepartoutsContent.percentHeight = null;
+					btnProjectPassepartoutsContent.height = 0;
+					lstPassepartouts.percentHeight = null;
+					lstPassepartouts.height = 0;
+					btnProjectPassepartoutsContent.visible = false;
+				}
+				*/
+			}
+			
+			protected function btnAdvicedPassepartouts_clickHandler(event:MouseEvent):void
+			{
+				/*
+				if (btnAdvicedPassepartouts.selected) {
+					
+					btnAdvicedPassepartoutsContent.percentHeight = 100;
+					lstAdvicedPassepartouts.percentHeight = 100;
+					btnAdvicedPassepartoutsContent.visible = true;
+					
+				} else {
+					
+					btnAdvicedPassepartoutsContent.percentHeight = null;
+					btnAdvicedPassepartoutsContent.height = 0;
+					lstAdvicedPassepartouts.percentHeight = null;
+					lstAdvicedPassepartouts.height = 0; 
+					btnAdvicedPassepartoutsContent.visible = false;
+					
+				}
+				*/
+			}
+			
+			[Bindable] public var findPassepartoutPopup:FindPassepartoutPopup;
+			protected function btnGetPassepartouts_clickHandler(event:MouseEvent):void
+			{
+				
+				findPassepartoutPopup = FindPassepartoutPopup(PopUpManager.createPopUp(FlexGlobals.topLevelApplication.vsEditor, popups.FindPassepartoutPopup, true));
+				
+				if (FlexGlobals.topLevelApplication.vsEditor.width > 835) {
+					findPassepartoutPopup.width = 835;
+					if (FlexGlobals.topLevelApplication.vsEditor.height > 580) {
+						findPassepartoutPopup.height = 580;
+					} else {
+						findPassepartoutPopup.height = FlexGlobals.topLevelApplication.vsEditor.height - 100;
+					}
+				} else {
+					findPassepartoutPopup.width = FlexGlobals.topLevelApplication.vsEditor.width - 100;
+					findPassepartoutPopup.height = FlexGlobals.topLevelApplication.vsEditor.height - 100;
+				}
+				
+				PopUpManager.centerPopUp(findPassepartoutPopup);
+				
+				findPassepartoutPopup.btnCloseWindow.addEventListener(MouseEvent.CLICK, CloseFindPassepartout);
+				findPassepartoutPopup.btnCancel.addEventListener(MouseEvent.CLICK, CloseFindPassepartout);
+				findPassepartoutPopup.btnAdd.addEventListener(MouseEvent.CLICK, AddPassepartoutToProject);
+				
+				passepartout_selected = new ArrayCollection;
+				
+				//Add the current project photos to avoid doubles and show the selected
+				for (var x:int=0; x < singleton.passepartout_items.length; x++) {
+					var obj:Object =  ObjectUtil.copy(singleton.passepartout_items.getItemAt(x));
+					obj.used = true;
+					passepartout_selected.addItem(obj);
+				}
+				
+				passepartout_selected.refresh();
+				
+			}
+			
+			public function CloseFindPassepartout(event:Event = null):void {
+				
+				PopUpManager.removePopUp(findPassepartoutPopup);
+				findPassepartoutPopup = null;
+			}
+			
+			public function AddPassepartoutToProject(event:Event):void {
+				
+				if (!singleton.passepartout_items_adviced) {
+					singleton.passepartout_items_adviced = new ArrayCollection();
+				}
+				
+				
+				for (var x:int=0; x < passepartout_selected.length; x++) {
+					
+					var excist:Boolean = false;
+					//Check if it doesn't excist yet
+					for (var y:int=0; y < singleton.passepartout_items_adviced.length; y++) {
+						if (singleton.passepartout_items_adviced.getItemAt(y).id == passepartout_selected.getItemAt(x).id) {
+							excist = true;
+							break;
+						}
+					}
+					
+					if (!excist) {
+						singleton.passepartout_items_adviced.addItem(passepartout_selected.getItemAt(x));
+					}
+				}
+				
+				CloseFindPassepartout();
+			}
+			
+			private function SelectPhotoOptions(event:SelectPhotoMenuEvent):void {
+				
+				//Get the photo data
+				var photodata:Object = event.data;
+				
+				photoOptionsGroup.enabled = false;
+				
+				if (photodata.status == "new" || photodata.status == "done") {
+					if (photodata.status == "new") {
+						if (photodata.original_image_id != "") {
+							photoOptionsGroup.enabled = true;
+						}
+					} else {
+						photoOptionsGroup.enabled = true;
+					}
+				}
+				
+				//vsMenu.selectedIndex = 4;
+				ncPhotoOptions.validateNow();
+				
+				bcNormal.graphics.clear();
+				bcSephia.graphics.clear();
+				bcBW.graphics.clear();
+				
+				switch (photodata.imageFilter) {
+					case "":
+						bcNormal.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+						bcNormal.graphics.drawRect(0, 0, bcNormal.width, bcNormal.height);
+						break;
+					case "null":
+						bcNormal.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+						bcNormal.graphics.drawRect(0, 0, bcNormal.width, bcNormal.height);
+						break;
+					case "sepia":
+						bcSephia.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+						bcSephia.graphics.drawRect(0, 0, bcSephia.width, bcSephia.height);
+						break;
+					case "bw":
+						bcBW.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+						bcBW.graphics.drawRect(0, 0, bcBW.width, bcBW.height);
+						break;
+				}
+				
+				photo_alpha.value = photodata.imageAlpha * 100;
+				
+				bcLeftshadow.graphics.clear();
+				bcRightshadow.graphics.clear();
+				bcBottomshadow.graphics.clear();
+				
+				switch (photodata.shadow) {
+					case "left":
+						bcLeftshadow.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+						bcLeftshadow.graphics.drawRect(0, 0, bcLeftshadow.width, bcLeftshadow.height);
+						break;
+					case "right":
+						bcRightshadow.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+						bcRightshadow.graphics.drawRect(0, 0, bcRightshadow.width, bcRightshadow.height);
+						break;
+					case "bottom":
+						bcBottomshadow.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+						bcBottomshadow.graphics.drawRect(0, 0, bcBottomshadow.width, bcBottomshadow.height);
+						break;
+				}
+				
+				borderColorPicker.selectedColor = photodata.bordercolor;
+				borderwidth.selectedIndex = singleton.GetBorderWeightIndex(photodata.borderweight);
+				
+			}
+			
+			[Bindable] public var oldData:Object;
+			protected function photo_alpha_mouseDownHandler(event:MouseEvent):void
+			{
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				photo_alpha.addEventListener(MouseEvent.MOUSE_UP, UpdateUndoObjectAlpha);
+				
+			}
+			
+			private function UpdateUndoObjectAlpha(event:MouseEvent):void {
+				
+				photo_alpha.removeEventListener(MouseEvent.MOUSE_UP, UpdateUndoObjectAlpha);
+				
+				if (oldData) {
+					singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				}
+			}
+			
+			private function normal_clickHandler(event:MouseEvent):void
+			{
+				
+				if (singleton.selected_element) {
+					
+					if (singleton.selected_element.data.classtype == "[class userphotoclass]") {
+						// STORE THE OLD DATA FOR LATER UNDO //
+						oldData = singleton.CloneObject(singleton.selected_element.data);
+						
+						var po:photocomponent = singleton.selected_element as photocomponent;
+						var data:Object = po.data as Object;
+						
+						if (po.img) {
+							po.img.filters = null;
+							data.imageFilter = "";
+						}
+						
+						bcNormal.graphics.clear();
+						bcSephia.graphics.clear();
+						bcBW.graphics.clear();
+						
+						bcNormal.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+						bcNormal.graphics.drawRect(0, 0, bcNormal.width, bcNormal.height);
+						
+						FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+						
+						singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+					}
+				}
+			}
+			
+			private function sephia_clickHandler(event:MouseEvent):void
+			{
+				
+				if (singleton.selected_element) {
+					
+					if (singleton.selected_element.data.classtype == "[class userphotoclass]") {
+						// STORE THE OLD DATA FOR LATER UNDO //
+						oldData = singleton.CloneObject(singleton.selected_element.data);
+						
+						var po:photocomponent = singleton.selected_element as photocomponent;
+						var data:Object = po.data as Object;
+						
+						if (po.img) {
+							po.img.filters = null;
+							po.img.filters = [singleton.sepiafilter];
+							data.imageFilter = "sepia";
+						}
+						
+						bcNormal.graphics.clear();
+						bcSephia.graphics.clear();
+						bcBW.graphics.clear();
+						
+						bcSephia.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+						bcSephia.graphics.drawRect(0, 0, bcSephia.width, bcSephia.height);
+						
+						FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+						
+						singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+					}
+				}
+			}
+			
+			private function bw_clickHandler(event:MouseEvent):void
+			{
+				
+				if (singleton.selected_element) {
+					
+					if (singleton.selected_element.data.classtype == "[class userphotoclass]") {
+					
+						// STORE THE OLD DATA FOR LATER UNDO //
+						oldData = singleton.CloneObject(singleton.selected_element.data);
+						
+						var po:photocomponent = singleton.selected_element as photocomponent;
+						var data:Object = po.data as Object;
+						
+						if (po.img) {
+							po.img.filters = null;
+							po.img.filters = [singleton.bwfilter];
+							data.imageFilter = "bw";
+						}
+						
+						bcNormal.graphics.clear();
+						bcSephia.graphics.clear();
+						bcBW.graphics.clear();
+						
+						bcBW.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+						bcBW.graphics.drawRect(0, 0, bcBW.width, bcBW.height);
+						
+						FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+						
+						singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+					}	
+				}
+					
+			}
+			
+			protected function photo_alpha_changeHandler(event:Event):void
+			{
+				
+				if (singleton.selected_element) {
+					
+					if (singleton.selected_element.data.classtype == "[class userphotoclass]") {
+						//Update the alpha
+						var data:Object = singleton.selected_element.data as Object;
+						
+						if (singleton.selected_element.img) {
+							singleton.selected_element.img.alpha = photo_alpha.value / 100;
+							data.imageAlpha = photo_alpha.value / 100;
+						}
+						
+						FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+					}
+				}
+			}
+			
+			private function bordercolor_changeHandler(event:ColorPickerEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				//UPDATE THE RGB/CMYK VALUES AS WELL!!
+				var color:Object = new Object();
+				color.id = event.color;
+				color.rgb = singleton.GetRgb(color.id);
+				color.cmyk = singleton.GetCMYK(color.id);
+				singleton.colorcollection.addItem(color);
+				
+				singleton.selected_element.data.bordercolor = color.id;
+				
+				//Update the border
+				singleton.selected_element.DrawBorder();
+				
+				if (!singleton.lastusedcolors) {
+					singleton.lastusedcolors = new ArrayCollection();
+				}
+				
+				if (singleton.lastusedcolors.getItemIndex(event.color.toString()) == -1) {
+					singleton.lastusedcolors.addItemAt(event.color.toString(), 0);
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			private function borderwidth_mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopPropagation();
+			}
+			
+			private function borderwidth_changeHandler(event:Event):void {
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				singleton.selected_element.data.borderweight = event.currentTarget.selectedItem;
+				
+				//Update the border
+				singleton.selected_element.DrawBorder();
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			protected function noshadow_clickHandler(event:MouseEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.filters = null;
+					singleton.selected_element.data.shadow = "";
+				}
+				
+				bcLeftshadow.graphics.clear();
+				bcRightshadow.graphics.clear();
+				bcBottomshadow.graphics.clear();
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			protected function leftshadow_clickHandler(event:MouseEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.filters = [FlexGlobals.topLevelApplication.leftShadowFilter];
+					singleton.selected_element.data.shadow = "left";
+				}
+				
+				bcLeftshadow.graphics.clear();
+				bcRightshadow.graphics.clear();
+				bcBottomshadow.graphics.clear();
+				
+				bcLeftshadow.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+				bcLeftshadow.graphics.drawRect(0, 0, bcLeftshadow.width, bcLeftshadow.height);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			protected function rightshadow_clickHandler(event:MouseEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.filters = [FlexGlobals.topLevelApplication.rightShadowFilter];
+					singleton.selected_element.data.shadow = "right";
+				}
+				
+				bcLeftshadow.graphics.clear();
+				bcRightshadow.graphics.clear();
+				bcBottomshadow.graphics.clear();
+				
+				bcRightshadow.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+				bcRightshadow.graphics.drawRect(0, 0, bcRightshadow.width, bcRightshadow.height);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			protected function bottomshadow_clickHandler(event:MouseEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.filters = [FlexGlobals.topLevelApplication.bottomShadowFilter];
+					singleton.selected_element.data.shadow = "bottom";
+				}
+				
+				bcLeftshadow.graphics.clear();
+				bcRightshadow.graphics.clear();
+				bcBottomshadow.graphics.clear();
+				
+				bcBottomshadow.graphics.lineStyle(4, 0xFFFFFF, 1, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+				bcBottomshadow.graphics.drawRect(0, 0, bcBottomshadow.width, bcBottomshadow.height);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			protected function btnApplyToSpread_clickHandler(event:MouseEvent):void
+			{
+				
+				var borderWeight:Number = singleton.selected_element.data.borderweight;
+				var borderColor:uint = singleton.selected_element.data.bordercolor;
+				var borderAlpha:Number = singleton.selected_element.data.borderalpha;
+				var shadow:String = singleton.selected_element.data.shadow;
+				
+				for (var x:int=0; x < singleton.selected_spread_editor.elementcontainer.numElements; x++) {
+					
+					var obj:Object = singleton.selected_spread_editor.elementcontainer.getElementAt(x) as Object;
+					
+					if (obj.hasOwnProperty("data")) {
+						
+						if (obj.data.classtype == singleton.selected_element.data.classtype) {
+							
+							// STORE THE OLD DATA FOR LATER UNDO //
+							oldData = singleton.CloneObject(obj.data);
+							
+							obj.data.borderweight = borderWeight;
+							obj.data.bordercolor = borderColor;
+							obj.data.borderalpha = borderAlpha;
+							obj.data.shadow = shadow;
+							
+							//Update the border
+							obj.DrawBorder();
+							
+							switch (shadow) {
+								case "": 
+									obj.filters = null;
+									break;
+								case "left":
+									obj.filters = [FlexGlobals.topLevelApplication.leftShadowFilter];
+									break;
+								case "bottom":
+									obj.filters = [FlexGlobals.topLevelApplication.bottomShadowFilter];
+									break;
+								case "right":
+									obj.filters = [FlexGlobals.topLevelApplication.rightShadowFilter];
+									break;
+							}
+							
+							FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, obj.data));
+							
+							singleton.selected_undoredomanager.AddUndo(oldData, obj, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(obj));
+							
+						}
+					}
+				}
+			}
+			
+			protected function btnApplyToBook_clickHandler(event:MouseEvent):void
+			{
+				
+				var borderWeight:Number = singleton.selected_element.data.borderweight;
+				var borderColor:uint = singleton.selected_element.data.bordercolor;
+				var borderAlpha:Number = singleton.selected_element.data.borderalpha;
+				var shadow:String = singleton.selected_element.data.shadow;
+				
+				for (var x:int=0; x < singleton.selected_spread_editor.elementcontainer.numElements; x++) {
+					
+					var obj:Object = singleton.selected_spread_editor.elementcontainer.getElementAt(x) as Object;
+					
+					if (obj.hasOwnProperty("data")) {
+						
+						if (obj.data.classtype == singleton.selected_element.data.classtype) {
+							
+							obj.data.borderweight = borderWeight;
+							obj.data.bordercolor = borderColor;
+							obj.data.borderalpha = borderAlpha;
+							obj.data.shadow = shadow;
+							
+							//Update the border
+							obj.DrawBorder();
+							
+							switch (shadow) {
+								case "": 
+									obj.filters = null;
+									break;
+								case "left":
+									obj.filters = [FlexGlobals.topLevelApplication.leftShadowFilter];
+									break;
+								case "bottom":
+									obj.filters = [FlexGlobals.topLevelApplication.bottomShadowFilter];
+									break;
+								case "right":
+									obj.filters = [FlexGlobals.topLevelApplication.rightShadowFilter];
+									break;
+							}
+							
+							FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, obj.data));
+							
+						}
+					}
+				}
+				
+				//Now apply to all the other elements in the book
+				for (x=0; x < FlexGlobals.topLevelApplication.lstSpreads.numElements; x++) {
+					
+					var spread:spreadItemRenderer = FlexGlobals.topLevelApplication.lstSpreads.getElementAt(x) as spreadItemRenderer;
+					
+					for (var y:int=0; y < spread.elementcontainer.numElements; y++) {
+						
+						obj = spread.elementcontainer.getElementAt(y) as Object;
+						
+						if (obj.hasOwnProperty("data")) {
+							
+							if (obj.data.classtype == singleton.selected_element.data.classtype) {
+								
+								obj.data.borderweight = borderWeight;
+								obj.data.bordercolor = borderColor;
+								obj.data.borderalpha = borderAlpha;
+								obj.data.shadow = shadow;
+								
+								//Update the border
+								obj.DrawBorder();
+								
+								switch (shadow) {
+									case "": 
+										obj.filters = null;
+										break;
+									case "left":
+										obj.filters = [FlexGlobals.topLevelApplication.leftShadowFilter];
+										break;
+									case "bottom":
+										obj.filters = [FlexGlobals.topLevelApplication.bottomShadowFilter];
+										break;
+									case "right":
+										obj.filters = [FlexGlobals.topLevelApplication.rightShadowFilter];
+										break;
+								}
+							}
+						}
+						
+					}
+				}
+				
+				singleton.selected_undoredomanager = new undoredoClass();
+				singleton.canRedo = false;
+				singleton.canUndo = false;
+				
+				if (ExternalInterface.available) {
+					var wrapperFunction:String = "canUndo";
+					ExternalInterface.call(wrapperFunction, singleton.canUndo);
+				}
+				
+				if (ExternalInterface.available) {
+					wrapperFunction = "canRedo";
+					ExternalInterface.call(wrapperFunction, singleton.canRedo);
+				}
+			}
+			
+			private function lstUsedColors_mouseUpHandler(event:MouseEvent):void
+			{
+				
+				if (singleton.selected_element) {
+					
+					// STORE THE OLD DATA FOR LATER UNDO //
+					oldData = singleton.CloneObject(singleton.selected_element.data);
+					
+					singleton.selected_element.data.bordercolor = uint(event.currentTarget.selectedItem);
+					
+					//Update the border
+					singleton.selected_element.DrawBorder();
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+					
+					singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+					
+				}
+			}
+			
+			protected function _renderHandler(event:Event):void
+			{
+				if (FlexGlobals.topLevelApplication.vsView.selectedIndex == 0) {
+					if (grpButtonsPhotoBackground.visible == false) {
+						grpButtonsPhotoBackground.visible = true;
+						grpButtonsPhotoBackground.height = 70;
+					}
+				} else {
+					grpButtonsPhotoBackground.visible = false;
+					grpButtonsPhotoBackground.height = 0;
+				}
+			}
+				
+			protected function btnScrollBorderColorsLeft_clickHandler(event:MouseEvent):void
+			{
+				if (lstUsedBorderColors.selectedIndex > 0) {
+					lstUsedBorderColors.selectedIndex -= 1;
+					lstUsedBorderColors.ensureIndexIsVisible(lstUsedBorderColors.selectedIndex);
+				}
+			}
+			
+			protected function btnScrollBorderColorsRight_clickHandler(event:MouseEvent):void
+			{
+				if (lstUsedBorderColors.selectedIndex < lstUsedBorderColors.dataProvider.length -1) {
+					lstUsedBorderColors.selectedIndex += 1;
+					lstUsedBorderColors.ensureIndexIsVisible(lstUsedBorderColors.selectedIndex);
+				}
+			}
+			
+			protected function bcNoshadow_rollOverHandler(event:MouseEvent):void
+			{
+				bcNoshadow.setStyle("backgroundColor", 0x969696);
+			}
+			
+			protected function bcNoshadow_rollOutHandler(event:MouseEvent):void
+			{
+				bcNoshadow.setStyle("backgroundColor", 0x7D7D7D);
+			}
+			
+			private var sortTimerDate:Timer = new Timer(1000, 0);
+			private var sortTimerName:Timer = new Timer(1000, 0);
+			public function SortPhotos(event:Event = null):void {
+				
+				sortTimerDate.stop();
+				sortTimerName.stop();
+				
+				/*
+				if (ddSorting.selectedIndex == 0) {
+					ChangeSortOrderByDate();
+				} else {
+					ChangeSortOrderByName();
+				}
+				*/
+			}
+			
+			public function ChangeSortOrderByDate():void {
+				
+				/*
+				if (!sortTimerDate.running) {
+					if (singleton.userphotos && singleton.userphotos.length > 0) {
+						sortTimerDate.addEventListener(TimerEvent.TIMER, onSortTimerDate);
+						sortTimerDate.start();
+					} else {
+						sortTimerDate.stop();
+						sortTimerDate.reset();	
+					}
+				} else {
+				
+					sortTimerDate.stop();
+					sortTimerDate.reset();
+					sortTimerDate.start();
+				}
+				*/
+				
+			}
+			
+			public function onSortTimerDate(event:Event):void {
+				
+				/*
+				sortTimerDate.stop();
+				sortTimerDate.reset();
+				
+				sortTimerDate.removeEventListener(TimerEvent.TIMER, onSortTimerDate);
+				
+				//Order by date initially
+				if (singleton.userphotos) {
+					if (singleton.userphotos.length > 0) {
+						var dateSort:Sort = new Sort();
+						var fields:Array = [ new SortField("dateCreated", false), new SortField("timeCreated", false) ];
+						dateSort.fields = fields;
+						singleton.userphotos.sort = dateSort;
+						singleton.userphotos.refresh();
+					}
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTUSERPHOTO, "", false));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
+				*/
+			}
+			
+			public function ChangeSortOrderByName():void {
+				
+				/*
+				if (!sortTimerName.running) {
+					if (singleton.userphotos && singleton.userphotos.length > 0) {
+						sortTimerName.addEventListener(TimerEvent.TIMER, onSortTimerName);
+						sortTimerName.start();
+					} else {
+						sortTimerName.stop();
+						sortTimerName.reset();	
+					}
+				} else {
+					sortTimerName.stop();
+					sortTimerName.reset();
+					sortTimerName.start();
+				}
+				*/
+			}
+			
+			public function onSortTimerName(event:Event):void {
+				
+				
+				/*
+				sortTimerName.stop();
+				sortTimerName.reset();
+				
+				sortTimerName.removeEventListener(TimerEvent.TIMER, onSortTimerName);
+				
+				//Order by name
+				if (singleton.userphotos) {
+					if (singleton.userphotos.length > 0) {
+						singleton.userphotos.refresh();
+						var dataSortField:SortField = new SortField();
+						dataSortField.name = "name";
+						dataSortField.descending = false;
+						var dateSort:Sort = new Sort();
+						dateSort.fields = [dataSortField];
+						singleton.userphotos.sort = dateSort;
+						singleton.userphotos.refresh();
+					}
+				}	
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTUSERPHOTO, "", false));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
+				*/
+			}
+			
+			[Bindable] public var userphotoshidden:Boolean = false;
+			protected function cbHideUsed_changeHandler(event:Event):void
+			{
+				
+				if (userphotoshidden != event.currentTarget.selected) {
+					
+					userphotoshidden = event.currentTarget.selected;
+					
+					if (userphotoshidden == true) {
+						//hide the used photos
+						singleton.userphotoshidden = new ArrayCollection();
+						for (var x:int=singleton.userphotos.length -1; x > -1; x--) {
+							if (singleton.userphotos.getItemAt(x).used > 0) {
+								singleton.userphotoshidden.addItem(singleton.userphotos.getItemAt(x));
+								singleton.userphotos.removeItemAt(x);
+							}
+						}
+					} else {
+						//show the used photos
+						if (singleton.userphotoshidden) {
+							for (x=singleton.userphotoshidden.length -1; x > -1; x--) {
+								singleton.userphotos.addItem(singleton.userphotoshidden.getItemAt(x));
+								singleton.userphotoshidden.removeItemAt(x);
+							}
+						}
+					}
+					
+					singleton.userphotos.refresh();
+					singleton.userphotoshidden.refresh();
+					
+					/*
+					//Refresh the sort
+					if (!userphotoshidden) {
+						if (ddSorting.selectedIndex == 0) {
+							ChangeSortOrderByDate();
+						} else {
+							ChangeSortOrderByName();
+						}
+					}
+					*/
+					
+					var _itemRenderer:IFactory = lstUserPhotos.itemRenderer;
+					lstUserPhotos.itemRenderer = null;
+					lstUserPhotos.itemRenderer = _itemRenderer;
+					
+				}
+				
+				
+			}
+			
+			protected function btnShowThemes_clickHandler(event:MouseEvent):void
+			{
+				
+				if (FlexGlobals.topLevelApplication.themebuilder) {
+					FlexGlobals.topLevelApplication.themebuilder.visible = true;
+					PopUpManager.centerPopUp(FlexGlobals.topLevelApplication.themebuilder);
+				}
+			}
+			
+			protected function btnChangeProduct_clickHandler(event:MouseEvent):void
+			{
+				
+				if (!singleton._changesMade) {
+					
+					//Detect if another productsize was selected
+					if (FlexGlobals.topLevelApplication.themebuilder.lstProducts.selectedIndex != lstProductSizes.selectedIndex) {
+						
+						//We have a change
+						singleton.newProductRequest = true;
+						singleton._changesMade = true;
+						
+						//Make sure we will create a new theme later
+						singleton._userProductID = null;
+						
+						//Start a new product, based on the first item in the selected product
+						var product:Object = lstProductSizes.selectedItem;
+						
+						//Find the softcover version
+						var selectedproduct:int = 0;
+						
+						for (var x:int=0; x < lstProductSizes.selectedItem.infos.length; x++) {
+							if (lstProductSizes.selectedItem.infos[x].coverwrap == 0) {
+								selectedproduct = x;
+								break;
+							}
+						}
+						
+						singleton._productID = lstProductSizes.selectedItem.ids[selectedproduct];
+						
+						FlexGlobals.topLevelApplication.themeBuilderLabel.text = "Gekozen thema: " + singleton._bookTitle + " (" + lstProductSizes.selectedItem.width + " x " + lstProductSizes.selectedItem.height + " mm)"
+							
+						FlexGlobals.topLevelApplication.GetProduct();
+						
+					} else {
+						singleton.ShowMessage("Kies een ander product.", "Deze is nu al gekozen.", true);
+					}
+					
+				} else {
+					//Save first
+					singleton.ShowMessage("Sla het huidige thema eerst op.", "Er zijn wijzigingen.", true);
+				}
+				
+			}
+			
+			protected function ddBackgroundCategory_changeHandler(event:IndexChangeEvent):void
+			{
+				
+				var ast:AsyncToken = FlexGlobals.topLevelApplication.api_cms.api_categorized("Background", ddBackgroundCategory.selectedItem.id);
+				ast.addResponder(new mx.rpc.Responder(onGetBackgroundByIDResult, onGetCMSFail));
+			}
+			
+			protected function ddStickerCategory_changeHandler(event:IndexChangeEvent):void
+			{
+				var ast:AsyncToken = FlexGlobals.topLevelApplication.api_cms.api_categorized("Sticker", ddStickerCategory.selectedItem.id);
+				ast.addResponder(new mx.rpc.Responder(onGetClipartByIDResult, onGetCMSFail));
+			}
+			
+			protected function ddPassepartoutsCategory_changeHandler(event:IndexChangeEvent):void
+			{
+				var ast:AsyncToken = FlexGlobals.topLevelApplication.api_cms.api_get_by_submodel("Mask", "Type", ddPassepartoutsCategory.selectedItem.id); //2nd, Type or Styke
+				ast.addResponder(new mx.rpc.Responder(onGetPassepartoutByIDResult, onGetCMSFail));
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="album"/>
+		<s:State name="timeline"/>
+		<s:State name="theme"/>
+	</s:states>
+	
+	
+	<fx:Declarations>
+		<s:Power id="powerEasing"
+				 exponent="3"/>
+		
+		<s:Move id="menuMoveIn" target="{vsMenu}"
+				easer="{powerEasing}"
+				duration="400"
+				effectEnd="menuMoveIn_effectEndHandler(event)"
+				xFrom="-205" xTo="73" />
+		
+		<s:Move id="menuMoveOut" target="{vsMenu}"
+				easer="{powerEasing}"
+				duration="400"
+				effectEnd="menuMoveOut_effectEndHandler(event)"
+				xFrom="73" xTo="-205" />
+		
+		<s:Move id="menuMoveInView" target="{FlexGlobals.topLevelApplication.vsView}"
+				easer="{powerEasing}"
+				duration="400"
+				xFrom="73" xTo="330" />
+		
+		<s:Move id="menuMoveOutView" target="{FlexGlobals.topLevelApplication.vsView}"
+				easer="{powerEasing}"
+				duration="400"
+				xFrom="330" xTo="73" />
+		
+	</fx:Declarations>
+	
+	<fx:Script source="../functions/sidemenu.as" />
+	<fx:Script source="../functions/shapes.as" />
+	
+	<fx:Style source="../styles/sidemenu_stylesheet.css" />
+	
+	<s:Rect id="menuBackground" width="73" height="100%">
+		<s:fill>
+			<s:SolidColor color="#f2f2f2" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<mx:ViewStack id="vsMenu" x="-205" width="260" top="0" height="100%">
+		
+		<s:NavigatorContent label="photos">
+			
+			<s:BorderContainer width="100%" height="100%" backgroundColor="#E3E3E3" borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout gap="0" />
+				</s:layout>
+				
+				<s:HGroup width="100%" height="40" verticalAlign="middle" paddingLeft="10" paddingRight="5">
+					
+					<s:Label width="100%" color="#4E4E4E" fontSize="16" text="Mijn foto's" />
+					
+					<s:Button id="btnUploadPhotosFolder" height="30"
+							  label="+ foto's" click="{FlexGlobals.topLevelApplication.onUploadPhotoClick()}"
+							  fontSize="14" skinClass="skins.btnGreenSkin"/>
+				</s:HGroup>
+				
+				<!--
+				<s:BorderContainer width="100%" height="30" backgroundColor="#E3E3E3" borderVisible="false">
+					<s:layout>
+						<s:HorizontalLayout verticalAlign="middle" paddingLeft="10" paddingRight="10" gap="4" />
+					</s:layout>
+					
+					<s:CheckBox id="cbHideUsed" label="" skinClass="skins.checkBoxSkin"
+								change="cbHideUsed_changeHandler(event)"/>
+					
+					<s:Label text="Verberg gebruikt" fontSize="9" color="#FFFFFF" />
+					
+					<s:Spacer width="100%" />
+					
+					<s:Label text="Sorteer op:" fontSize="9" color="#FFFFFF" />
+					
+					<s:DropDownList id="ddSorting" width="80" height="16" borderColor="#000000" color="0"
+									fontSize="9" change="SortPhotos(event)"
+									dataProvider="{singleton.sortingoptions}"
+									requireSelection="true" selectedIndex="0"
+									skinClass="skins.dropDownSmallSkin"/>
+					
+				</s:BorderContainer>
+				-->
+				
+				<s:List id="lstUserPhotos" width="260" height="100%"
+						contentBackgroundAlpha="0"
+						dataProvider="{singleton.userphotos}" horizontalScrollPolicy="off"
+						itemRenderer="itemrenderers.userPhotoRenderer" useVirtualLayout="false"
+						borderVisible="false">
+					<s:layout>
+						<s:TileLayout horizontalGap="5" verticalGap="5" 
+									  orientation="rows"
+									  paddingBottom="5" paddingLeft="5"
+									  paddingRight="5" paddingTop="5"/>
+					</s:layout>
+				</s:List>
+				
+				<s:BorderContainer width="100%" backgroundColor="#EAEAEA" borderVisible="false"
+								   render="_renderHandler(event)">
+					<s:layout>
+						<s:VerticalLayout verticalAlign="middle" paddingLeft="0" paddingRight="0" gap="0" />
+					</s:layout>
+					
+					<s:VGroup id="grpButtonsPhotoBackground" width="100%" height="120" gap="5">
+						
+						<mx:HRule width="100%"/>
+						
+						<s:Label id="lblPhotosBackground" paddingLeft="10" text="Foto op de achtergrond" paddingTop="5" paddingBottom="10" fontSize="14"/>
+						
+						<s:HGroup width="100%" enabled="{singleton.selected_userphoto != null}"
+								  gap="5" paddingLeft="10" paddingBottom="5" verticalAlign="middle">
+							
+							<s:Button uid="left"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond linker pagina"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('left')}"/>
+							<s:Button uid="right"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond rechter pagina"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('right')}"/>
+							<s:Button uid="spread"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond over spread"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('spread')}"/>
+							
+							<s:Label text="Deze pagina" fontSize="12" paddingLeft="10"/>
+							
+						</s:HGroup>
+						
+						<mx:HRule width="100%"/>
+						
+						<s:HGroup width="100%" enabled="{singleton.selected_userphoto != null}"
+								  gap="5" paddingLeft="10" paddingTop="5" verticalAlign="middle">
+							
+							<s:Button uid="leftAll"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond ALLE linker pagina's"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('leftAll')}"/>
+							<s:Button uid="rightAll"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond ALLE rechter pagina's"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('rightAll')}"/>
+							<s:Button uid="spreadAll"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond over ALLE spreads"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('spreadAll')}"/>
+							
+							<s:Label text="Alle pagina's" fontSize="12" paddingLeft="10"/>
+							
+						</s:HGroup>
+					
+					</s:VGroup>
+					
+				</s:BorderContainer>
+				
+			</s:BorderContainer>
+			
+			<s:Line rotation="90" height="100%" right="0">
+				<s:stroke>
+					<s:SolidColorStroke color="0xFFFFFF" alpha="1" />		
+				</s:stroke>
+			</s:Line>
+			
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent label="backgrounds">
+			
+			<s:BorderContainer width="100%" height="100%" backgroundColor="#E3E3E3" borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout gap="0" />
+				</s:layout>
+				
+				<s:HGroup width="100%" height="40" verticalAlign="middle" paddingLeft="10" paddingRight="5">
+					
+					<s:Label width="100%" color="#4E4E4E" fontSize="16"
+							 text="Achtergrond" />
+					
+					<s:Button id="btnGetBackgrounds" height="35"
+							  label="+ achtergrond"
+							  click="btnGetBackgrounds_clickHandler(event)"
+							  fontSize="14" skinClass="skins.btnGreenSkin"/>
+				</s:HGroup>
+			
+				<s:VGroup id="backgroundCollection" width="100%" height="100%" gap="0">
+					
+					<s:BorderContainer includeIn="theme" width="100%" 
+									   backgroundColor="#58595B" borderVisible="false">
+						<s:layout>
+							<s:VerticalLayout gap="10" 
+											  paddingLeft="5" paddingRight="5" 
+											  paddingTop="10" paddingBottom="10"
+											  verticalAlign="middle" /> 
+						</s:layout>
+						
+						<s:Label text="Thema categorie:" color="#FFFFFF" />
+						
+						<s:DropDownList id="ddBackgroundCategory" width="100%" selectedIndex="0" skinClass="skins.dropDownSmallSkin" 
+										dataProvider="{singleton.background_categories}" requireSelection="true"
+										labelField="name" horizontalScrollPolicy="off"
+										change="ddBackgroundCategory_changeHandler(event)"/>
+					</s:BorderContainer>
+					
+					<s:Scroller width="100%" height="100%" horizontalScrollPolicy="off">
+						
+						<s:VGroup width="100%" gap="0">
+							
+							<s:ToggleButton id="btnAdvicedBackgrounds" width="100%" height="30"
+											click="btnAdvicedBackgrounds_clickHandler(event)"
+											selected="true"
+											skinClass="skins.btnToggleOpenCloseButtonWithArrow"
+											label="Achtergronden ({singleton.background_items_adviced.length})"/>
+							
+							<s:Group id="btnAdvicedBackgroundsContent" width="100%" minHeight="200" visible="true" clipAndEnableScrolling="false">
+							
+									<s:List id="lstAdvicedBackgrounds" width="100%" minHeight="0"
+											contentBackgroundAlpha="1" contentBackgroundColor="#E3E3E3"
+											dataProvider="{singleton.background_items_adviced}" horizontalScrollPolicy="off"
+											itemRenderer="itemrenderers.backgroundPhotoRenderer" 
+											useVirtualLayout="true"
+											borderVisible="false">
+										<s:layout>
+											<s:TileLayout horizontalGap="5" verticalGap="5" 
+														  orientation="rows" requestedColumnCount="4"
+														  paddingBottom="5" paddingLeft="5"
+														  paddingRight="5" paddingTop="5"/>
+										</s:layout>
+									</s:List>
+								
+							</s:Group>
+							
+							<s:ToggleButton id="btnProjectBackgrounds" width="100%" height="30"
+											label="Gebruikte achtergronden ({singleton.background_items_lastused.length})"
+											click="btnProjectBackgrounds_clickHandler(event)"
+											selected="true"
+											skinClass="skins.btnToggleOpenCloseButtonWithArrow"/>
+							
+							<s:Group id="btnProjectBackgroundsContent" width="100%" minHeight="100" clipAndEnableScrolling="false">
+								
+								<s:List id="lstBackgrounds" width="100%" minHeight="0" height="100%"
+										contentBackgroundAlpha="1" contentBackgroundColor="#E3E3E3"
+										dataProvider="{singleton.background_items_lastused}" horizontalScrollPolicy="off"
+										itemRenderer="itemrenderers.backgroundPhotoRenderer" 
+										useVirtualLayout="true"
+										borderVisible="false">
+									<s:layout>
+										<s:TileLayout horizontalGap="5" verticalGap="5" 
+													  orientation="rows" requestedColumnCount="4"
+													  paddingBottom="5" paddingLeft="5"
+													  paddingRight="5" paddingTop="5"/>
+									</s:layout>
+								</s:List>
+								
+							</s:Group>
+							
+							<s:BorderContainer width="100%" height="30" borderVisible="false" backgroundColor="#c8c8c8">
+								<s:layout>
+									<s:HorizontalLayout gap="5" paddingRight="5" verticalAlign="middle" />
+								</s:layout>
+								
+								<s:ToggleButton id="btnProjectColors" width="100%" height="30"
+												label="Gebruikte kleuren ({singleton.lastusedcolors.length})"
+												click="btnProjectBackgrounds_clickHandler(event)"
+												selected="true"
+												skinClass="skins.btnToggleOpenCloseButtonWithArrow"/>
+								
+								<s:ToggleButton id="btnEyeDropper"
+												skinClass="skins.toggleButtonSkin" color="#FFFFFF"
+												label="&#xf1fb;" uid="_AppFontAwesome" fontSize="22"
+												toolTip="Kleurpipet"
+												click="{FlexGlobals.topLevelApplication.SetColorByEyeDropper(event)}"/>
+								
+								<mx:ColorPicker id="backgroundColorPicker" width="25" height="25"
+												change="{FlexGlobals.topLevelApplication.UpdateBackgroundColor(event)}"
+												toolTip="Kleurenkiezer"/> 
+								
+							</s:BorderContainer>
+							
+							<s:Group id="btnProjectColorsContent" width="100%" minHeight="100" clipAndEnableScrolling="false">
+								
+								<s:List id="lstThemeColors" width="100%" minHeight="0" height="100%"
+										contentBackgroundAlpha="1" contentBackgroundColor="#E3E3E3"
+										dataProvider="{singleton.lastusedcolors}" horizontalScrollPolicy="off"
+										itemRenderer="itemrenderers.colorItemLargeRenderer" 
+										useVirtualLayout="true"
+										borderVisible="false">
+									<s:layout>
+										<s:TileLayout horizontalGap="5" verticalGap="5" 
+													  orientation="rows" requestedColumnCount="4"
+													  paddingBottom="5" paddingLeft="5"
+													  paddingRight="5" paddingTop="5"/>
+									</s:layout>
+								</s:List>
+								
+							</s:Group>
+							
+						</s:VGroup>
+						
+					</s:Scroller>
+					
+				</s:VGroup>
+				
+				<s:BorderContainer width="100%" backgroundColor="#EAEAEA" borderVisible="false"
+								   render="_renderHandler(event)">
+					<s:layout>
+						<s:VerticalLayout verticalAlign="middle" paddingLeft="0" paddingRight="0" gap="0" />
+					</s:layout>
+					
+					<s:VGroup width="100%" height="120" gap="5">
+						
+						<mx:HRule width="100%"/>
+						
+						<s:Label paddingLeft="10" text="Achtergrond toepassen op:" paddingTop="5" paddingBottom="10" fontSize="14"/>
+						
+						<s:HGroup width="100%" enabled="{singleton.selected_background != null}"
+								  gap="5" paddingLeft="10" paddingBottom="5" verticalAlign="middle">
+							
+							<s:Button uid="left"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond linker pagina"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('left')}"/>
+							<s:Button uid="right"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond rechter pagina"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('right')}"/>
+							<s:Button uid="spread"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond over spread"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('spread')}"/>
+							
+							<s:Label text="Deze pagina" fontSize="12" paddingLeft="10"/>
+							
+						</s:HGroup>
+						
+						<mx:HRule width="100%"/>
+						
+						<s:HGroup width="100%" enabled="{singleton.selected_background != null}"
+								  gap="5" paddingLeft="10" paddingTop="5" verticalAlign="middle">
+							
+							<s:Button uid="leftAll"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond ALLE linker pagina's"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('leftAll')}"/>
+							<s:Button uid="rightAll"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond ALLE rechter pagina's"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('rightAll')}"/>
+							<s:Button uid="spreadAll"
+									  skinClass="skins.buttonSkinSwf"
+									  toolTip="Achtergrond over ALLE spreads"
+									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('spreadAll')}"/>
+							
+							<s:Label text="Alle pagina's" fontSize="12" paddingLeft="10"/>
+							
+						</s:HGroup>
+						
+					</s:VGroup>
+					
+				</s:BorderContainer>
+				
+				<mx:HRule width="100%" />
+				
+			</s:BorderContainer>
+			
+			<s:Line rotation="90" height="100%" right="0">
+				<s:stroke>
+					<s:SolidColorStroke color="0xFFFFFF" alpha="1" />		
+				</s:stroke>
+			</s:Line>
+			
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent label="stickers">
+			
+			<s:BorderContainer width="100%" height="100%" backgroundColor="#E3E3E3" borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout gap="0" />
+				</s:layout>
+				
+				<s:HGroup width="100%" height="40" verticalAlign="middle" paddingLeft="10" paddingRight="5">
+					
+					<s:Label width="100%" color="#4E4E4E" fontSize="16"
+							 text="Stickers" />
+					
+					<s:Button id="btnGetCliparts" height="35"
+							  label="+ stickers"
+							  click="btnGetCliparts_clickHandler(event)"
+							  fontSize="14" skinClass="skins.btnGreenSkin"/>
+				</s:HGroup>
+				
+				<s:BorderContainer includeIn="theme" width="100%" 
+								   backgroundColor="#58595B" borderVisible="false">
+					<s:layout>
+						<s:VerticalLayout gap="10" 
+										  paddingLeft="5" paddingRight="5" 
+										  paddingTop="10" paddingBottom="10"
+										  verticalAlign="middle" /> 
+					</s:layout>
+					
+					<s:Label text="Thema categorie:" color="#FFFFFF" />
+					
+					<s:DropDownList id="ddStickerCategory" width="100%" selectedIndex="0" skinClass="skins.dropDownSmallSkin" 
+									dataProvider="{singleton.clipart_categories}" requireSelection="true"
+									labelField="name" horizontalScrollPolicy="off" 
+									change="ddStickerCategory_changeHandler(event)"/>
+				</s:BorderContainer>
+				
+				<s:Scroller width="100%" height="100%" horizontalScrollPolicy="off">
+					
+					<s:VGroup width="100%" gap="0">
+						
+						<s:BorderContainer width="100%" backgroundColor="#c8c8c8" borderVisible="false">
+							<s:layout>
+								<s:VerticalLayout paddingLeft="10" paddingRight="30" verticalAlign="middle" />
+							</s:layout>
+							
+							<s:Label text="Vormen" width="100%" fontSize="14" color="#4e4e4e" />
+							
+						</s:BorderContainer>
+						
+						<s:HGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10"
+								  paddingTop="10">
+							<s:Group width="40" height="40" 
+									 mouseEnabledWhereTransparent="true" 
+									 mouseDown="{AddRectangle(event)}">
+								<s:SWFLoader source="@Embed('assets/icons/rectangle.swf')"
+											 horizontalCenter="0" verticalCenter="0"
+											 width="40" height="40" mouseEnabled="false"/>
+							</s:Group> 
+							<s:Group width="40" height="40" 
+									 mouseEnabledWhereTransparent="true" 
+									 mouseDown="{AddCircle(event)}">
+								<s:SWFLoader source="@Embed('assets/icons/circle.swf')"
+											 horizontalCenter="0" verticalCenter="0"
+											 width="40" height="40" mouseEnabled="false"/>
+							</s:Group> 
+							<s:Group width="40" height="40" 
+									 mouseEnabledWhereTransparent="true" 
+									 mouseDown="{AddLine(event)}">
+								<s:SWFLoader source="@Embed('assets/icons/stroke.swf')"
+											 horizontalCenter="0" verticalCenter="0"
+											 width="40" height="3" scaleContent="true" 
+											 maintainAspectRatio="false" mouseEnabled="false"/>
+							</s:Group> 
+						</s:HGroup>
+						
+						<s:VGroup width="100%" height="100%" gap="0">
+							
+							<s:ToggleButton id="btnAdvicedCliparts" 
+											width="100%" height="30"
+											visible="true"
+											selected="true"
+											skinClass="skins.btnToggleOpenCloseButtonWithArrow"
+											label="Stickers ({singleton.clipart_items_adviced.length})" 
+											click="btnAdvicedCliparts_clickHandler(event)" />
+							
+							<s:Scroller width="100%" height="100%" minHeight="200" horizontalScrollPolicy="off">
+								
+								<s:Group id="btnAdvicedClipartsContent" width="100%" height="100%" visible="true" 
+										 clipAndEnableScrolling="false">
+									
+									<s:List id="lstAdvicedCliparts" width="100%" minHeight="0"
+											contentBackgroundAlpha="1" contentBackgroundColor="#E3E3E3"
+											dataProvider="{singleton.clipart_items_adviced}" horizontalScrollPolicy="off"
+											itemRenderer="itemrenderers.clipartPhotoRenderer" 
+											useVirtualLayout="true"
+											borderVisible="false">
+										<s:layout>
+											<s:TileLayout horizontalGap="5" verticalGap="5" 
+														  orientation="rows" requestedColumnCount="4"
+														  paddingBottom="5" paddingLeft="5"
+														  paddingRight="5" paddingTop="5"/>
+										</s:layout>
+									</s:List>
+								</s:Group>
+							
+							</s:Scroller>
+							
+							<s:ToggleButton id="btnProjectCliparts" 
+											width="100%" height="30" 
+											skinClass="skins.btnToggleOpenCloseButtonWithArrow"
+											label="Gebruikte stickers ({singleton.clipart_items_lastused.length})" 
+											selected="false" 
+											click="btnProjectCliparts_clickHandler(event)"/>
+							
+							<s:Scroller width="100%" height="150" minHeight="100" horizontalScrollPolicy="off">
+								
+								<s:Group id="btnProjectClipartsContent" width="100%" clipAndEnableScrolling="false">
+									
+									<s:List id="lstCliparts" width="100%"
+											contentBackgroundAlpha="1" contentBackgroundColor="#E3E3E3"
+											dataProvider="{singleton.clipart_items_lastused}" horizontalScrollPolicy="off"
+											itemRenderer="itemrenderers.clipartPhotoRenderer" 
+											useVirtualLayout="true"
+											borderVisible="false">
+										<s:layout>
+											<s:TileLayout horizontalGap="5" verticalGap="5" 
+														  orientation="rows" requestedColumnCount="4"
+														  paddingBottom="5" paddingLeft="5"
+														  paddingRight="5" paddingTop="5"/>
+										</s:layout>
+									</s:List>
+									
+								</s:Group>
+								
+							</s:Scroller>
+							
+						</s:VGroup>
+						
+					</s:VGroup>
+					
+				</s:Scroller>
+	
+			</s:BorderContainer>
+			
+			<s:Line rotation="90" height="100%" right="0">
+				<s:stroke>
+					<s:SolidColorStroke color="0xFFFFFF" alpha="1" />		
+				</s:stroke>
+			</s:Line>
+			
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent label="passepartouts">
+			
+			<s:BorderContainer width="100%" height="100%" backgroundColor="#E3E3E3" borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout gap="0" />
+				</s:layout>
+				
+				<s:HGroup width="100%" height="40" verticalAlign="middle" paddingLeft="10" paddingRight="5">
+					
+					<s:Label width="100%" color="#4E4E4E" fontSize="16"
+							 text="Kaders" />
+					
+					<s:Button id="btnGetPassepartouts" height="35"
+							  label="+ kaders"
+							  click="btnGetPassepartouts_clickHandler(event)"
+							  fontSize="14" skinClass="skins.btnGreenSkin"/>
+				</s:HGroup>
+				
+				<s:BorderContainer includeIn="theme" width="100%" 
+								   backgroundColor="#58595B" borderVisible="false">
+					<s:layout>
+						<s:VerticalLayout gap="10" 
+										  paddingLeft="5" paddingRight="5" 
+										  paddingTop="10" paddingBottom="10"
+										  verticalAlign="middle" /> 
+					</s:layout>
+					
+					<s:Label text="Thema categorie:" color="#FFFFFF" />
+					
+					<s:DropDownList id="ddPassepartoutsCategory" width="100%" selectedIndex="0" skinClass="skins.dropDownSmallSkin" 
+									dataProvider="{singleton.passepartout_categories}" requireSelection="true"
+									labelField="name" horizontalScrollPolicy="off" 
+									change="ddPassepartoutsCategory_changeHandler(event)"/>
+				</s:BorderContainer>
+				
+				<s:VGroup width="100%" height="100%" gap="0">
+					
+					<s:ToggleButton id="btnAdvicedPassepartouts" 
+									width="100%" height="30"
+									visible="true"
+									selected="true"
+									skinClass="skins.btnToggleOpenCloseButtonWithArrow"
+									label="Passepartouts ({singleton.passepartout_items_adviced.length})" 
+									click="btnAdvicedPassepartouts_clickHandler(event)" />
+					
+					<s:Scroller width="100%" height="100%" horizontalScrollPolicy="off">
+						<s:Group id="btnAdvicedPassepartoutsContent" width="100%" height="50%" visible="true" clipAndEnableScrolling="false">
+							
+							<s:List id="lstAdvicedPassepartouts" width="100%" minHeight="0"
+									contentBackgroundAlpha="1" contentBackgroundColor="#E3E3E3"
+									dataProvider="{singleton.passepartout_items_adviced}" horizontalScrollPolicy="off"
+									itemRenderer="itemrenderers.passepartoutPhotoRenderer" 
+									useVirtualLayout="true"
+									borderVisible="false">
+								<s:layout>
+									<s:TileLayout horizontalGap="5" verticalGap="5" 
+												  orientation="rows" requestedColumnCount="4"
+												  paddingBottom="5" paddingLeft="5"
+												  paddingRight="5" paddingTop="5"/>
+								</s:layout>
+							</s:List>
+						</s:Group>
+					</s:Scroller>
+					
+					<s:ToggleButton id="btnProjectPassepartouts" 
+									width="100%" height="30" 
+									skinClass="skins.btnToggleOpenCloseButtonWithArrow"
+									label="Gebruikte passepartouts ({singleton.passepartout_items_lastused.length})" 
+									selected="true" 
+									click="btnProjectPassepartouts_clickHandler(event)"/>
+					
+					<s:Scroller width="100%" height="200" horizontalScrollPolicy="off">
+						<s:Group id="btnProjectPassepartoutsContent" width="100%" height="50%" clipAndEnableScrolling="false">
+							
+							<s:List id="lstPassepartouts" width="100%" minHeight="0" height="100%"
+									contentBackgroundAlpha="1" contentBackgroundColor="#E3E3E3"
+									dataProvider="{singleton.passepartout_items_lastused}" horizontalScrollPolicy="off"
+									itemRenderer="itemrenderers.passepartoutPhotoRenderer" 
+									useVirtualLayout="true"
+									borderVisible="false">
+								<s:layout>
+									<s:TileLayout horizontalGap="5" verticalGap="5" 
+												  orientation="rows" requestedColumnCount="4"
+												  paddingBottom="5" paddingLeft="5"
+												  paddingRight="5" paddingTop="5"/>
+								</s:layout>
+							</s:List>
+							
+						</s:Group>
+					</s:Scroller>
+					
+				</s:VGroup>
+				
+			</s:BorderContainer>
+			
+			<s:Line rotation="90" height="100%" right="0">
+				<s:stroke>
+					<s:SolidColorStroke color="0xFFFFFF" alpha="1" />		
+				</s:stroke>
+			</s:Line>
+			
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent label="layouts">
+			
+			<s:BorderContainer width="100%" height="100%" backgroundColor="#E3E3E3" borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout gap="0" />
+				</s:layout>
+				
+				<s:HGroup width="100%" height="40" verticalAlign="middle" paddingLeft="10" paddingRight="5">
+					
+					<s:Label width="100%" color="#4E4E4E" fontSize="16"
+							 text="Layouts" />
+					
+				</s:HGroup>
+						
+					<s:BorderContainer width="100%" backgroundColor="0xFFFFFF" height="32" borderVisible="false">
+						<s:layout>
+							<s:HorizontalLayout paddingLeft="0" paddingRight="0" gap="1" verticalAlign="middle" />
+						</s:layout>
+						
+						<s:ToggleButton id="btnLayout1" width="32" height="32" label="1"
+										selected="false" skinClass="skins.btnToggleMenuNumber"
+										click="{UpdatePageLayouts(event)}"/>
+						<s:ToggleButton skinClass="skins.btnToggleMenuNumber" id="btnLayout2" width="32" height="32" label="2"
+										click="{UpdatePageLayouts(event)}"/>
+						<s:ToggleButton skinClass="skins.btnToggleMenuNumber" id="btnLayout3" 
+										selected="true" width="32" height="32" label="3"
+										click="{UpdatePageLayouts(event)}"/>
+						<s:ToggleButton skinClass="skins.btnToggleMenuNumber" id="btnLayout4" width="32" height="32" label="4"
+										click="{UpdatePageLayouts(event)}"/>
+						<s:ToggleButton skinClass="skins.btnToggleMenuNumber" id="btnLayout5" width="32" height="32" label="5+"
+										click="{UpdatePageLayouts(event)}"/>
+						<s:ToggleButton skinClass="skins.btnToggleMenuNumber" id="btnLayout10" width="100%" height="32" label="tekst"
+										click="{UpdatePageLayouts(event)}"/>
+						
+					</s:BorderContainer>
+					
+					<s:Scroller width="100%" height="100%" horizontalScrollPolicy="off">
+						
+						<s:VGroup width="100%" gap="0">
+							
+							<s:List id="lstPageLayouts" width="260" minHeight="0"
+									contentBackgroundAlpha="1" contentBackgroundColor="#E3E3E3"
+									dataProvider="{singleton.pagelayout_selection}"
+									itemRenderer="itemrenderers.pagelayout_itemrenderer"
+									horizontalScrollPolicy="off"
+									useVirtualLayout="true"
+									borderVisible="false">
+								<s:layout>
+									<s:TileLayout horizontalGap="10" verticalGap="10" 
+												  orientation="rows" requestedColumnCount="2"
+												  paddingBottom="10" paddingLeft="10"
+												  paddingRight="10" paddingTop="10"/>
+								</s:layout>
+							</s:List>
+							
+							<s:BorderContainer width="100%" height="0" backgroundColor="{singleton.baseColor}" borderVisible="false"
+											   visible="false">
+								<s:layout>
+									<s:HorizontalLayout paddingLeft="10" paddingRight="10" verticalAlign="middle" />
+								</s:layout>
+								
+								<s:Label text="Mijn lay-outs" width="100%" fontSize="14" color="0xFFFFFF" />
+								
+								<s:Label id="lblMyLayoutCount" text="0" fontSize="14" color="0xFFFFFF" />
+								
+								<s:Image id="btnShowMyLayouts" width="13" height="6" smooth="true"
+										 source="@Embed('assets/icons/arrow_down.jpg')"
+										 buttonMode="true" rotation="90" />
+								
+							</s:BorderContainer>
+							
+							<s:List id="lstMyPageLayouts" width="260" minHeight="0" height="0" visible="false"
+									contentBackgroundAlpha="1" contentBackgroundColor="#E3E3E3"
+									horizontalScrollPolicy="off"
+									useVirtualLayout="false"
+									borderVisible="false">
+								<s:layout>
+									<s:TileLayout horizontalGap="10" verticalGap="10" 
+												  orientation="rows" requestedColumnCount="2"
+												  paddingBottom="10" paddingLeft="10"
+												  paddingRight="10" paddingTop="10"/>
+								</s:layout>
+							</s:List>
+							
+						</s:VGroup>
+					</s:Scroller>
+						
+			</s:BorderContainer>
+			
+			<s:Line rotation="90" height="100%" right="0">
+				<s:stroke>
+					<s:SolidColorStroke color="0xFFFFFF" alpha="1" />		
+				</s:stroke>
+			</s:Line>
+			
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent label="options" id="ncPhotoOptions">
+			
+			<s:BorderContainer width="100%" height="100%" backgroundColor="#E3E3E3" borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout gap="0" />
+				</s:layout>
+				
+				<s:HGroup width="100%" height="40" verticalAlign="middle" paddingLeft="10" paddingRight="5">
+					<s:Label width="100%" color="#4E4E4E" fontSize="16"
+							 text="Bewerken" />
+				</s:HGroup>
+				
+				<s:Scroller width="100%" height="100%" horizontalScrollPolicy="off">
+					
+					<s:VGroup id="photoOptionsGroup" enabled="false" width="100%" gap="0">
+					
+						<s:BorderContainer width="100%" height="0" visible="false" backgroundColor="#c8c8c8" borderVisible="false">
+							<s:layout>
+								<s:HorizontalLayout paddingLeft="10" paddingRight="10" verticalAlign="middle" />
+							</s:layout>
+							
+							<s:Label text="Foto bewerken" width="100%" fontSize="14" color="#4e4e4e" />
+							
+							<s:Image id="btnPhotoEdit" width="13" height="6" smooth="true"
+									 source="@Embed('assets/icons/arrow_down.jpg')"
+									 buttonMode="true" rotation="90" />
+							
+						</s:BorderContainer>
+						
+						<s:BorderContainer id="bcPhotoEdit" width="100%" height="0" visible="false" backgroundColor="#E3E3E3" borderVisible="false">
+							<s:layout>
+								<s:VerticalLayout paddingLeft="10" paddingRight="10"
+												  paddingTop="10" paddingBottom="15" 
+												  gap="5" verticalAlign="middle" />
+							</s:layout>
+						
+							<s:HGroup width="100%" verticalAlign="middle">
+								<s:Label text="Contrast" width="120" fontSize="12" color="0x4E4E4E" />
+								<s:HSlider id="photo_contrast" width="100%" skinClass="skins.HSlider"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle">
+								<s:Label text="Saturatie" width="120" fontSize="12" color="0x4E4E4E" />
+								<s:HSlider id="photo_saturation" width="100%" skinClass="skins.HSlider"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle">
+								<s:Label text="Helderheid" width="120" fontSize="12" color="0x4E4E4E" />
+								<s:HSlider id="photo_brightness" width="100%" skinClass="skins.HSlider"/>
+							</s:HGroup>
+							
+						</s:BorderContainer>
+						
+						<!--
+						<s:BorderContainer width="100%" height="30" backgroundColor="{singleton.baseColor}" borderVisible="false">
+							<s:layout>
+								<s:HorizontalLayout paddingLeft="10" paddingRight="10" verticalAlign="middle" />
+							</s:layout>
+							
+							<s:Label text="Grid" width="100%" fontSize="14" color="0xFFFFFF" />
+							
+							<s:Image id="btnGridOptions" width="13" height="6" smooth="true"
+									 source="@Embed('assets/icons/arrow_down.jpg')"
+									 buttonMode="true" rotation="90" />
+							
+						</s:BorderContainer>
+						
+						<s:BorderContainer id="bcGrid" width="100%" backgroundColor="#E3E3E3" borderVisible="false">
+							<s:layout>
+								<s:VerticalLayout paddingLeft="10" paddingRight="10"
+												  paddingTop="10" paddingBottom="15" 
+												  gap="5" verticalAlign="middle" />
+							</s:layout>
+							
+							<s:HGroup width="100%" verticalAlign="middle">
+								<s:Label text="Gridlijn om de (in mm)" width="100%" fontSize="12" color="0xFFFFFF" />
+								<s:NumericStepper id="gridlines" minimum="0" maximum="1000" stepSize="1" />
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle">
+								<s:Label text="Kleur grid" width="120" fontSize="12" color="0xFFFFFF" />
+								<s:RadioButton id="gridcolor_black" label="Zwart" color="#FFFFFF"
+											   groupName="gridcolors" selected="true"/>
+								<s:RadioButton id="gridcolor_white" label="Wit" color="#FFFFFF"
+											   groupName="gridcolors"/>
+							</s:HGroup>
+							
+						</s:BorderContainer>
+						-->
+						
+						<s:BorderContainer width="100%" height="30" backgroundColor="#c8c8c8" borderVisible="false">
+							<s:layout>
+								<s:HorizontalLayout paddingLeft="10" paddingRight="10" verticalAlign="middle" />
+							</s:layout>
+							
+							<s:Label text="Filters" width="100%" fontSize="14" color="0x4E4E4E" />
+							
+						</s:BorderContainer>
+						
+						<s:BorderContainer id="bcFilters" width="100%" backgroundColor="#E3E3E3" borderVisible="false">
+							<s:layout>
+								<s:HorizontalLayout gap="15" paddingLeft="10" paddingTop="10" paddingBottom="10" paddingRight="10"/>
+							</s:layout>
+							
+							<s:VGroup horizontalAlign="center" verticalAlign="top" gap="10"
+									  paddingLeft="0" paddingRight="0" paddingTop="5" paddingBottom="5">
+								<s:Group id="bcNormal">
+									<s:Image id="normal" width="48" height="31" click="normal_clickHandler(event)"
+											 source="@Embed('assets/handlers/filter-kleur.jpg')"/>
+								</s:Group>
+								<s:Label color="0x4E4E4E" fontSize="10" text="Normaal"/>
+							</s:VGroup>
+							
+							<s:VGroup horizontalAlign="center" verticalAlign="top" gap="10"
+									  paddingLeft="0" paddingRight="0" paddingTop="5" paddingBottom="5">
+								<s:Group id="bcBW">
+									<s:Image id="bw" width="48" height="31"
+											 source="@Embed('assets/handlers/filter-zwartwit.jpg')"
+											 click="bw_clickHandler(event)"/>
+								</s:Group>
+								<s:Label text="Zwart/Wit" fontSize="10" color="0x4E4E4E" />
+							</s:VGroup>
+							
+							<s:VGroup horizontalAlign="center" verticalAlign="top" gap="10"
+									  paddingLeft="0" paddingRight="0" paddingTop="5" paddingBottom="5">
+								<s:Group id="bcSephia">
+									<s:Image id="sephia" width="48" height="31"
+											 source="@Embed('assets/handlers/filter-sepia.jpg')"
+											 click="sephia_clickHandler(event)"/>
+								</s:Group>
+								<s:Label text="Sepia" fontSize="10" color="0x4E4E4E" />
+							</s:VGroup>
+							
+						</s:BorderContainer>
+						
+						<s:BorderContainer width="100%" height="30" backgroundColor="#c8c8c8" borderVisible="false">
+							<s:layout>
+								<s:HorizontalLayout paddingLeft="10" paddingRight="10" verticalAlign="middle" />
+							</s:layout>
+							
+							<s:Label text="Foto transparantie" width="100%" fontSize="14" color="0x4E4E4E" />
+							
+						</s:BorderContainer>
+						
+						<s:BorderContainer width="100%" backgroundColor="#E3E3E3" borderVisible="false">
+							<s:layout>
+								<s:HorizontalLayout paddingLeft="10" paddingRight="10" 
+													paddingTop="5" paddingBottom="5" gap="4" verticalAlign="middle" 
+													horizontalAlign="center" />
+							</s:layout>
+						
+							<s:SWFLoader source="@Embed('assets/handlers/transparant.swf')" width="24" height="24" />
+							
+							<s:HSlider id="photo_alpha" buttonMode="true" change="photo_alpha_changeHandler(event)"
+									   maximum="100" minimum="0" uid="140"
+									   skinClass="skins.ZoomSliderGray" stepSize="1"
+									   useHandCursor="true" value="100"/> 
+						</s:BorderContainer>
+						
+						<s:BorderContainer width="100%" height="30" backgroundColor="#c8c8c8" borderVisible="false">
+							<s:layout>
+								<s:HorizontalLayout paddingLeft="10" paddingRight="10" verticalAlign="middle" />
+							</s:layout>
+							
+							<s:Label text="Schaduwen" width="100%" fontSize="14" color="0x4E4E4E" />
+							
+						</s:BorderContainer>
+						
+						<s:BorderContainer id="bcShadows" width="100%" backgroundColor="#E3E3E3" borderVisible="false">
+							<s:layout>
+								<s:VerticalLayout paddingLeft="10" paddingRight="10"
+												  paddingTop="10" paddingBottom="15" 
+												  gap="15" verticalAlign="middle" />
+							</s:layout>
+							
+							<s:BorderContainer id="bcNoshadow" backgroundColor="#7D7D7D" click="noshadow_clickHandler(event)"
+											   rollOver="bcNoshadow_rollOverHandler(event)"
+											   rollOut="bcNoshadow_rollOutHandler(event)">
+								<s:layout>
+									<s:HorizontalLayout verticalAlign="middle" gap="5" paddingLeft="4" paddingRight="4" />
+								</s:layout>
+								
+								<s:SWFLoader id="noshadow" width="24" height="24" mouseEnabled="false"
+											 source="@Embed('assets/handlers/geen-schaduw.swf')"/>
+								
+								<s:Label text="Geen schaduw" color="0x4E4E4E" mouseEnabled="false" />
+								
+							</s:BorderContainer> 
+							
+							<s:HGroup width="100%" verticalAlign="middle">
+								
+								<s:VGroup horizontalAlign="center" verticalAlign="top" gap="10"
+										  paddingLeft="0" paddingRight="0" paddingTop="5" paddingBottom="5">
+									<s:Group id="bcLeftshadow">
+										<s:Image id="leftshadow" width="48" height="30" click="leftshadow_clickHandler(event)"
+												 source="@Embed('assets/handlers/schaduw.png')"
+											     filters="{[FlexGlobals.topLevelApplication.leftShadowFilter]}"/>
+									</s:Group>
+									<s:Label color="0x4E4E4E" fontSize="10" text="Schaduw links"/>
+								</s:VGroup>
+								
+								<s:VGroup horizontalAlign="center" verticalAlign="top" gap="10"
+										  paddingLeft="0" paddingRight="0" paddingTop="5" paddingBottom="5">
+									<s:Group id="bcRightshadow">
+										<s:Image id="rightshadow" width="48" height="30" click="rightshadow_clickHandler(event)"
+												 source="@Embed('assets/handlers/schaduw.png')"
+												 filters="{[FlexGlobals.topLevelApplication.rightShadowFilter]}"/>
+									</s:Group>
+									<s:Label color="0x4E4E4E" fontSize="10" text="Schaduw rechts"/>
+								</s:VGroup>
+								
+								<s:VGroup horizontalAlign="center" verticalAlign="top" gap="10"
+										  paddingLeft="0" paddingRight="0" paddingTop="5" paddingBottom="5">
+									<s:Group id="bcBottomshadow">
+										<s:Image id="bottomshadow" width="48" height="30" click="bottomshadow_clickHandler(event)"
+												 source="@Embed('assets/handlers/schaduw.png')"
+												 filters="{[FlexGlobals.topLevelApplication.bottomShadowFilter]}"/>
+									</s:Group>
+									<s:Label color="0x4E4E4E" fontSize="10" text="Schaduw onder"/>
+								</s:VGroup>
+								
+							</s:HGroup>
+							
+						</s:BorderContainer>
+						
+						<s:BorderContainer width="100%" height="30" backgroundColor="#c8c8c8" borderVisible="false">
+							<s:layout>
+								<s:HorizontalLayout paddingLeft="10" paddingRight="10" verticalAlign="middle" />
+							</s:layout>
+							
+							<s:Label text="Randen" width="100%" fontSize="14" color="0x4E4E4E" />
+							
+						</s:BorderContainer>
+						
+						<s:BorderContainer id="bcBorders" width="100%" backgroundColor="#E3E3E3" borderVisible="false">
+							<s:layout>
+								<s:VerticalLayout paddingLeft="10" paddingRight="10"
+												  paddingTop="10" paddingBottom="15" 
+												  gap="5" verticalAlign="middle" />
+							</s:layout>
+							
+							<s:HGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10"
+									  paddingTop="10" verticalAlign="middle">
+								
+								<s:Image id="btnScrollBorderColorsLeft" width="6" height="13" smooth="true"
+										 source="@Embed('assets/iconset/pijl-links.png')"
+										 buttonMode="true" blendMode="invert" 
+										 click="btnScrollBorderColorsLeft_clickHandler(event)"/>
+								
+								<s:List id="lstUsedBorderColors" width="100%" height="22"
+										minHeight="22" borderVisible="false"
+										selectedIndex="0" requireSelection="true"
+										click="{lstUsedColors_mouseUpHandler(event)}"
+										contentBackgroundAlpha="0"
+										dataProvider="{singleton.lastusedcolors}"
+										horizontalScrollPolicy="off"
+										itemRenderer="itemrenderers.colorItemRenderer"
+										selectionColor="#FFFFFF">
+									<s:layout>
+										<s:HorizontalLayout gap="2" verticalAlign="middle"/>
+									</s:layout>
+								</s:List>
+								
+								<s:Image id="btnScrollBorderColorsRight" width="6" height="13" smooth="true"
+										 source="@Embed('assets/iconset/pijl-links.png')" rotation="180"
+										 buttonMode="true" blendMode="invert" 
+										 click="btnScrollBorderColorsRight_clickHandler(event)"/>
+								
+								<mx:ColorPicker id="borderColorPicker" width="25" height="25" change="{bordercolor_changeHandler(event)}" />
+								
+							</s:HGroup>
+							
+							<s:HGroup width="100%" verticalAlign="middle">
+								<s:Label text="Rand dikte" width="100%" fontSize="12" color="0x4E4E4E" />
+								
+								<s:DropDownList id="borderwidth" width="60" dataProvider="{singleton.borderArray}" 
+												change="{borderwidth_changeHandler(event)}"
+												mouseDown="{borderwidth_mouseDownHandler(event)}"
+												skinClass="skins.dropDownSkin" selectedIndex="0" />
+							</s:HGroup>
+							
+						</s:BorderContainer>
+						
+						<s:BorderContainer width="100%" height="30" backgroundColor="#c8c8c8" borderVisible="false">
+							<s:layout>
+								<s:HorizontalLayout paddingLeft="10" paddingRight="10" verticalAlign="middle" />
+							</s:layout>
+							
+							<s:Label text="Rand en schaduw toepassen op..." width="100%" fontSize="14" color="0x4E4E4E" />
+							
+						</s:BorderContainer>
+						
+						<s:HGroup width="100%" paddingLeft="5" paddingRight="5" gap="5"
+								  paddingTop="5" paddingBottom="5">
+							<s:Button id="btnApplyToThisPage" label="deze pagina" width="50%" skinClass="skins.btnGreenSkin"
+								   click="btnApplyToSpread_clickHandler(event)"/>
+							<s:Button id="btnApplyToBook" label="het hele boek" width="50%" skinClass="skins.btnGreenSkin" 
+								   click="btnApplyToBook_clickHandler(event)"/>
+						</s:HGroup>	
+						
+					</s:VGroup>
+					
+				</s:Scroller>
+				
+			</s:BorderContainer>
+
+			<s:BorderContainer visible="{!photoOptionsGroup.enabled}" top="36"
+							   width="100%" height="100%" backgroundAlpha=".7"
+							   backgroundColor="#58595B"
+							   borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" />
+				</s:layout>
+				
+				<s:Label text="Selecteer een foto..." color="0xFFFFFF" fontSize="14" />
+				
+				
+			</s:BorderContainer>
+			
+			<s:Line rotation="90" height="100%" right="0">
+				<s:stroke>
+					<s:SolidColorStroke color="0xFFFFFF" alpha="1" />		
+				</s:stroke>
+			</s:Line>
+			
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent label="themes" id="ncThemeOptions">
+			
+			<s:BorderContainer width="100%" height="100%" backgroundColor="#E3E3E3" borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout gap="0" />
+				</s:layout>
+				
+				<s:BorderContainer width="100%" height="36" backgroundColor="{singleton.baseColor}" borderVisible="false">
+					<s:layout>
+						<s:HorizontalLayout verticalAlign="middle"
+											paddingLeft="10"/>
+					</s:layout>
+					
+					<s:Label text="&#xf03e;" fontFamily="_AppFontAwesome" fontSize="24" color="#FFFFFF" />
+					
+					<s:Label width="100%" height="100%" color="#FFFFFF" fontSize="16"
+							 text="Thema" verticalAlign="middle"
+							 paddingTop="4"/>
+					
+				</s:BorderContainer>
+				
+				<s:VGroup id="themesettings" width="100%" height="100%" gap="10" paddingLeft="5" paddingRight="5" paddingTop="5">
+					
+					<s:BorderContainer width="100%" height="73" backgroundColor="#F2F2F2" backgroundAlpha="1" borderVisible="false">
+						<s:layout>
+							<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" 
+												paddingLeft="10" paddingRight="10"/>
+						</s:layout>
+						
+						<s:Button id="btnShowThemes" width="100%" height="35"
+								  label="Thema overzicht..."
+								  click="btnShowThemes_clickHandler(event)"
+								  fontSize="16" skinClass="skins.btnGreenSkin"/>
+						
+					</s:BorderContainer>
+					
+					<s:ComboBox id="lstProductSizes" dataProvider="{singleton.products}"
+									labelFunction="lstProductSizes_labelFunc"
+									width="100%" height="30"
+									selectedIndex="-1"
+									prompt="Kies een product..."
+									color="#58595B" fontSize="14"
+									labelField="name"
+									borderVisible="true" />
+					
+					<s:Button id="btnChangeProduct" width="100%" height="35"
+							  label="Ander product kiezen..."
+							  click="btnChangeProduct_clickHandler(event)"
+							  fontSize="16" skinClass="skins.btnGreenSkin"/>
+					
+				</s:VGroup>
+				
+			</s:BorderContainer>
+			
+			<s:Line rotation="90" height="100%" right="0">
+				<s:stroke>
+					<s:SolidColorStroke color="0xFFFFFF" alpha="1" />		
+				</s:stroke>
+			</s:Line>
+			
+		</s:NavigatorContent>
+		
+	</mx:ViewStack>
+	
+	<s:BorderContainer id="menuGroup" width="73" height="100%" left="0" top="0" 
+					   borderVisible="false" borderWeight="0" backgroundColor="{singleton.baseColor}">
+		<s:layout>
+			<s:VerticalLayout gap="0" paddingBottom="0" paddingLeft="0" paddingRight="0"
+							  paddingTop="0" />
+		</s:layout>
+		
+		<s:ToggleButton id="btnPhotos" width="73" height="73" 
+						toolTip="Foto's"
+						click="{onSideMenuSelection(event)}"
+						label="&#xf030;" uid="_AppFontAwesome" fontSize="28"
+						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
+		<s:ToggleButton id="btnLayouts" includeIn="album,theme" width="73" height="73" toolTip="Layouts"
+						click="{onSideMenuSelection(event)}"
+						label="&#xe605;" uid="_AppFontEnjoy" fontSize="28"
+						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
+		<s:ToggleButton id="btnBackgrounds" width="73" height="73"
+						toolTip="Achtergrond" 
+						click="{onSideMenuSelection(event)}" 
+						label="&#xf03e;" uid="_AppFontAwesome" fontSize="28"
+						skinClass="skins.btnToggleMenu"/>
+		<s:ToggleButton id="btnSticker" includeIn="album,theme" width="73" height="73" toolTip="Stickers"
+						click="{onSideMenuSelection(event)}"
+						label="&#xe602;" uid="_AppFontEnjoy" fontSize="34"
+						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
+		<s:ToggleButton id="btnPP" includeIn="album,theme" width="73" height="73" toolTip="Kaders"
+						click="{onSideMenuSelection(event)}"
+						label="&#xe60a;" uid="_AppFontEnjoy" fontSize="34"
+						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
+		<s:ToggleButton id="btnOptions" includeIn="album,theme" width="73" height="73"
+						toolTip="Bewerken" click="{onSideMenuSelection(event)}"
+						label="&#xe600;" uid="_AppFontEnjoy" fontSize="28"
+						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
+		<s:ToggleButton id="btnThemes" includeIn="theme" width="73" height="73"
+						toolTip="Thema" click="{onSideMenuSelection(event)}"
+						label="&#xf013;" uid="_AppFontAwesome" fontSize="28"
+						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
+		
+	</s:BorderContainer>
+	
+	<s:Line rotation="90" height="100%" x="73">
+		<s:stroke>
+			<s:SolidColorStroke color="0xC8C8C8" alpha="1" />		
+		</s:stroke>
+	</s:Line>
+	
+</s:Group>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true"
+				width="20" height="20">
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			
+			override public function set data(value:Object):void 
+			{
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				creationCompleteHandler();
+				
+			}
+			
+			protected function creationCompleteHandler():void
+			{
+				
+				colorRect.setStyle("backgroundColor", uint(data));
+			}
+			
+			protected function colorRect_rollOverHandler(event:MouseEvent):void
+			{
+				colorRect.setStyle("borderVisible", true);
+			
+			}
+			
+			protected function colorRect_rollOutHandler(event:MouseEvent):void
+			{
+				
+				colorRect.setStyle("borderVisible", false);
+					
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer id="colorRect" width="20" height="20" borderVisible="false"
+						   rollOver="colorRect_rollOverHandler(event)"
+						   rollOut="colorRect_rollOutHandler(event)"/>
+	
+</s:ItemRenderer>

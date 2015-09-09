@@ -1,0 +1,636 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				width="100%" height="100%" 
+				autoDrawBackground="false" 
+				currentState="normal"
+				rollOut="_rollOutHandler(event)"
+				rollOver="_rollOverHandler(event)">
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="dragging" />
+	</s:states>
+	
+	<fx:Declarations>
+		<s:DropShadowFilter id="dropShadow" distance="2" color="0" alpha=".6" angle="45" blurX="5" blurY="5" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.updateTimelinePhotoPreviewEvent;
+			
+			import mx.controls.Alert;
+			import mx.controls.SWFLoader;
+			import mx.core.FlexGlobals;
+			import mx.graphics.BitmapScaleMode;
+			
+			import spark.components.BorderContainer;
+			import spark.components.Image;
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			[Bindable] public var imagecontainer:Group;
+			[Bindable] public var imageMask:Image;
+			[Bindable] public var imageOverlay:Image;
+			[Bindable] public var img:Image;
+			
+			[Embed(source="../assets/icons/drop_image.swf")]
+			[Bindable] private var addphoto:Class;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			public function _creationCompleteHandler():void
+			{
+				
+				FlexGlobals.topLevelApplication.addEventListener(updateTimelinePhotoPreviewEvent.UPDATETIMELINEPHOTOPREVIEW, UpdatePhotoPreview);
+				
+				if (data) {
+					
+					SetPhoto();
+					
+				}
+				
+			}
+			
+			private function SetPhoto():void {
+				
+				container.removeAllElements();
+				
+				container.width = data.@objectWidth;
+				container.height = data.@objectHeight;
+				
+				borderContainer.width = data.@objectWidth;
+				borderContainer.height = data.@objectHeight;
+				
+				imagecontainer = new Group();
+				imagecontainer.clipAndEnableScrolling = true;
+				
+				if (data.imageRotation == "90" || data.imageRotation == "270") {
+					imagecontainer.height = data.@objectWidth;
+					imagecontainer.width = data.@objectHeight;
+				} else {
+					imagecontainer.height = data.@objectHeight;
+					imagecontainer.width = data.@objectWidth;
+				}
+				if (data.@fliphorizontal == 1) {
+					imagecontainer.scaleX = -1;
+				}
+				
+				container.addElement(imagecontainer);
+				
+				if (data.exif) {
+					
+					/*
+					var rot:String = data.exif.@orientation.toString();
+					//Check for the orientation now and correct it if necessary!
+					switch (rot) {
+						case "1": //Normal orientation
+							imagecontainer.rotation = 0;
+							break;
+						case "6": //Right rotation 90 degrees
+							imagecontainer.rotation = 90;
+							break;
+						case "8": //Left rotation 270 degrees
+							imagecontainer.rotation = -90;
+							break;
+						case "3": //180 degrees
+							imagecontainer.rotation = 180;
+							break;
+					}
+					*/
+					
+					imagecontainer.verticalCenter = 0;
+					imagecontainer.horizontalCenter = 0; 
+					imagecontainer.validateNow();
+					
+				}
+				
+				this.filters = null;
+				if (data.@shadow == "") {
+					this.filters = null;
+				}
+				if (data.@shadow == "left") {
+					this.filters = [FlexGlobals.topLevelApplication.leftShadowFilter];
+				}
+				if (data.@shadow == "right") {
+					this.filters = [FlexGlobals.topLevelApplication.rightShadowFilter];
+				}
+				if (data.@shadow == "bottom") {
+					this.filters = [FlexGlobals.topLevelApplication.bottomShadowFilter];
+				}
+				
+				if (data.@status == "done") {
+					
+					if (data.@origin == "3rdparty") {
+						
+						var request:URLRequest = new URLRequest(encodeURI(data.@lowres_url));
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, on3rdPartyComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+						
+					} else {
+						
+						request = new URLRequest(encodeURI(singleton.assets_url + data.@lowres_url));
+						context = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+						
+					}
+					
+					
+				} else { //Get the imagesource based on the id
+					
+					container.removeAllElements();
+					
+					imagecontainer = new Group();
+					imagecontainer.clipAndEnableScrolling = true;
+					imagecontainer.width = data.@objectWidth;
+					imagecontainer.height = data.@objectHeight;
+					imagecontainer.horizontalCenter = 0;
+					imagecontainer.verticalCenter = 0;
+					
+					if (data.@fliphorizontal == 1) {
+						imagecontainer.scaleX = -1;
+					}
+					
+					this.filters = null;
+					if (data.@shadow == "") {
+						this.filters = null;
+					}
+					if (data.@shadow == "left") {
+						this.filters = [FlexGlobals.topLevelApplication.leftShadowFilter];
+					}
+					if (data.@shadow == "right") {
+						this.filters = [FlexGlobals.topLevelApplication.rightShadowFilter];
+					}
+					if (data.@shadow == "bottom") {
+						this.filters = [FlexGlobals.topLevelApplication.bottomShadowFilter];
+					}
+					
+					if (data.@status == "empty") {
+						
+						//Create a photo placeholder here
+						var bc:BorderContainer = new BorderContainer();
+						bc.width = data.@objectWidth;
+						bc.height = data.@objectHeight;
+						bc.setStyle("backgroundColor", "#D2D2D2");
+						bc.setStyle("borderColor", "#58595B");
+						
+						var icon:SWFLoader = new SWFLoader();
+						icon.source = addphoto;
+						icon.width = 40;
+						icon.height = 40;
+						icon.horizontalCenter = 0;
+						icon.verticalCenter = 0;
+						icon.scaleContent = true;
+						icon.maintainAspectRatio = true;
+						icon.mouseEnabled = false;
+						bc.addElement(icon);
+						bc.validateNow();
+						
+						imagecontainer.addElement(bc);
+						
+					} else {
+						
+						var found:Boolean = false;
+						img = new Image();
+						
+						while (!found) {
+						
+							for (var x:int=0; x < singleton.userphotosforupload.length; x++) {
+								if (singleton.userphotosforupload.getItemAt(x).id == data.@original_image_id) {
+									img.source = singleton.userphotosforupload.getItemAt(x).source.clone();
+									found = true;
+									break;
+								}
+							}
+							
+							if (singleton.userphotosforuploadhidden) {
+								for (x=0; x < singleton.userphotosforuploadhidden.length; x++) {
+									if (singleton.userphotosforuploadhidden.getItemAt(x).id == data.@original_image_id) {
+										img.source = singleton.userphotosforuploadhidden.getItemAt(x).source.clone();
+										found = true;
+										break;
+									}
+								}
+							}
+						}
+						
+						if (imagecontainer.numElements == 2) {
+							imagecontainer.removeElementAt(1);
+						}
+					
+						//Set rotation
+						SetImageRotation();
+						
+						img.x = data.@offsetX;
+						img.y = data.@offsetY;
+						img.alpha = data.@imageAlpha;
+						img.width = data.@imageWidth;
+						img.height = data.@imageHeight;
+						img.cacheAsBitmap = true;
+						img.scaleMode = BitmapScaleMode.STRETCH;
+						img.smooth = true;
+						
+						img.filters = null;
+						if (data.@imageFilter != "") {
+							if (data.@imageFilter == "bw") {
+								img.filters = [singleton.bwfilter];
+							}
+							if (data.@imageFilter == "sepia") {
+								img.filters = [singleton.sepiafilter];
+							}
+						}
+						
+						img.validateNow();
+						
+						imagecontainer.addElement(img);
+					
+					}
+					
+					container.addElement(imagecontainer);
+					
+					if (img) {
+						
+						var loadmask:Boolean = false;
+						var loadoverlay:Boolean = false;
+						
+						if (data.@mask_thumb_url.toString() != "" && data.@mask_thumb_url.toString() != "null") {
+							loadmask = true;
+						}
+						
+						if (data.@overlay_thumb_url.toString() != "" && data.@overlay_thumb_url.toString() != "null") {
+							loadoverlay = true;
+						}
+						
+						if (loadmask) {
+							
+							request = new URLRequest(encodeURI(singleton.assets_url + data.@mask_lowres_url));
+							context = new LoaderContext();
+							context.checkPolicyFile = true;
+							if (Capabilities.isDebugger == false) {
+								context.securityDomain = SecurityDomain.currentDomain;
+								context.applicationDomain = ApplicationDomain.currentDomain;
+							}
+							
+							loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteMask);
+							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+							loader.load(request, context);
+							
+						} else {
+							
+							if (loadoverlay) {
+								
+								if (data.@overlay_thumb && data.@overlay_original_width) {
+									
+									if (data.@overlay_thumb_url.toString() != "" && data.@overlay_original_width != "0") {
+										
+										request = new URLRequest(encodeURI(singleton.assets_url + data.@overlay_lowres_url));
+										context = new LoaderContext();
+										context.checkPolicyFile = true;
+										if (Capabilities.isDebugger == false) {
+											context.securityDomain = SecurityDomain.currentDomain;
+											context.applicationDomain = ApplicationDomain.currentDomain;
+										}
+										
+										loader = new Loader();
+										loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteOverlay);
+										loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+										loader.load(request, context);
+										
+									}
+								}
+							}
+						}
+						
+					}
+				}
+				
+				DrawBorder();
+				
+			}	
+			
+			public function DrawBorder():void {
+				
+				
+				borderContainer.graphics.clear();
+				
+				if (data.@borderalpha.toString() == "NaN") {
+					data.@borderalpha = 1;
+				}
+				
+				var w:Number = parseFloat(data.@borderweight);
+				var ow:Number = parseFloat(data.@objectWidth);
+				var oh:Number = parseFloat(data.@objectHeight);
+				
+				if (data.@borderweight > 0) {
+					borderContainer.graphics.lineStyle(w + 1, data.@bordercolor.toString(), data.@borderalpha, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+					borderContainer.graphics.drawRect(-w / 2, -w / 2, ow + w, oh + w);
+					trace("ok");
+				}
+			}
+			
+			private function on3rdPartyComplete(e:Event):void 
+			{
+				
+				img = new Image();
+				img.source = e.target.content;
+				img.cacheAsBitmap = true;
+				img.scaleMode = BitmapScaleMode.STRETCH;
+				img.width = data.@imageWidth;
+				img.height = data.@imageHeight;
+				img.x = data.@offsetX;
+				img.y = data.@offsetY;
+				
+				imagecontainer.addElement(img);
+				
+				img.validateNow();
+				
+				if (data.@mask_lowres_url) {
+					
+					var request:URLRequest = new URLRequest(encodeURI(singleton.assets_url + data.@mask_lowres_url));
+					var context:LoaderContext = new LoaderContext();
+					context.checkPolicyFile = true;
+					if (Capabilities.isDebugger == false) {
+						context.securityDomain = SecurityDomain.currentDomain;
+						context.applicationDomain = ApplicationDomain.currentDomain;
+					}
+					
+					var loader:Loader = new Loader();
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteMask);
+					loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+					loader.load(request, context);
+					
+				} else {
+					
+					if (data.overlay_thumb_url) {
+						
+						request = new URLRequest(encodeURI(singleton.assets_url + data.@overlay_lowres_url));
+						context = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteOverlay);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+						
+					}
+				}
+				
+			}
+			
+			private function onCompleteMask(event:Event):void {
+				
+				container.graphics.clear();
+				
+				if (imageMask) {
+					this.removeElement(imageMask);
+				}
+				
+				imageMask = new Image();
+				imageMask.source = event.target.content;
+				imageMask.width = this.width;
+				imageMask.height = this.height;
+				imageMask.cacheAsBitmap = true;
+				imageMask.scaleMode = BitmapScaleMode.STRETCH;
+				
+				this.addElement(imageMask);
+				
+				img.mask = imageMask;
+				img.cacheAsBitmap = true;
+				img.invalidateDisplayList();
+				
+				//Check for an overlay as well
+				var loadoverlay:Boolean = false;
+				if (data.hasOwnProperty("overlay_thumb_url")) {
+					if (data.overlay_thumb_url.toString() != "" && data.overlay_thumb_url.toString() != "null") {
+						loadoverlay = true;
+					}
+				}
+				
+				if (loadoverlay) {
+					
+					var request:URLRequest = new URLRequest(encodeURI(singleton.assets_url + data.@overlay_lowres_url));
+					var context:LoaderContext = new LoaderContext();
+					context.checkPolicyFile = true;
+					if (Capabilities.isDebugger == false) {
+						context.securityDomain = SecurityDomain.currentDomain;
+						context.applicationDomain = ApplicationDomain.currentDomain;
+					}
+					
+					var loader:Loader = new Loader();
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteOverlay);
+					loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+					loader.load(request, context);
+					
+				}
+				
+			}
+			
+			private function onCompleteOverlay(event:Event):void {
+				
+				container.graphics.clear();
+				overlayGroup.removeAllElements();
+				
+				imageOverlay = new Image();
+				imageOverlay.source = event.target.content;
+				imageOverlay.width = this.width;
+				imageOverlay.height = this.height;
+				imageOverlay.mouseEnabled = false;
+				imageOverlay.mouseChildren = false;
+				imageOverlay.scaleMode = BitmapScaleMode.STRETCH;
+				
+				overlayGroup.addElement(imageOverlay);
+				
+			}
+			
+			private function onComplete(e:Event):void 
+			{
+				
+				container.removeAllElements();
+				
+				imagecontainer = new Group();
+				imagecontainer.clipAndEnableScrolling = true;
+				imagecontainer.width = data.@objectWidth;
+				imagecontainer.height = data.@objectHeight;
+				imagecontainer.horizontalCenter = 0;
+				imagecontainer.verticalCenter = 0;
+				if (data.@fliphorizontal == 1) {
+					imagecontainer.scaleX = -1;
+				}
+				
+				container.addElement(imagecontainer);
+				
+				//Set rotation
+				SetImageRotation();
+				
+				img = new Image();
+				img.source = e.target.content;
+				img.x = data.@offsetX;
+				img.y = data.@offsetY;
+				img.alpha = data.@imageAlpha;
+				img.width = data.@imageWidth;
+				img.height = data.@imageHeight;
+				img.cacheAsBitmap = true;
+				img.scaleMode = BitmapScaleMode.STRETCH;
+				img.smooth = true;
+				
+				img.filters = null;
+				if (data.imageFilter != "") {
+					if (data.imageFilter == "bw") {
+						img.filters = [singleton.bwfilter];
+					}
+					if (data.imageFilter == "sepia") {
+						img.filters = [singleton.sepiafilter];
+					}
+				}
+				
+				img.validateNow();
+				
+				imagecontainer.addElement(img);
+				
+				container.addElement(imagecontainer);
+				
+				var loadmask:Boolean = false;
+				var loadoverlay:Boolean = false;
+				
+				if (data.@mask_thumb_url.toString() != "" && data.@mask_thumb_url.toString() != "null") {
+					loadmask = true;
+				}
+				
+				if (data.@overlay_thumb_url.toString() != "" && data.@overlay_thumb_url.toString() != "null") {
+					loadoverlay = true;
+				}
+				
+				if (loadmask) {
+					
+					var request:URLRequest = new URLRequest(encodeURI(singleton.assets_url + data.@mask_lowres_url));
+					var context:LoaderContext = new LoaderContext();
+					context.checkPolicyFile = true;
+					if (Capabilities.isDebugger == false) {
+						context.securityDomain = SecurityDomain.currentDomain;
+						context.applicationDomain = ApplicationDomain.currentDomain;
+					}
+					
+					var loader:Loader = new Loader();
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteMask);
+					loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+					loader.load(request, context);
+					
+				} else {
+					
+					if (loadoverlay) {
+						
+						if (data.@overlay_thumb && data.@overlay_original_width) {
+							
+							if (data.@overlay_thumb_url.toString() != "" && data.@overlay_original_width != "0") {
+								
+								request = new URLRequest(encodeURI(singleton.assets_url + data.@overlay_thumb_url));
+								context = new LoaderContext();
+								context.checkPolicyFile = true;
+								if (Capabilities.isDebugger == false) {
+									context.securityDomain = SecurityDomain.currentDomain;
+									context.applicationDomain = ApplicationDomain.currentDomain;
+								}
+								
+								loader = new Loader();
+								loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteOverlay);
+								loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+								loader.load(request, context);
+								
+							}
+						}
+					}
+				}
+				
+			}
+			
+			public function SetImageRotation():void {
+				
+				if (imagecontainer) {
+					
+					imagecontainer.rotation = Math.round(parseFloat(data.@imageRotation));
+					
+					if (data.@imageRotation == "90" || data.@imageRotation == "270") {
+						imagecontainer.height = container.width;
+						imagecontainer.width = container.height;
+					} else {
+						imagecontainer.height = container.height;
+						imagecontainer.width = container.width;
+					}
+					
+					imagecontainer.horizontalCenter = 0;
+					imagecontainer.verticalCenter = 0;
+					imagecontainer.validateNow();
+					
+				}
+			}
+			
+			private function onError(e:Event):void {
+				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n " + e.toString());
+			}
+			
+			protected function _rollOverHandler(event:MouseEvent):void
+			{
+				
+			}
+			
+			protected function _rollOutHandler(event:MouseEvent):void
+			{
+				
+			}
+			
+			private function UpdatePhotoPreview(event:updateTimelinePhotoPreviewEvent):void {
+				
+				if (event.photoID == data.@id) {
+					
+					data = event.data;
+					SetPhoto();
+				}
+			}
+			
+				
+		]]>
+	</fx:Script>
+	
+	<s:Group id="borderContainer" width="{data.@objectWidth}" height="{data.@objectHeight}" 
+			 clipAndEnableScrolling="false" />
+	
+	<s:Group id="container" 
+			 width="{data.@objectWidth}" height="{data.@objectHeight}" 
+			 clipAndEnableScrolling="true" />
+	
+	<s:Group id="overlayGroup" width="{this.width}" height="{this.height}" mouseEnabled="false" mouseChildren="true" />
+	
+</s:ItemRenderer>

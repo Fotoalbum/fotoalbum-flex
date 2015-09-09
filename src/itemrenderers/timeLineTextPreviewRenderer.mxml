@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				width="100%" height="100%" 
+				autoDrawBackground="false" 
+				currentState="normal">
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="dragging" />
+	</s:states>
+	
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.textflowclass;
+			import classes.textsprite;
+			
+			import components.textcomponent;
+			
+			import events.updateTimelineEvent;
+			
+			import flashx.textLayout.container.ContainerController;
+			import flashx.textLayout.conversion.ConversionType;
+			import flashx.textLayout.conversion.TextConverter;
+			import flashx.textLayout.elements.TextFlow;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.graphics.BitmapScaleMode;
+			
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var sprite:textsprite;
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			public function _creationCompleteHandler():void
+			{
+				if (data) {
+					
+					FlexGlobals.topLevelApplication.addEventListener(updateTimelineEvent.UPDATETIMELINETEXTFLOW, UpdateTextFlow);
+					
+					CreateTextElement();
+					
+				}
+			}	
+			
+			[Bindable] private var tf:TextFlow;
+			private function CreateTextElement():void {
+				
+				container.removeAllElements();
+				
+				this.width = data.@objectWidth;
+				this.height = data.@objectHeight;
+				
+				var tfclass:Object = singleton.GetTextFlowClassByID(data.@tfID);
+				var content:Object = TextConverter.export(tfclass.tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.XML_TYPE);
+				
+				tf = new TextFlow();
+				tf = TextConverter.importToFlow(content, TextConverter.TEXT_LAYOUT_FORMAT);
+				tf.invalidateAllFormats();
+				
+				sprite = new textsprite;
+				container.addElement(sprite);
+				
+				var cc:ContainerController = new ContainerController(sprite, this.width, this.height);
+				sprite.cc = cc;
+				tf.flowComposer.addController(sprite.cc);
+				tf.flowComposer.updateAllControllers();
+				
+				CheckTextPresent();
+				
+				DrawBorder();
+				
+				SetShadow();
+				
+			}
+			
+			private function UpdateTextFlow(event:updateTimelineEvent):void {
+				
+				if (event.data.@tfID == data.@tfID) {
+					
+					//Update the textflow
+					data = event.data.copy();
+					
+					CreateTextElement();
+					
+				}
+			}
+			
+			public function CheckTextPresent():void {
+				
+				if (sprite) {
+					
+					if (sprite.cc) {
+						
+						if (sprite.cc.textLength > 1) {
+							background.visible = false;
+							img.visible = false;
+						} else {
+							background.visible = true;
+							img.visible = true;
+						}
+					}
+					
+				} else {
+					
+					background.visible = true;
+					img.visible = true;
+				}
+			}
+			
+			public function DrawBorder():void {
+				
+				borderContainer.graphics.clear();
+				
+				if (data.@borderalpha.toString() == "NaN") {
+					data.@borderalpha = 1;
+				}
+				if (data.@borderweight.toString() == "NaN") {
+					data.@borderweight = 0;
+				}
+				
+				if (data.@borderweight > 0) {
+					borderContainer.graphics.lineStyle(parseFloat(data.@borderweight) + 1, data.@bordercolor, data.@borderalpha, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+					borderContainer.graphics.drawRect(-parseFloat(data.@borderweight) / 2, -parseFloat(data.@borderweight) / 2, this.width + parseFloat(data.@borderweight), this.height + parseFloat(data.@borderweight));
+				}
+			}
+			
+			public function SetShadow():void {
+				
+				//Check for shadow
+				if (data.@shadow) {
+					if (data.@shadow.toString() == "") {
+						this.filters = null;
+					}
+					if (data.@shadow.toString() == "left") {
+						this.filters = [FlexGlobals.topLevelApplication.leftShadowFilter];
+					}
+					if (data.@shadow.toString() == "right") {
+						this.filters = [FlexGlobals.topLevelApplication.rightShadowFilter];
+					}
+					if (data.@shadow.toString() == "bottom") {
+						this.filters = [FlexGlobals.topLevelApplication.bottomShadowFilter];
+					}
+				} else {
+					this.filters = null;
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<s:Group id="borderContainer" width="{this.width}" height="{this.height}" clipAndEnableScrolling="false" />
+	
+	<s:BorderContainer id="background" visible="false" width="100%" height="100%" backgroundColor="#BFBFBF" 
+						borderVisible="false" mouseEnabled="false"/>
+	
+	<s:Image id="img" 
+			 width="40" 
+			 height="40" 
+			 horizontalCenter="0" smooth="true" visible="false" mouseEnabled="false"
+			 source="@Embed('assets/icons/texticon.png')" verticalCenter="0"/>
+	
+	<s:Group id="container" 
+			 width="{data.@objectWidth}" height="{data.@objectHeight}" 
+			 clipAndEnableScrolling="true">
+		
+	</s:Group>
+	
+</s:ItemRenderer>

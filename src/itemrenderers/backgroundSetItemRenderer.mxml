@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false">
+	<s:layout>
+		<s:VerticalLayout gap="10" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"/>
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import classes.Singleton;
+			
+			[Bindable] private var items:ArrayCollection;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			protected function _creationCompleteHandler():void
+			{
+				
+				if (data) {
+					
+					var ast:AsyncToken = parentApplication.api_cms.api_categorized("Background", data.id);
+					ast.addResponder(new mx.rpc.Responder(onGetBackgroundItemsResult, onFail));					
+					
+				}
+			}
+			
+			private function onGetBackgroundItemsResult(e:ResultEvent):void 
+			{
+				
+				items = new ArrayCollection();
+				
+				if (e.result) {
+					if (e.result.length > 0) {
+						
+						catName.text = data.name;
+						rule.visible = true;
+						
+						for each (var obj:Object in e.result) {
+							var background:Object = new Object();
+							background.id = obj.Background.id;
+							background.label = obj.Background.label;
+							background.thumb = obj.Background.thumb;
+							background.thumb_url = obj.Background.thumb_url;
+							background.lowres = obj.Background.lowres;
+							background.lowres_url = obj.Background.lowres_url;
+							background.hires = obj.Background.hires;
+							background.hires_url = obj.Background.hires_url;
+							background.bytesize = obj.Background.bytesize;
+							background.width = obj.Background.width;
+							background.height = obj.Background.height;
+							background.directory = obj.Background.directory;
+							background.metatags = obj.Background.metatags;
+							items.addItem(background);
+						}
+					} else {
+						
+						catName.text = "";
+						rule.visible = false;
+					}
+				}
+			}
+			
+			private function onFail(e:FaultEvent):void 
+			{
+				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n backgroundSetItemRenderer|onFail|" + e.fault.faultString);
+				singleton.ReportError(e.fault.faultString);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup id="labelGroup" width="100%" gap="20" verticalAlign="middle">
+		<s:Label id="catName" color="0xFFFFFF" />
+		<mx:HRule id="rule" width="100%" height="1" />
+	</s:HGroup>
+	
+	<s:List id="lstItems" width="100%" borderVisible="false" dataProvider="{items}" horizontalScrollPolicy="off"
+			itemRenderer="itemrenderers.backgroundPhotoRenderer" labelField="id">
+		<s:layout>
+			<s:TileLayout columnWidth="100" horizontalAlign="center" horizontalGap="10" orientation="rows"
+						  requestedColumnCount="2" verticalAlign="top" />
+		</s:layout>
+	</s:List>
+	
+</s:ItemRenderer>

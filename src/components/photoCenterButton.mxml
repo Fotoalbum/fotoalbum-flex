@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="40" height="40" 
+		 creationComplete="_creationCompleteHandler(event)"
+		 resize="_resizeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.CursorManager;
+			
+			[Embed(source="/assets/icons/cursor_move.png")] 
+			[Bindable] public var moveCursor:Class;
+			[Embed(source="/assets/icons/cursor-grab-open.gif")] 
+			[Bindable] public var grabOpen:Class;
+			[Embed(source="/assets/icons/cursor-grab-closed.gif")] 
+			[Bindable] public var grabClosed:Class;
+			[Embed(source="/assets/handlers/handje.swf")] 
+			[Bindable] public var centerButtonDefault:Class;
+			[Embed(source="/assets/handlers/switch.swf")] 
+			[Bindable] public var swapPhoto:Class;
+			
+			private var cursorID:Number = 0;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var zoom:Number;
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				_resizeHandler();
+				
+			}
+			
+			protected function btnSwap_rollOverHandler(event:MouseEvent):void
+			{
+				
+				Mouse.hide();
+				cursorID = CursorManager.setCursor(grabOpen, 2, -8 / zoom, -8 / zoom);
+				
+				event.currentTarget.scaleX = event.currentTarget.scaleY = 1.2;
+				event.currentTarget.right = -5 / zoom;
+				event.currentTarget.top = -5 / zoom;
+				
+			}
+			
+			protected function btnSwap_rollOutHandler(event:MouseEvent):void
+			{
+				event.currentTarget.scaleX = event.currentTarget.scaleY = 1;
+				event.currentTarget.right = 0;
+				event.currentTarget.top = 0;
+				
+				Mouse.show();
+				CursorManager.removeCursor(cursorID);
+				
+			}
+			
+			protected function btnMove_rollOverHandler(event:MouseEvent):void
+			{
+				
+				Mouse.hide();
+				cursorID = CursorManager.setCursor(moveCursor, 2, -8 / zoom, -8 / zoom);
+				
+				event.currentTarget.scaleX = event.currentTarget.scaleY = 1.1;
+				
+			}
+			
+			protected function btnMove_rollOutHandler(event:MouseEvent):void
+			{
+				event.currentTarget.scaleX = event.currentTarget.scaleY = 1;
+				
+				Mouse.show();
+				CursorManager.removeCursor(cursorID);
+				
+			}
+			
+			public function _resizeHandler(event:ResizeEvent = null):void
+			{
+				
+				zoom = FlexGlobals.topLevelApplication.viewer.scaleX;
+			
+				var w1:Number = this.width - 5;
+				var w2:Number = w1 * .55;
+				
+				btnSwap.height = w1 / 2;
+				btnSwap.width = w1 / 2;
+				btnSwap.right = 0;
+				btnSwap.top = 0;
+				btnSwap.graphics.clear();
+				btnSwap.graphics.beginFill(0x64AADD, .6);
+				btnSwap.graphics.drawCircle(0, btnSwap.height, w1 / 2);
+				btnSwap.graphics.endFill();
+				
+				btnMove.width = w2;
+				btnMove.height = w2;
+				btnMove.horizontalCenter = 0;
+				btnMove.verticalCenter = 0;
+				btnMove.graphics.clear();
+				btnMove.graphics.beginFill(0x58595B, 1);
+				btnMove.graphics.drawCircle(w2 / 2, w2 / 2, w2 / 2);
+				btnMove.graphics.endFill();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Group id="btnSwap" right="0" top="0" width="20" 
+			 height="20" clipAndEnableScrolling="true"
+			 mouseEnabledWhereTransparent="false" 
+			 rollOver="btnSwap_rollOverHandler(event)"
+			 rollOut="btnSwap_rollOutHandler(event)"
+			 mouseDown="{parentDocument.swapImageButton_mouseDownHandler(event)}"
+			 toolTip="Omwisselen met andere foto">
+		
+		<s:SWFLoader horizontalCenter="0"
+					 verticalCenter="0"
+					 width="{btnSwap.width * .4}"
+					 height="{btnSwap.height * .4}"
+					 source="{swapPhoto}"
+					 includeInLayout="true"
+					 mouseEnabled="false" />
+		
+	</s:Group>
+	
+	<s:Group id="btnMove" width="35" height="35" clipAndEnableScrolling="true" 
+			 horizontalCenter="0"
+			 verticalCenter="0" mouseEnabledWhereTransparent="false"
+			 rollOver="btnMove_rollOverHandler(event)"
+			 rollOut="btnMove_rollOutHandler(event)"
+			 mouseDown="{parentDocument.centerbutton_mouseDownHandler(event)}"
+			 toolTip="Verplaats de foto binnen het fotokader">
+		
+		<s:SWFLoader horizontalCenter="0"
+					 verticalCenter="0" 
+					 width="{btnMove.width * .8}"
+					 height="{btnMove.height * .8}"
+					 source="{centerButtonDefault}"
+					 includeInLayout="true"
+					 mouseEnabled="false" />
+		
+	</s:Group>
+	
+</s:Group>

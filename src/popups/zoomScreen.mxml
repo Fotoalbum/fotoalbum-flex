@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   backgroundAlpha="0.0" 
+				   borderColor="#F4CA04" 
+				   borderVisible="true" 
+				   borderWeight="1"
+				   mouseMove="zoomWindow_mouseMoveHandler(event)"
+				   mouseUp="zoomWindow_mouseUpHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import flashx.textLayout.formats.Float;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.DragEvent;
+			
+			import spark.components.Scroller;
+			import spark.primitives.Rect;
+			private var cursorID:int;
+			
+			[Embed(source="../assets/icons/cursor-grab-open.gif")]
+			private var HandOpen:Class;
+			[Embed(source="../assets/icons/cursor-grab-closed.gif")]
+			private var HandClosed:Class;
+
+			[Bindable] private var dragging:Boolean = false;
+			[Bindable] private var singleton:Singleton = Singleton.getInstance();
+			
+			protected function zoomWindow_mouseDownHandler(event:MouseEvent):void
+			{
+				zoomWindow.addEventListener(MouseEvent.MOUSE_MOVE, MoveZoomWindow);
+				zoomWindow.removeEventListener(MouseEvent.ROLL_OVER, zoomWindow_rollOverHandler);
+				zoomWindow.removeEventListener(MouseEvent.ROLL_OUT, zoomWindow_rollOutHandler);
+				cursorManager.removeCursor(cursorID);
+				cursorID = cursorManager.setCursor(HandClosed);
+			}
+			
+			private function MoveZoomWindow(event:Event):void {
+				
+				parentDocument.addEventListener(MouseEvent.MOUSE_UP, zoomWindow_mouseUpHandler);
+				parentDocument.addEventListener(MouseEvent.MOUSE_MOVE, zoomWindow_mouseMoveHandler);
+				dragging = true;
+				
+				var zoomRect:Rectangle = new Rectangle(background.x, background.y, 
+					background.width - (zoomWindow.width * zoomWindow.scaleX), 
+					background.height - (zoomWindow.height * zoomWindow.scaleY));
+				zoomWindow.startDrag(false, zoomRect);
+			}
+			
+			protected function zoomWindow_mouseUpHandler(event:MouseEvent):void
+			{
+				zoomWindow.stopDrag();
+				dragging = false;
+				
+				zoomWindow.removeEventListener(MouseEvent.MOUSE_MOVE, MoveZoomWindow);
+				
+				parentDocument.removeEventListener(MouseEvent.MOUSE_UP, zoomWindow_mouseUpHandler);
+				parentDocument.removeEventListener(MouseEvent.MOUSE_MOVE, zoomWindow_mouseMoveHandler);
+				
+				if (event.currentTarget.constructor.toString() == "[class ApplicationSkin]") {
+					cursorManager.removeAllCursors();
+				} else {
+					cursorManager.removeAllCursors();
+					//cursorID = cursorManager.setCursor(HandOpen);
+				}
+				zoomWindow.addEventListener(MouseEvent.ROLL_OVER, zoomWindow_rollOverHandler)
+				zoomWindow.addEventListener(MouseEvent.ROLL_OUT, zoomWindow_rollOutHandler)
+			}
+			
+			
+			protected function zoomWindow_rollOverHandler(event:MouseEvent):void
+			{
+				if (cursorID && dragging == false) {
+					cursorManager.removeCursor(cursorID);
+				}
+				
+				if (dragging == false) {
+					cursorID = cursorManager.setCursor(HandOpen);
+				}
+			}
+			
+			protected function zoomWindow_rollOutHandler(event:MouseEvent):void
+			{
+				if (dragging == false) {
+					cursorManager.removeCursor(cursorID);
+				}
+			}
+			
+			protected function zoomWindow_mouseMoveHandler(event:MouseEvent):void
+			{
+				
+				if (dragging == true) {
+					
+					var x:Number = zoomWindow.x;
+					var w:Number = (zoomWindow.width * zoomWindow.scaleX) / 2;
+					var y:Number = zoomWindow.y;
+					var h:Number = (zoomWindow.height * zoomWindow.scaleY) / 2;
+					
+					var c:Point = new Point(x + w, y + h);
+					var mid:Point = new Point(c.x - (background.width / 2), c.y - (background.height / 2));
+					
+					var zoom:Number = background.width / singleton.selected_spread_editor.width;
+					
+					singleton.selected_spread_editor.verticalCenter = -mid.y / zoom;
+					singleton.selected_spread_editor.horizontalCenter = -mid.x / zoom;
+					
+				}
+			}
+			
+			protected function mouseUpHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Group id="background" horizontalCenter="0"/>
+	
+	<s:BorderContainer id="zoomWindow" 
+					   rollOver="zoomWindow_rollOverHandler(event)"
+					   mouseOut="zoomWindow_rollOutHandler(event)" 
+					   backgroundAlpha="0.0" borderStyle="inset" borderVisible="true"
+					   borderWeight="4" cornerRadius="0" horizontalCenter="0" mouseChildren="false"
+					   borderColor="#FF0000"
+					   mouseDown="zoomWindow_mouseDownHandler(event)" 
+					   mouseEnabled="true"
+					   mouseUp="zoomWindow_mouseUpHandler(event)"
+					   buttonMode="true"
+					   verticalCenter="0"/>
+	
+</s:BorderContainer>

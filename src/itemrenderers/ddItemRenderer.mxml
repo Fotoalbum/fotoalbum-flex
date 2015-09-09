@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true"
+				minHeight="25">
+	
+	<fx:Script>
+		<![CDATA[
+			
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			protected function _creationCompleteHandler():void
+			{
+			
+				if (data) {
+					catName.text = data.name.toString();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Label id="catName" left="10" verticalCenter="0" />
+	
+</s:ItemRenderer>

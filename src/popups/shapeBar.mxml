@@ -1,0 +1,1167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:classes="classes.*"
+				   height="30" backgroundColor="#4e4e4e"
+				   borderVisible="false" cornerRadius="0"
+				   creationComplete="_creationCompleteHandler(event)" 
+				   currentState="rectangle"
+				   filters="{[toolbarShadow]}" 
+				   mouseDown="_mouseDownHandler(event)">
+	<s:states>
+		<s:State name="rectangle"/>
+		<s:State name="circle"/>
+		<s:State name="line"/>
+	</s:states>
+	
+	<fx:Declarations>
+		<s:DropShadowFilter id="toolbarShadow" distance="5" color="0" alpha=".6" angle="45" blurX="10" blurY="10" />
+		<s:DropShadowFilter id="leftShadowFilter" distance="3" color="0" alpha=".6" angle="135" blurX="8" blurY="8" />
+		<s:DropShadowFilter id="rightShadowFilter" distance="3" color="0" alpha=".6" angle="45" blurX="8" blurY="8" />
+		<s:DropShadowFilter id="bottomShadowFilter" distance="3" color="0" alpha=".6" angle="90" blurX="8" blurY="8" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.undoActions;
+			
+			import events.barMenuEvent;
+			import events.showPoofEvent;
+			import events.updateElementsEvent;
+			
+			import itemrenderers.spreadEditor;
+			import itemrenderers.spreadItemRenderer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.core.IVisualElement;
+			import mx.events.ColorPickerEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.components.Group;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var oldData:Object;
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				FlexGlobals.topLevelApplication.addEventListener(barMenuEvent.SETBARENABLED, EnableBar);
+				FlexGlobals.topLevelApplication.addEventListener(barMenuEvent.SETBARDISABLED, DisableBar);
+			}
+			
+			private function EnableBar(event:barMenuEvent):void {
+				this.enabled = true;
+				this.mouseEnabled = true;
+			}
+			
+			private function DisableBar(event:barMenuEvent):void {
+				this.enabled = false;
+				this.mouseEnabled = false;
+			}
+			
+			protected function _mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();
+			}
+			
+			protected function bordercolor_changeHandler(event:ColorPickerEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				//UPDATE THE RGB/CMYK VALUES AS WELL!!
+				var color:Object = new Object();
+				color.id = event.color;
+				color.rgb = singleton.GetRgb(color.id);
+				color.cmyk = singleton.GetCMYK(color.id);
+				singleton.colorcollection.addItem(color);
+				
+				singleton.selected_element.data.bordercolor = color.id;
+				
+				//Update the element
+				if (singleton.selected_element.constructor.toString() == "[class rectangleobject]") {
+					singleton.selected_element.DrawRect();
+				}
+				if (singleton.selected_element.constructor.toString() == "[class circleobject]") {
+					singleton.selected_element.DrawCircle();
+				}
+				if (singleton.selected_element.constructor.toString() == "[class lineobject]") {
+					singleton.selected_element.DrawRect();
+				}
+				
+				if (!singleton.lastusedcolors) {
+					singleton.lastusedcolors = new ArrayCollection();
+				}
+				
+				if (singleton.lastusedcolors.getItemIndex(event.color.toString()) == -1) {
+					singleton.lastusedcolors.addItemAt(event.color.toString(), 0);
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			protected function fillcolor_changeHandler(event:ColorPickerEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				//UPDATE THE RGB/CMYK VALUES AS WELL!!
+				var color:Object = new Object();
+				color.id = event.color;
+				color.rgb = singleton.GetRgb(color.id);
+				color.cmyk = singleton.GetCMYK(color.id);
+				singleton.colorcollection.addItem(color);
+				
+				singleton.selected_element.data.fillcolor = color.id;
+				
+				//Update the element
+				if (singleton.selected_element.constructor.toString() == "[class rectangleobject]") {
+					singleton.selected_element.DrawRect();
+				}
+				if (singleton.selected_element.constructor.toString() == "[class circleobject]") {
+					singleton.selected_element.DrawCircle();
+				}
+				if (singleton.selected_element.constructor.toString() == "[class lineobject]") {
+					singleton.selected_element.DrawRect();
+				}
+				
+				if (!singleton.lastusedcolors) {
+					singleton.lastusedcolors = new ArrayCollection();
+				}
+				
+				if (singleton.lastusedcolors.getItemIndex(event.color.toString()) == -1) {
+					singleton.lastusedcolors.addItemAt(event.color.toString(), 0);
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			protected function linecolor_changeHandler(event:ColorPickerEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				//UPDATE THE RGB/CMYK VALUES AS WELL!!
+				var color:Object = new Object();
+				color.id = event.color;
+				color.rgb = singleton.GetRgb(color.id);
+				color.cmyk = singleton.GetCMYK(color.id);
+				singleton.colorcollection.addItem(color);
+				
+				singleton.selected_element.data.fillcolor = color.id;
+				
+				//Update the element
+				singleton.selected_element.DrawRect();
+				
+				if (!singleton.lastusedcolors) {
+					singleton.lastusedcolors = new ArrayCollection();
+				}
+				
+				if (singleton.lastusedcolors.getItemIndex(event.color.toString()) == -1) {
+					singleton.lastusedcolors.addItemAt(event.color.toString(), 0);
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			private function borderwidth_changeHandler(event:Event):void {
+			
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				singleton.selected_element.data.borderweight = event.currentTarget.selectedItem;
+				
+				//Update the element
+				if (singleton.selected_element.constructor.toString() == "[class rectangleobject]") {
+					singleton.selected_element.DrawRect();
+				}
+				if (singleton.selected_element.constructor.toString() == "[class circleobject]") {
+					singleton.selected_element.DrawCircle();
+				}
+				if (singleton.selected_element.constructor.toString() == "[class lineobject]") {
+					singleton.selected_element.DrawRect();
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			private function linewidth_changeHandler(event:Event):void {
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				singleton.selected_element.data.lineweight = event.currentTarget.selectedItem;
+				
+				//Update the element
+				singleton.selected_element.DrawRect();
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			private function alpha_changeHandler(event:Event):void {
+				
+				singleton.selected_element.data.fillalpha = event.currentTarget.value / 100;
+				
+				if (singleton.selected_element.constructor.toString() == "[class rectangleobject]") {
+					singleton.selected_element.DrawRect();
+				}
+				if (singleton.selected_element.constructor.toString() == "[class circleobject]") {
+					singleton.selected_element.DrawCircle();
+				}
+				if (singleton.selected_element.constructor.toString() == "[class lineobject]") {
+					singleton.selected_element.DrawRect();
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+			}	
+			
+			private function DeleteShape():void {
+				
+				var oldData:Object = singleton.CloneObject(singleton.selected_element.data);
+				
+				var index:int = singleton.GetRealObjectIndex(singleton.selected_element);
+				
+				//Delete this component
+				var elementContainer:Group = singleton.selected_element.parent as Group;
+				elementContainer.removeElement(singleton.selected_element as IVisualElement);
+				
+				singleton.selected_element.parentObjectHandles.selectionManager.clearSelection();
+				singleton.selected_element.graphics.clear();
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new showPoofEvent(showPoofEvent.POOF));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.DELETE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				var editor:spreadEditor = FlexGlobals.topLevelApplication.viewer.getElementAt(0) as spreadEditor;
+				editor.shapemenu.visible = false;
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_DELETE_ELEMENT, index);
+				
+			}
+			
+		
+			public function UpdateShapeMenu():void {
+				
+				if (singleton.selected_element) {
+					
+					if (singleton.selected_element.constructor.toString() == "[class rectangleobject]") {
+						this.currentState = "rectangle";
+						fillcolor.selectedColor = singleton.selected_element.data.fillcolor;
+						alphaslider.value = singleton.selected_element.data.fillalpha * 100;
+						bordercolor.selectedColor = singleton.selected_element.data.bordercolor;
+						borderwidth.selectedIndex = singleton.GetBorderWeightIndex(singleton.selected_element.data.borderweight);
+					}
+					if (singleton.selected_element.constructor.toString() == "[class circleobject]") {
+						this.currentState = "circle";
+						fillcolor.selectedColor = singleton.selected_element.data.fillcolor;
+						alphaslider.value = singleton.selected_element.data.fillalpha * 100;
+						bordercolor.selectedColor = singleton.selected_element.data.bordercolor;
+						borderwidth.selectedIndex = singleton.GetBorderWeightIndex(singleton.selected_element.data.borderweight);
+					}
+					if (singleton.selected_element.constructor.toString() == "[class lineobject]") {
+						this.currentState = "line";
+						linecolor.selectedColor = singleton.selected_element.data.fillcolor;
+						linewidth.selectedIndex = singleton.selected_element.data.lineweight;
+						alphaslider.value = singleton.selected_element.data.fillalpha * 100;
+					}
+					
+					bcNoshadow.setStyle("backgroundAlpha", 0);
+					bcLeftshadow.setStyle("backgroundAlpha", 0);
+					bcRightshadow.setStyle("backgroundAlpha", 0);
+					bcBottomshadow.setStyle("backgroundAlpha", 0);
+					
+					if (singleton.selected_element.data.shadow == "") {
+						bcNoshadow.setStyle("backgroundAlpha", 1);
+					}
+					if (singleton.selected_element.data.shadow == "left") {
+						bcLeftshadow.setStyle("backgroundAlpha", 1);
+					}
+					if (singleton.selected_element.data.shadow == "right") {
+						bcRightshadow.setStyle("backgroundAlpha", 1);
+					}
+					if (singleton.selected_element.data.shadow == "bottom") {
+						bcBottomshadow.setStyle("backgroundAlpha", 1);
+					}
+				}
+			}
+			
+			protected function btnBorders_clickHandler(event:MouseEvent):void
+			{
+				
+				if ((this.y + bcBorders.height) > singleton.selected_spread_editor.height - 120) { 
+					bcBorders.top = -(bcBorders.height + 5);
+				} else {
+					bcBorders.top = 35;
+				}
+				
+				bcShadows.visible = false;
+				bcBorders.visible = !bcBorders.visible;
+				
+			}
+			
+			protected function btnShadows_clickHandler(event:MouseEvent):void
+			{
+				
+				
+				if ((this.y + bcShadows.height) > singleton.selected_spread_editor.height - 120) { 
+					bcShadows.top = -(bcShadows.height + 5);
+				} else {
+					bcShadows.top = 35;
+				}
+				
+				bcBorders.visible = false;
+				bcShadows.visible = !bcShadows.visible;
+				
+			}
+			
+			protected function slider_changeHandler(event:Event):void
+			{
+				
+				//Update the alpha
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element.img) {
+					singleton.selected_element.img.alpha = alphaslider.value / 100;
+					data.imageAlpha = alphaslider.value / 100;
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+			}
+			
+			protected function noshadow_clickHandler(event:MouseEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.data.shadow = "";
+					singleton.selected_element.container.filters = null;
+				}
+				
+				bcNoshadow.setStyle("backgroundAlpha", 1);
+				bcLeftshadow.setStyle("backgroundAlpha", 0);
+				bcRightshadow.setStyle("backgroundAlpha", 0);
+				bcBottomshadow.setStyle("backgroundAlpha", 0);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			protected function leftshadow_clickHandler(event:MouseEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.data.shadow = "left";
+					singleton.selected_element.container.filters = [leftShadowFilter];
+				}
+				
+				bcNoshadow.setStyle("backgroundAlpha", 0);
+				bcLeftshadow.setStyle("backgroundAlpha", 1);
+				bcRightshadow.setStyle("backgroundAlpha", 0);
+				bcBottomshadow.setStyle("backgroundAlpha", 0);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			protected function rightshadow_clickHandler(event:MouseEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.data.shadow = "right";
+					singleton.selected_element.container.filters = [rightShadowFilter];
+				}
+				
+				bcNoshadow.setStyle("backgroundAlpha", 0);
+				bcLeftshadow.setStyle("backgroundAlpha", 0);
+				bcRightshadow.setStyle("backgroundAlpha", 1);
+				bcBottomshadow.setStyle("backgroundAlpha", 0);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			protected function bottomshadow_clickHandler(event:MouseEvent):void
+			{
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				var data:Object = singleton.selected_element.data as Object;
+				
+				if (singleton.selected_element) {
+					singleton.selected_element.data.shadow = "bottom";
+					singleton.selected_element.container.filters = [bottomShadowFilter];
+				}
+				
+				bcNoshadow.setStyle("backgroundAlpha", 0);
+				bcLeftshadow.setStyle("backgroundAlpha", 0);
+				bcRightshadow.setStyle("backgroundAlpha", 0);
+				bcBottomshadow.setStyle("backgroundAlpha", 1);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+			protected function btnMoveToFront_clickHandler(event:MouseEvent):void
+			{
+				
+				//Store for undo
+				var oldData:Object;
+				var _oldIndex:int;
+				var _newIndex:int;
+				//Move this object to the front
+				for (var x:int=0; x < singleton.selected_spread.elements.length; x++) {
+					if (singleton.selected_spread.elements.getItemAt(x) == singleton.selected_element.data) {
+						//found it
+						_oldIndex = x;
+						var tempObj:Object = singleton.selected_spread.elements.getItemAt(singleton.selected_spread.elements.length - 1) as Object;
+						singleton.selected_spread.elements.setItemAt(singleton.selected_spread.elements.getItemAt(x), singleton.selected_spread.elements.length - 1);
+						singleton.selected_spread.elements.setItemAt(tempObj, x);
+						singleton.selected_spread.elements.refresh();
+						_newIndex = singleton.selected_spread.elements.length - 1;
+						break;
+					}
+				}
+				
+				var editor:spreadEditor = FlexGlobals.topLevelApplication.viewer.getElementAt(0) as spreadEditor;
+				
+				var _source:Object;
+				var _lastIndex:int;
+				for (x=0; x < editor.elementcontainer.numElements; x++) {
+					var obj:Object = editor.elementcontainer.getElementAt(x) as Object;
+					if (obj.hasOwnProperty("data")) {
+						if (obj.data.classtype.toString() == "[class userphotoclass]" ||
+							obj.data.classtype.toString() == "[class usertextclass]" ||
+							obj.data.classtype.toString() == "[class userrectangle]" ||
+							obj.data.classtype.toString() == "[class usercircle]" ||
+							obj.data.classtype.toString() == "[class userline]" ||
+							obj.data.classtype.toString() == "[class userclipartclass]") {
+						
+							_lastIndex = x;
+							
+							if (obj.data == singleton.selected_element.data) {
+								//found it, remember it for now
+								if (!_source) {
+									_source = editor.elementcontainer.getElementAt(x) as Object;
+									oldData = singleton.CloneObject(_source.data);
+									oldData.index = _oldIndex;
+								}
+							}
+						}
+					}
+				}
+				
+				singleton.ReorderElements();
+				
+				//Get the index after the reorder
+				_lastIndex = singleton.GetIndexAfterReorder(singleton.selected_element.id);
+				
+				if (_source) {
+					editor.elementcontainer.setElementIndex(_source as IVisualElement, _lastIndex);
+					_source.data.index = _newIndex;
+				}
+				
+				singleton.selected_spread_item.MoveToFront(oldData);
+				
+				
+			}
+			
+			protected function btnSendToBack_clickHandler(event:MouseEvent):void
+			{
+			
+				//Store for undo
+				var oldData:Object;
+				var _oldIndex:int;
+				var _newIndex:int;
+				//Send this object to the back
+				for (var x:int=0; x < singleton.selected_spread.elements.length; x++) {
+					if (singleton.selected_spread.elements.getItemAt(x) == singleton.selected_element.data) {
+						//found it
+						_oldIndex = x;
+						var currObj:Object = singleton.selected_spread.elements.getItemAt(x) as Object;
+						//move the former one up
+						for (var n:int=x-1; n > -1; n--) {
+							var tempObj:Object = singleton.selected_spread.elements.getItemAt(n) as Object;
+							singleton.selected_spread.elements.setItemAt(tempObj, n + 1);
+						}
+						singleton.selected_spread.elements.setItemAt(currObj, 0);
+						singleton.selected_spread.elements.refresh();
+						_newIndex = 0;
+						break;
+					}
+				}
+				
+				var editor:spreadEditor = FlexGlobals.topLevelApplication.viewer.getElementAt(0) as spreadEditor;
+				
+				var _source:Object;
+				var _firstIndex:int = -1;
+				for (x=0; x < editor.elementcontainer.numElements; x++) {
+					var obj:Object = editor.elementcontainer.getElementAt(x) as Object;
+					if (obj.hasOwnProperty("data")) {
+						if (obj.data.classtype.toString() == "[class userphotoclass]" ||
+							obj.data.classtype.toString() == "[class usertextclass]" ||
+							obj.data.classtype.toString() == "[class userrectangle]" ||
+							obj.data.classtype.toString() == "[class usercircle]" ||
+							obj.data.classtype.toString() == "[class userline]" ||
+							obj.data.classtype.toString() == "[class userclipartclass]") {
+						
+							if (_firstIndex == -1) {
+								_firstIndex = x;
+							}
+							
+							if (obj.data == singleton.selected_element.data) {
+								//found it, remember it for now
+								if (!_source) {
+									_source = editor.elementcontainer.getElementAt(x) as Object;
+									oldData = singleton.CloneObject(_source.data);
+									oldData.index = _oldIndex;
+									break;
+								}
+							}
+						}
+					}
+				}
+				
+				singleton.ReorderElements();
+				
+				if (_source) {
+					editor.elementcontainer.setElementIndex(_source as IVisualElement, _firstIndex);
+					_source.data.index = _newIndex;
+				}
+				
+				singleton.selected_spread_item.SendToBack(oldData);
+					
+			}
+			
+			protected function alphaslider_mouseDownHandler(event:MouseEvent):void
+			{
+				
+				//oldData = singleton.CloneObject(singleton.selected_element.data);	
+				alphaslider.addEventListener(MouseEvent.MOUSE_UP, UpdateUndo);
+			}
+			
+			private function UpdateUndo(event:MouseEvent):void {
+				
+				alphaslider.removeEventListener(MouseEvent.MOUSE_UP, UpdateUndo);
+				
+				if (oldData) {
+					singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				}
+			}
+			
+			private function UpdateUndoObjectAlpha(event:MouseEvent):void {
+				
+				alphaslider.removeEventListener(MouseEvent.MOUSE_UP, UpdateUndoObjectAlpha);
+				
+				if (oldData) {
+					singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				}
+			}
+			
+			protected function dragHandle_mouseDownHandler(event:MouseEvent):void
+			{
+				singleton.selected_spread_editor.shapemenu.startDrag();
+			}
+			
+			protected function dragHandle_mouseUpHandler(event:MouseEvent):void
+			{
+				singleton.selected_spread_editor.shapemenu.stopDrag();
+				if (singleton._toolbarX != this.x || singleton._toolbarY != this.y) {
+					singleton._toolbarX = this.x;
+					singleton._toolbarY = this.y;
+					singleton._toolbarMoved = true;
+				}
+			}
+			
+			protected function lstUsedColors_mouseUpHandler(event:MouseEvent):void
+			{
+				
+				if (singleton.selected_element) {
+					
+					// STORE THE OLD DATA FOR LATER UNDO //
+					oldData = singleton.CloneObject(singleton.selected_element.data);
+					
+					singleton.selected_element.data.bordercolor = uint(event.currentTarget.selectedItem);
+					
+					//Update the border
+					if (singleton.selected_element.constructor.toString() == "[class rectangleobject]") {
+						singleton.selected_element.DrawRect();
+					}
+					if (singleton.selected_element.constructor.toString() == "[class circleobject]") {
+						singleton.selected_element.DrawCircle();
+					}
+					if (singleton.selected_element.constructor.toString() == "[class lineobject]") {
+						singleton.selected_element.DrawRect();
+					}
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+					
+					singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+					
+				}
+			}
+			
+			protected function lstUsedFillColors_mouseUpHandler(event:MouseEvent):void
+			{
+				if (singleton.selected_element) {
+					
+					// STORE THE OLD DATA FOR LATER UNDO //
+					oldData = singleton.CloneObject(singleton.selected_element.data);
+					
+					singleton.selected_element.data.fillcolor = uint(event.currentTarget.selectedItem);
+					
+					//Update the border
+					if (singleton.selected_element.constructor.toString() == "[class rectangleobject]") {
+						singleton.selected_element.DrawRect();
+					}
+					if (singleton.selected_element.constructor.toString() == "[class circleobject]") {
+						singleton.selected_element.DrawCircle();
+					}
+					if (singleton.selected_element.constructor.toString() == "[class lineobject]") {
+						singleton.selected_element.DrawRect();
+					}
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+					
+					singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+					
+				}
+			}
+			
+			protected function btnApplyShadowToSpread_clickHandler(event:MouseEvent):void
+			{
+				
+				var shadow:String = singleton.selected_element.data.shadow;
+				
+				for (var x:int=0; x < singleton.selected_spread_editor.elementcontainer.numElements; x++) {
+					
+					var obj:Object = singleton.selected_spread_editor.elementcontainer.getElementAt(x) as Object;
+					
+					if (obj.hasOwnProperty("data")) {
+						
+						if (obj.data.classtype == singleton.selected_element.data.classtype) {
+							
+							// STORE THE OLD DATA FOR LATER UNDO //
+							oldData = singleton.CloneObject(obj.data);
+							obj.data.shadow = shadow;
+							
+							switch (shadow) {
+								case "": 
+									obj.filters = null;
+									break;
+								case "left":
+									obj.filters = [leftShadowFilter];
+									break;
+								case "bottom":
+									obj.filters = [bottomShadowFilter];
+									break;
+								case "right":
+									obj.filters = [rightShadowFilter];
+									break;
+							}
+							
+							FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, obj.data));
+							
+							singleton.selected_undoredomanager.AddUndo(oldData, obj, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(obj));
+							
+						}
+					}
+				}
+			}
+			
+			protected function btnApplyBorderToSpread_clickHandler(event:MouseEvent):void
+			{
+				
+				var borderWeight:Number = singleton.selected_element.data.borderweight;
+				var borderColor:uint = singleton.selected_element.data.bordercolor;
+				var fillAlpha:Number = singleton.selected_element.data.fillalpha;
+				var fillColor:uint = singleton.selected_element.data.fillcolor;
+				
+				for (var x:int=0; x < singleton.selected_spread_editor.elementcontainer.numElements; x++) {
+					
+					var obj:Object = singleton.selected_spread_editor.elementcontainer.getElementAt(x) as Object;
+					
+					if (obj.hasOwnProperty("data")) {
+						
+						if (obj.data.classtype == singleton.selected_element.data.classtype) {
+							
+							// STORE THE OLD DATA FOR LATER UNDO //
+							oldData = singleton.CloneObject(obj.data);
+							obj.data.borderweight = borderWeight;
+							obj.data.bordercolor = borderColor;
+							obj.data.fillalpha = fillAlpha;
+							obj.data.fillcolor = fillColor;
+							
+							//Update the fill and border
+							if (obj.data.classtype == "[class userrectangle]") {
+								obj.DrawRect();
+							}
+							if (obj.data.classtype == "[class usercircle]") {
+								obj.DrawCircle();
+							}
+							if (obj.data.classtype == "[class userline]") {
+								obj.DrawRect();
+							}
+							
+							FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, obj.data));
+							
+							singleton.selected_undoredomanager.AddUndo(oldData, obj, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(obj));
+							
+						}
+					}
+				}
+			}
+			
+			protected function btnApplyShadowToBook_clickHandler(event:MouseEvent):void
+			{
+				
+				var shadow:String = singleton.selected_element.data.shadow;
+				
+				for (var x:int=0; x < singleton.selected_spread_editor.elementcontainer.numElements; x++) {
+					
+					var obj:Object = singleton.selected_spread_editor.elementcontainer.getElementAt(x) as Object;
+					
+					if (obj.hasOwnProperty("data")) {
+						
+						if (obj.data.classtype == singleton.selected_element.data.classtype) {
+							
+							// STORE THE OLD DATA FOR LATER UNDO //
+							oldData = singleton.CloneObject(obj.data);
+							obj.data.shadow = shadow;
+							
+							switch (shadow) {
+								case "": 
+									obj.filters = null;
+									break;
+								case "left":
+									obj.filters = [leftShadowFilter];
+									break;
+								case "bottom":
+									obj.filters = [bottomShadowFilter];
+									break;
+								case "right":
+									obj.filters = [rightShadowFilter];
+									break;
+							}
+							
+							FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, obj.data));
+							
+							singleton.selected_undoredomanager.AddUndo(oldData, obj, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(obj));
+							
+						}
+					}
+				}
+				
+				//Now apply to all the other elements in the book
+				for (x=0; x < FlexGlobals.topLevelApplication.lstSpreads.numElements; x++) {
+					
+					var spread:spreadItemRenderer = FlexGlobals.topLevelApplication.lstSpreads.getElementAt(x) as spreadItemRenderer;
+					
+					for (var y:int=0; y < spread.elementcontainer.numElements; y++) {
+						
+						obj = spread.elementcontainer.getElementAt(y) as Object;
+						
+						if (obj.hasOwnProperty("data")) {
+							
+							if (obj.data.classtype == singleton.selected_element.data.classtype) {
+								
+								obj.data.shadow = shadow;
+								
+								switch (shadow) {
+									case "": 
+										obj.filters = null;
+										break;
+									case "left":
+										obj.filters = [leftShadowFilter];
+										break;
+									case "bottom":
+										obj.filters = [bottomShadowFilter];
+										break;
+									case "right":
+										obj.filters = [rightShadowFilter];
+										break;
+								}
+							}
+						}
+						
+					}
+				}
+			}
+			
+			protected function btnApplyBorderToBook_clickHandler(event:MouseEvent):void
+			{
+				
+				var borderWeight:Number = singleton.selected_element.data.borderweight;
+				var borderColor:uint = singleton.selected_element.data.bordercolor;
+				var fillAlpha:Number = singleton.selected_element.data.fillalpha;
+				var fillColor:uint = singleton.selected_element.data.fillcolor;
+				
+				for (var x:int=0; x < singleton.selected_spread_editor.elementcontainer.numElements; x++) {
+					
+					var obj:Object = singleton.selected_spread_editor.elementcontainer.getElementAt(x) as Object;
+					
+					if (obj.hasOwnProperty("data")) {
+						
+						if (obj.data.classtype == singleton.selected_element.data.classtype) {
+							
+							// STORE THE OLD DATA FOR LATER UNDO //
+							oldData = singleton.CloneObject(obj.data);
+							
+							obj.data.borderweight = borderWeight;
+							obj.data.bordercolor = borderColor;
+							obj.data.fillalpha = fillAlpha;
+							obj.data.fillcolor = fillColor;
+							
+							//Update the fill and border
+							if (obj.data.classtype == "[class userrectangle]") {
+								obj.DrawRect();
+							}
+							if (obj.data.classtype == "[class usercircle]") {
+								obj.DrawCircle();
+							}
+							if (obj.data.classtype == "[class userline]") {
+								obj.DrawRect();
+							}
+							
+							FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, obj.data));
+							
+							singleton.selected_undoredomanager.AddUndo(oldData, obj, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(obj));
+							
+						}
+					}
+				}
+				
+				//Now apply to all the other elements in the book
+				for (x=0; x < FlexGlobals.topLevelApplication.lstSpreads.numElements; x++) {
+					
+					var spread:spreadItemRenderer = FlexGlobals.topLevelApplication.lstSpreads.getElementAt(x) as spreadItemRenderer;
+					
+					for (var y:int=0; y < spread.elementcontainer.numElements; y++) {
+						
+						obj = spread.elementcontainer.getElementAt(y) as Object;
+						
+						if (obj.hasOwnProperty("data")) {
+							
+							if (obj.data.classtype == singleton.selected_element.data.classtype) {
+								
+								obj.data.borderweight = borderWeight;
+								obj.data.bordercolor = borderColor;
+								obj.data.fillalpha = fillAlpha;
+								obj.data.fillcolor = fillColor;
+								
+								//Update the fill and border
+								if (obj.data.classtype == "[class userrectangle]") {
+									obj.DrawRect();
+								}
+								if (obj.data.classtype == "[class usercircle]") {
+									obj.DrawCircle();
+								}
+								if (obj.data.classtype == "[class userline]") {
+									obj.DrawRect();
+								}
+							}
+						}
+						
+					}
+				}
+			}
+			
+			protected function borderwidth_mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopPropagation();
+			}
+			
+			protected function borderalphaslider_mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopPropagation();
+				oldData = singleton.CloneObject(singleton.selected_element.data);	
+				//borderalphaslider.addEventListener(MouseEvent.MOUSE_UP, UpdateUndo);
+			}
+			
+			private function borderalpha_changeHandler(event:Event):void {
+				
+				singleton.selected_element.data.fillalpha = event.currentTarget.value / 100;
+				
+				//Update the fill and border
+				if (singleton.selected_element.data.classtype == "[class userrectangleclass]") {
+					singleton.selected_element.DrawRect();
+				}
+				if (singleton.selected_element.data.classtype == "[class usercircleclass]") {
+					singleton.selected_element.DrawCircle();
+				}
+				if (singleton.selected_element.data.classtype == "[class userlineclass]") {
+					singleton.selected_element.DrawRect();
+				}
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+			}	
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup paddingLeft="0" paddingRight="5" verticalAlign="middle" gap="4" height="30">
+		
+		<s:BorderContainer id="dragHandle" width="20" height="30" backgroundColor="0xD2D2D2" borderVisible="false"
+						   mouseDown="dragHandle_mouseDownHandler(event)"
+						   mouseUp="dragHandle_mouseUpHandler(event)">
+			<s:Image source="@Embed('assets/icons/drag_handle.png')" height="25" width="14" horizontalCenter="0" verticalCenter="0" />
+		</s:BorderContainer>
+		
+		<classes:menuButton id="btnDelete" width="22" height="22" 
+							_text="&#xf014;" _font="_AppFontAwesome" _fontsize="18"
+							buttonMode="true" click="{DeleteShape()}"
+							mouseChildren="false" toolTip="Verwijderen"
+							useHandCursor="true"/>
+		
+		<mx:VRule width="1" height="80%" />
+		
+		<s:Image includeIn="line" source="@Embed('assets/icons/border-weight-icon.png')"/>
+		
+		<s:DropDownList id="linewidth" includeIn="line" width="60" dataProvider="{singleton.linewidthArray}" 
+						change="{linewidth_changeHandler(event)}"
+						skinClass="skins.dropDownSkin" selectedIndex="0" />
+		
+		<mx:VRule includeIn="line" width="1" height="80%" />
+		
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:HSlider id="alphaslider" width="100%" maximum="100" minimum="0" skinClass="skins.ZoomSlider"
+					   mouseDown="alphaslider_mouseDownHandler(event)" uid="55"
+					   stepSize="1" value="100" change="{alpha_changeHandler(event)}"/>
+		</s:HGroup>
+		
+		<mx:VRule width="1" height="80%" />
+		
+		<mx:ColorPicker id="linecolor" includeIn="line" change="{linecolor_changeHandler(event)}" />
+		
+		<classes:menuButtonSwf id="btnShadows" _source="@Embed('assets/handlers/schaduw.swf')" width="22" height="22" 
+							buttonMode="true" click="btnShadows_clickHandler(event)" toolTip="Schaduw opties" />
+		
+		<classes:menuButtonSwf id="btnBorders" includeIn="circle,rectangle" width="22" height="22"
+							_source="@Embed('assets/handlers/rand.swf')" buttonMode="true"
+							click="btnBorders_clickHandler(event)" toolTip="Rand opties"/>
+		
+		<mx:VRule height="22" width="1" />	
+		
+		<classes:menuButtonSwf id="btnMoveToFront" width="25" height="25"
+							_source="@Embed('assets/icons/to_front.swf')"
+							buttonMode="true" click="{btnMoveToFront_clickHandler(event)}"
+							mouseChildren="false" toolTip="Naar voorgrond"
+							useHandCursor="true"/>
+		
+		<classes:menuButtonSwf id="btnSendToBack" width="25" height="25"
+							_source="@Embed('assets/icons/to_back.swf')"
+							buttonMode="true" click="{btnSendToBack_clickHandler(event)}"
+							mouseChildren="false" toolTip="Naar achtergrond"
+							useHandCursor="true"/>
+		
+	</s:HGroup>
+	
+	<!-- ****************************************
+	Border window
+	**************************************** -->
+	<s:BorderContainer id="bcBorders" visible="false" right="0"
+					   top="35" backgroundColor="#D2D2D2" borderVisible="false" cornerRadius="0"
+					   dropShadowVisible="true" fontSize="11" mouseChildren="true"
+					   mouseEnabled="{bcBorders.visible}"
+					   width="250">
+		<s:layout>
+			<s:VerticalLayout gap="3" paddingBottom="0" paddingLeft="0" paddingRight="0"
+							  paddingTop="10"/>
+		</s:layout>
+		
+		<s:Label includeIn="circle,rectangle" color="#000000" paddingLeft="10" paddingTop="4"
+				 text="Vulkleur:"/>
+		
+		<s:HGroup width="100%" gap="10" paddingLeft="10" verticalAlign="middle"> 
+			
+			<mx:ColorPicker id="fillcolor" includeIn="circle,rectangle"
+							change="{fillcolor_changeHandler(event)}"/>
+			
+			<s:List id="lstUsedFillColors" includeIn="circle,rectangle" width="100%" height="40"
+					borderVisible="false" contentBackgroundAlpha="0.0"
+					dataProvider="{singleton.lastusedcolors}"
+					itemRenderer="itemrenderers.lastColorItemRenderer"
+					mouseUp="lstUsedFillColors_mouseUpHandler(event)"
+					width.rectangle="170">
+				<s:layout>
+					<s:HorizontalLayout gap="2" columnWidth="20" />
+				</s:layout>
+			</s:List>
+			
+		</s:HGroup>
+		
+		<!--
+		<mx:HRule includeIn="circle,rectangle" width="100%" height="1"/>
+		
+		<s:HGroup width="100%" verticalAlign="middle" paddingLeft="10" paddingRight="10">
+			
+			<s:SWFLoader includeIn="circle,rectangle" width="22" height="22"
+						 source="@Embed('assets/handlers/transparant.swf')"/>
+			
+			<s:HGroup width="100%" verticalAlign="middle">
+				<s:HSlider id="borderalphaslider" includeIn="circle,rectangle"
+						   change="{borderalpha_changeHandler(event)}" maximum="100" minimum="0"
+						   mouseDown="borderalphaslider_mouseDownHandler(event)"
+						   skinClass="skins.ZoomSliderGray" stepSize="1" uid="100" value="100"/>
+			</s:HGroup>
+			
+		</s:HGroup>
+		-->
+		
+		<mx:HRule includeIn="circle,rectangle" width="100%" height="1"/>
+		
+		<s:Label color="#000000" paddingLeft="10" paddingTop="4" text="Rand:"
+				 text.line="Lijn:"/>
+		
+		<s:HGroup width="100%" gap="10" paddingLeft="10" verticalAlign="middle"> 
+			
+			<s:Image source="@Embed('assets/icons/border-weight-icon.png')"/>
+			
+			<s:DropDownList id="borderwidth" width="60" dataProvider="{singleton.borderArray}" 
+							change="{borderwidth_changeHandler(event)}"
+							mouseDown="borderwidth_mouseDownHandler(event)"
+							skinClass="skins.dropDownSkin" selectedIndex="0" />
+			
+			<mx:ColorPicker id="bordercolor" change="{bordercolor_changeHandler(event)}" />
+			
+			<s:List id="lstUsedColors" width="100%" height="50" borderVisible="false"
+					contentBackgroundAlpha="0.0" dataProvider="{singleton.lastusedcolors}"
+					itemRenderer="itemrenderers.lastColorItemRenderer"
+					mouseUp="lstUsedColors_mouseUpHandler(event)">
+				<s:layout>
+					<s:TileLayout columnWidth="20" rowHeight="20" horizontalGap="2" verticalGap="2" />
+				</s:layout>
+			</s:List>
+			
+		</s:HGroup>
+		
+		<mx:HRule width="100%" height="1" />
+		
+		<s:HGroup width="100%" gap="10" paddingLeft="10" paddingRight="10" paddingTop="10" paddingBottom="10">
+			<s:Button id="btnApplyBorderToSpread" width="50%" height="25" label="Deze pagina"
+					  click="btnApplyBorderToSpread_clickHandler(event)"
+					  skinClass="skins.btnGreenSkin"/>
+			<s:Button id="btnApplyToBook" width="50%" height="25" label="Hele boek"
+					  click="btnApplyBorderToBook_clickHandler(event)"
+					  skinClass="skins.btnGreenSkin"/>
+		</s:HGroup>
+		
+	</s:BorderContainer>
+	
+	<!-- ****************************************
+	Shadow window
+	**************************************** -->
+	<s:BorderContainer id="bcShadows" visible="false"
+					   right="0" top="35" backgroundColor="#D2D2D2" borderVisible="false"
+					   cornerRadius="0" dropShadowVisible="true" fontSize="11" mouseChildren="true"
+					   mouseEnabled="{bcShadows.visible}">
+		<s:layout>
+			<s:VerticalLayout gap="3" paddingBottom="10" paddingLeft="10" paddingRight="10"
+							  paddingTop="10"/>
+		</s:layout>
+		
+		<s:Label color="#000000" paddingTop="4" text="Schaduw:" /> 
+		
+		<s:BorderContainer id="bcNoshadow" backgroundColor="#EAEAEA" borderColor="#D2D2D2" borderWeight="1" 
+						   click="noshadow_clickHandler(event)">
+			<s:layout>
+				<s:HorizontalLayout verticalAlign="middle" gap="5" paddingLeft="5" paddingRight="5" />
+			</s:layout>
+			
+			<s:SWFLoader id="noshadow" width="24" height="24" mouseEnabled="false"
+						 source="@Embed('assets/handlers/geen-schaduw.swf')"/>
+			
+			<s:Label text="Geen schaduw" color="0" mouseEnabled="false" fontSize="9" />
+			
+		</s:BorderContainer> 
+		
+		<s:HGroup width="100%" verticalAlign="middle">
+			
+			<s:VGroup horizontalAlign="center" verticalAlign="top" gap="10"
+					  paddingLeft="0" paddingRight="0" paddingTop="5" paddingBottom="5">
+				<s:Group id="bcLeftshadow">
+					<s:Image id="leftshadow" width="48" height="30" click="leftshadow_clickHandler(event)"
+							 source="@Embed('assets/handlers/schaduw.png')"
+							 filters="{[FlexGlobals.topLevelApplication.leftShadowFilter]}"/>
+				</s:Group>
+			</s:VGroup>
+			
+			<s:VGroup horizontalAlign="center" verticalAlign="top" gap="10"
+					  paddingLeft="0" paddingRight="0" paddingTop="5" paddingBottom="5">
+				<s:Group id="bcRightshadow">
+					<s:Image id="rightshadow" width="48" height="30" click="rightshadow_clickHandler(event)"
+							 source="@Embed('assets/handlers/schaduw.png')"
+							 filters="{[FlexGlobals.topLevelApplication.rightShadowFilter]}"/>
+				</s:Group>
+			</s:VGroup>
+			
+			<s:VGroup horizontalAlign="center" verticalAlign="top" gap="10"
+					  paddingLeft="0" paddingRight="0" paddingTop="5" paddingBottom="5">
+				<s:Group id="bcBottomshadow">
+					<s:Image id="bottomshadow" width="48" height="30" click="bottomshadow_clickHandler(event)"
+							 source="@Embed('assets/handlers/schaduw.png')"
+							 filters="{[FlexGlobals.topLevelApplication.bottomShadowFilter]}"/>
+				</s:Group>
+			</s:VGroup>
+			
+		</s:HGroup>
+		
+		<s:HGroup width="100%" gap="10" paddingTop="10" paddingBottom="10">
+			<s:Button id="btnApplyToSpreadShadow" width="50%" height="25" label="Deze pagina"
+					  click="btnApplyShadowToSpread_clickHandler(event)"
+					  skinClass="skins.btnGreenSkin"/>
+			<s:Button id="btnApplyToBookShadow" width="50%" height="25" label="Hele boek"
+					  click="btnApplyShadowToBook_clickHandler(event)"
+					  skinClass="skins.btnGreenSkin"/>
+		</s:HGroup>
+		
+	</s:BorderContainer>
+
+</s:BorderContainer>

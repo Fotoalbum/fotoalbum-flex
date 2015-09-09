@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				width="100%" height="100%" 
+				autoDrawBackground="false" 
+				currentState="normal"
+				rollOut="_rollOutHandler(event)"
+				rollOver="_rollOverHandler(event)">
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="dragging" />
+	</s:states>
+	
+	<fx:Declarations>
+		<s:DropShadowFilter id="dropShadow" distance="2" color="0" alpha=".6" angle="45" blurX="5" blurY="5" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import mx.controls.Alert;
+			import mx.graphics.BitmapScaleMode;
+			
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			public function _creationCompleteHandler():void
+			{
+				if (data) {
+					
+					container.width = data.@objectWidth;
+					container.height = data.@objectHeight;
+					
+					if (data.exif) {
+						
+						/*
+						var rot:String = data.exif.@orientation.toString();
+						//Check for the orientation now and correct it if necessary!
+						switch (rot) {
+							case "1": //Normal orientation
+								container.rotation = 0;
+								break;
+							case "6": //Right rotation 90 degrees
+								container.rotation = 90;
+								break;
+							case "8": //Left rotation 270 degrees
+								container.rotation = -90;
+								break;
+							case "3": //180 degrees
+								container.rotation = 180;
+								break;
+						}
+						*/
+						
+						container.verticalCenter = 0;
+						container.horizontalCenter = 0; 
+						container.validateNow();
+						
+					}
+					
+					if (data.@status == "done") {
+						
+						if (data.@origin == "3rdparty") {
+							
+							var request:URLRequest = new URLRequest(encodeURI(data.@lowres_url));
+							var context:LoaderContext = new LoaderContext();
+							context.checkPolicyFile = true;
+							if (Capabilities.isDebugger == false) {
+								context.securityDomain = SecurityDomain.currentDomain;
+								context.applicationDomain = ApplicationDomain.currentDomain;
+							}
+							
+							var loader:Loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, on3rdPartyComplete);
+							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+							loader.load(request, context);
+							
+						} else {
+							
+							request = new URLRequest(encodeURI(singleton.assets_url + data.@lowres_url));
+							context = new LoaderContext();
+							context.checkPolicyFile = true;
+							if (Capabilities.isDebugger == false) {
+								context.securityDomain = SecurityDomain.currentDomain;
+								context.applicationDomain = ApplicationDomain.currentDomain;
+							}
+							
+							loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+							loader.load(request, context);
+							
+						}
+						
+						
+					} else { //Get the imagesource based on the id
+						
+						var found:Boolean = false;
+						
+						while (!found) {
+						
+							for (var x:int=0; x < singleton.userphotosforupload.length; x++) {
+								if (singleton.userphotosforupload.getItemAt(x).id == data.@original_image_id) {
+									img.source = singleton.userphotosforupload.getItemAt(x).source.clone();
+									found = true;
+									break;
+								}
+							}
+							
+							if (singleton.userphotosforuploadhidden) {
+								for (x=0; x < singleton.userphotosforuploadhidden.length; x++) {
+									if (singleton.userphotosforuploadhidden.getItemAt(x).id == data.@original_image_id) {
+										img.source = singleton.userphotosforuploadhidden.getItemAt(x).source.clone();
+										found = true;
+										break;
+									}
+								}
+							}
+						}
+				
+						img.scaleMode = BitmapScaleMode.STRETCH;
+						img.width = data.@imageWidth;
+						img.height = data.@imageHeight;
+						img.x = data.@offsetX;
+						img.y = data.@offsetY;
+						
+						img.validateNow();
+						
+					}
+				}
+			}	
+			
+			private function on3rdPartyComplete(e:Event):void 
+			{
+				
+				img.source = e.target.content;
+				img.cacheAsBitmap = true;
+				img.scaleMode = BitmapScaleMode.STRETCH;
+				img.width = data.@imageWidth;
+				img.height = data.@imageHeight;
+				img.x = data.@offsetX;
+				img.y = data.@offsetY;
+				
+				if (data.@fliphorizontal.toString() == "1") {
+					container.scaleX = -1;
+				} else {
+					container.scaleX = 1;
+				}
+				
+				img.validateNow();
+				
+			}
+			
+			private function onComplete(e:Event):void 
+			{
+				
+				img.source = e.target.content;
+				img.cacheAsBitmap = true;
+				img.scaleMode = BitmapScaleMode.STRETCH;
+				img.width = data.@objectWidth;
+				img.height = data.@objectHeight;
+				img.x = 0;
+				img.y = 0;
+				
+				if (data.@fliphorizontal.toString() == "1") {
+					container.scaleX = -1;
+				} else {
+					container.scaleX = 1;
+				}
+				
+				img.validateNow();
+				
+			}
+			
+			private function onError(e:Event):void {
+				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n timeLineClipartPreviewRenderer|onError|" + e.toString());
+			}
+			
+			protected function _rollOverHandler(event:MouseEvent):void
+			{
+				
+			}
+			
+			protected function _rollOutHandler(event:MouseEvent):void
+			{
+				
+			}
+			
+				
+		]]>
+	</fx:Script>
+	
+	<s:Group id="container" 
+			 width="{data.objectWidth}" height="{data.objectHeight}" 
+			 clipAndEnableScrolling="true">
+		<s:Image id="img" />
+	</s:Group>
+	
+</s:ItemRenderer>

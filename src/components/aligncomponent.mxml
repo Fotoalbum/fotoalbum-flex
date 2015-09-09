@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  gap="-1" minHeight="0"
+		  verticalAlign="middle" horizontalAlign="center">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import itemrenderers.spreadEditor;
+			
+			import mx.core.FlexGlobals;
+			
+			[Bindable] public var _selectedIndex:int = 0;
+			[Bindable] private var singleton:Singleton = Singleton.getInstance();
+			
+			protected function _changeHandler(event:Event):void
+			{
+				if (event.currentTarget.label == "left") {
+					_selectedIndex = 0;
+				}
+				if (event.currentTarget.label == "center") {
+					_selectedIndex = 1;
+				}
+				if (event.currentTarget.label == "right") {
+					_selectedIndex = 2;
+				}
+				
+				if (singleton.selected_spread_editor.textmenu) {
+					singleton.selected_spread_editor.textmenu.SetNewAlignment(_selectedIndex);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:RadioButton label="left" groupName="alignment" skinClass="skins.skinAlignLeft" selected="{_selectedIndex == 0}" click="_changeHandler(event)" />
+	<s:RadioButton label="center" groupName="alignment" skinClass="skins.skinAlignCentre" selected="{_selectedIndex == 1}" click="_changeHandler(event)" />
+	<s:RadioButton label="right" groupName="alignment" skinClass="skins.skinAlignRight" selected="{_selectedIndex == 2}" click="_changeHandler(event)" />
+	
+</s:HGroup>

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true"
+				mouseDown="_mouseDownHandler(event)"
+				height="140">
+	
+	<fx:Declarations>
+		<mx:DropShadowFilter id="dropShadow" distance="5" angle="45" blurX="10" blurY="10" alpha=".7" color="0x000000" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.pageclass;
+			
+			import flashx.textLayout.events.ScrollEvent;
+			
+			import mx.controls.SWFLoader;
+			import mx.events.FlexEvent;
+			import mx.graphics.BitmapScaleMode;
+			
+			import spark.components.Group;
+			import spark.components.Image;
+			import spark.components.Label;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			private function _creationCompleteHandler():void
+			{
+			
+				if (data) {
+					
+					this.removeAllElements();
+					
+					var shadowPlaced:Boolean = false;
+					
+					var back:SWFLoader = new SWFLoader();
+					var elements:SWFLoader = new SWFLoader();
+					var ontopelements:SWFLoader = new SWFLoader();
+					var spreadback:SWFLoader = new SWFLoader();
+					
+					if (data.back) {
+						back.source = data.back.source;
+						back.top = 5;
+						back.maxHeight = 90;
+						back.maxWidth = 180;
+						back.horizontalCenter = 0;
+						back.setStyle("horizontalAlign", "center");
+						this.addElement(back);
+						if (!shadowPlaced) {
+							back.filters = [dropShadow];
+							shadowPlaced = true;
+						}
+					}
+					
+					if (data.spread) {
+						if (data.spread.source) {
+							spreadback.source = data.spread.source;
+							spreadback.top = 5;
+							spreadback.maxHeight = 90;
+							spreadback.maxWidth = 180;
+							spreadback.horizontalCenter = 0;
+							spreadback.setStyle("horizontalAlign", "center");
+							this.addElement(spreadback);
+							if (!shadowPlaced) {
+								spreadback.filters = [dropShadow];
+								shadowPlaced = true;
+							}
+						}
+					}
+					
+					if (data.elements) {
+						if (data.elements.constructor.toString() != "[class Bitmap]") {
+							elements.source = data.elements.source;
+						} else {
+							elements.source = data.elements;
+						}
+						elements.top = 5;
+						elements.maxHeight = 90;
+						elements.maxWidth = 180;
+						elements.horizontalCenter = 0;
+						elements.setStyle("horizontalAlign", "center");
+						this.addElement(elements);
+						if (!shadowPlaced) {
+							elements.filters = [dropShadow];
+							shadowPlaced = true;
+						}
+					} 
+					
+					if (data.ontopelements) {
+						if (data.ontopelements.constructor.toString() != "[class Bitmap]") {
+							ontopelements.source = data.ontopelements.source;
+						} else {
+							ontopelements.source = data.ontopelements;
+						}
+						ontopelements.top = 5;
+						ontopelements.maxHeight = 90;
+						ontopelements.maxWidth = 180;
+						ontopelements.horizontalCenter = 0;
+						ontopelements.setStyle("horizontalAlign", "center");
+						this.addElement(ontopelements);
+						if (!shadowPlaced) {
+							ontopelements.filters = [dropShadow];
+							shadowPlaced = true;
+						}
+					} 
+					
+					if (!data.back && !data.spread && !data.elements&& !data.ontopelements) {
+						
+						//Draw an empty rectangle
+						var w:Number = (singleton._defaultPageWidth + singleton._defaultPageBleed) * 2;
+						var h:Number = singleton._defaultPageHeight + (2 * singleton._defaultPageBleed);
+						var img:Image = new Image();
+						img.source = new BitmapData(w, h, false, 0xFFFFFF);
+						img.width = (70 / h) * w;
+						img.height = 70;
+						img.top = 5;
+						img.maxHeight = 70;
+						img.maxWidth = 140;
+						img.horizontalCenter = 0;
+						img.scaleMode = BitmapScaleMode.ZOOM;
+						
+						this.addElement(img);
+						
+						if (!shadowPlaced) {
+							img.filters = [dropShadow];
+							shadowPlaced = true;
+						}
+						
+						var newLabel:Label = new Label;
+						newLabel.horizontalCenter = 0;
+						newLabel.verticalCenter = 0;
+						newLabel.setStyle("fontSize", 8);
+						newLabel.setStyle("color", 0x58595B);
+						//newLabel.rotation = 45;
+						newLabel.text = "NIEUWE PAGINA'S";
+						this.addElement(newLabel);
+					}
+					 
+					var pageNum:Label = new Label;
+					pageNum.horizontalCenter = 0;
+					pageNum.bottom = 5;
+					pageNum.setStyle("fontSize", 12);
+					pageNum.setStyle("color", 0);
+					this.addElement(pageNum);
+					
+					//Set the pagenumbers
+					for (var p:int=0; p < data.spreadData.pages.length; p++) 
+					{
+						var page:Object = data.spreadData.pages[p] as Object;
+						if (page.pageType.toString() == "coverback" ||
+							page.pageType.toString() == "coverspine" ||
+							page.pageType.toString() == "coverfront") 
+						{
+							pageNum.text = "Cover";
+						} 
+						else 
+						{
+							if (data.spreadData.pages.length == 1) 
+							{
+								pageNum.text = page.pageNumber.toString();
+							} 
+							else 
+							{
+								if (p == 1) {
+									pageNum.text += page.pageNumber.toString();
+								} 
+								else 
+								{
+									pageNum.text = page.pageNumber.toString() + " - ";
+								}
+							}
+						}
+					}
+					
+					this.invalidateDisplayList();
+				}
+			}
+			
+			private function _mouseDownHandler(event:Event):void {
+				
+				singleton.selectedspreadindex = this.parent.getChildIndex(this);
+			}
+			
+		]]>
+	</fx:Script>
+	
+</s:ItemRenderer>

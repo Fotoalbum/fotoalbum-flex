@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 minWidth="1" minHeight="1"
+		 clipAndEnableScrolling="false"
+		 creationComplete="_creationCompleteHandler(event)"
+		 rollOver="_rollOverHandler(event)"
+		 rollOut="_rollOutHandler(event)">
+	
+	<fx:Declarations>
+		<mx:GlowFilter id="myGlow" color="0xD2D2D2" alpha=".5" blurX="10" blurY="10" />
+		<mx:GlowFilter id="myGlowImage" color="0x00ff06" alpha=".5" blurX="10" blurY="10" />
+		<mx:DropShadowFilter id="dropShadow" distance="5" angle="45" blurX="10" blurY="10" alpha=".7" color="0x000000" />
+		
+		<s:DropShadowFilter id="leftShadowFilter" distance="3" color="0" alpha=".6" angle="135" blurX="8" blurY="8" />
+		<s:DropShadowFilter id="rightShadowFilter" distance="3" color="0" alpha=".6" angle="45" blurX="8" blurY="8" />
+		<s:DropShadowFilter id="bottomShadowFilter" distance="3" color="0" alpha=".6" angle="90" blurX="8" blurY="8" />
+		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.undoActions;
+			import classes.userphotoclass;
+			
+			import com.roguedevelopment.objecthandles.ObjectHandles;
+			import com.roguedevelopment.objecthandles.example.SimpleDataModel;
+			
+			import events.clearObjectHandlesEvent;
+			import events.dragdropExposeEvent;
+			import events.showPoofEvent;
+			import events.updateElementsEvent;
+			
+			import itemrenderers.spreadEditor;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.PropertyChangeEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.graphics.BitmapSmoothingQuality;
+			import mx.managers.CursorManager;
+			
+			import spark.components.Image;
+			
+			[Embed(source="/assets/icons/cursor_move.png")] 
+			[Bindable] public var moveCursor:Class;
+			
+			private var cursorID:Number = 0;
+			
+			[Bindable] public var data:Object;
+			[Bindable] public var img:Image;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var parentObjectHandles:ObjectHandles;
+			[Bindable] public var objectWidth:Number;
+			[Bindable] public var objectHeight:Number;
+			[Bindable] public var isNav:Boolean = false;
+			public var _model:SimpleDataModel;
+			public function SetParentObjectHandles(oh:ObjectHandles):void {
+				parentObjectHandles = oh;	
+			}
+			
+			public function set model(model:SimpleDataModel):void
+			{			
+				if( _model )
+				{
+					_model.removeEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onModelChange);
+				}			
+				_model = model;
+				
+				x = model.x;
+				y = model.y;
+				width = model.width;
+				height = model.height;
+				rotation = model.rotation;
+				model.addEventListener(PropertyChangeEvent.PROPERTY_CHANGE, onModelChange);		
+				
+				objectWidth = width;
+				objectHeight = height;
+				
+				redraw();
+				
+			}
+			
+			public function onModelChange(event:PropertyChangeEvent = null):void
+			{
+				
+				if (event) {
+					switch( event.property )
+					{
+						case "x": 
+							x = event.newValue as Number; 
+							//data.@objectX = x;
+							break;
+						case "y": 
+							y = event.newValue as Number; 
+							//data.@objectY = y;
+							break;
+						case "rotation": 
+							rotation = event.newValue as Number;
+							//data.@rotation = rotation;
+							break;
+						case "width": 
+							width = event.newValue as Number; 
+							//data.@objectWidth = width;
+							break;
+						case "height": 
+							height = event.newValue as Number; 
+							//data.@objectHeight = height;
+							break;
+						default: return;
+					}
+				}
+				
+				objectWidth = width;
+				objectHeight = height;
+				
+				singleton.objectWidth = width;
+				singleton.objectHeight = height;
+				singleton.objectRotation = rotation;
+				singleton.objectX = x;
+				singleton.objectY = y;
+				
+				this.width = width;
+				this.height = height;
+				
+				borderContainer.width = this.width;
+				borderContainer.height = this.height;
+				
+				DrawBorder();
+				
+				if (img) {
+					img.width = objectWidth;
+					img.height = objectHeight;
+				}
+				
+				if (!isNav) {
+					qualityAlert.visible = false;
+					if (img) {
+						qualityAlert.visible = singleton.CheckQuality(img, this);
+					}
+				}
+				
+				redraw();
+				
+			}
+			
+			protected function redraw() : void
+			{
+				if(!_model){return;}
+				graphics.clear();
+				//graphics.lineStyle(1, 0xF5DD3F, 1);
+				//graphics.beginFill(0xEAEAEA, 0);
+				//graphics.drawRoundRect(0,0,_model.width,_model.height,0,0);
+				//graphics.endFill();				
+			}
+			
+			public function SetEventListeners():void {
+				
+				FlexGlobals.topLevelApplication.addEventListener(dragdropExposeEvent.BACKGROUNDS, onDragDropBackground);
+				FlexGlobals.topLevelApplication.addEventListener(dragdropExposeEvent.ENABLEALL, onDragDropEnableAll);
+				FlexGlobals.topLevelApplication.addEventListener(dragdropExposeEvent.PHOTOS, onDragDropPhoto);
+				FlexGlobals.topLevelApplication.addEventListener(dragdropExposeEvent.CLIPART, onDragDropClipart);
+			}
+			
+			[Bindable] public var tempImage:Image;
+			public function CreateImage(nav:Boolean = false):void 
+			{
+				
+				loading.visible = false;
+				
+				isNav = nav;
+				
+				if (data) 
+				{
+					
+					loading.visible = true;
+					
+					//Check for shadow
+					if (data.shadow.toString() == "") {
+						this.filters = null;
+					}
+					if (data.shadow.toString() == "left") {
+						this.filters = [leftShadowFilter];
+					}
+					if (data.shadow.toString() == "right") {
+						this.filters = [rightShadowFilter];
+					}
+					if (data.shadow.toString() == "bottom") {
+						this.filters = [bottomShadowFilter];
+					}
+					
+					var request:URLRequest;
+					
+					if (nav == false) {
+						request = new URLRequest(encodeURI(singleton.assets_url + data.lowres_url));
+					}
+					else
+					{
+						request = new URLRequest(encodeURI(singleton.assets_url + data.lowres_url));
+					}
+					var context:LoaderContext = new LoaderContext();
+					context.checkPolicyFile = true;
+					if (Capabilities.isDebugger == false) {
+						context.securityDomain = SecurityDomain.currentDomain;
+						context.applicationDomain = ApplicationDomain.currentDomain;
+					}
+					
+					var loader:Loader = new Loader();
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+					loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+					loader.load(request, context);
+					
+				}
+				
+			}
+			
+			private function onComplete(e:Event):void 
+			{
+				
+				container.removeAllElements();
+				
+				img = new Image();
+				img.source = e.target.content;
+				img.x = 0;
+				img.y = 0;
+				img.width = data.objectWidth;
+				img.height = data.objectHeight;
+				img.scaleMode = BitmapScaleMode.STRETCH;
+				img.smooth = true;
+				img.cacheAsBitmap = true;
+				img.alpha = data.imageAlpha;
+				img.validateNow();
+				
+				container.addElement(img);
+				
+				if (data.fliphorizontal == 1) {
+					container.scaleX = -1;
+				}
+				
+				container.horizontalCenter = 0;
+				container.verticalCenter = 0;
+				
+				loading.visible = false;
+				
+				if (!isNav) {
+					qualityAlert.visible = singleton.CheckQuality(img, this);
+				}
+				
+			}
+			
+			private function onError(e:Event):void {
+				//trace(e);
+			}
+			
+			private function onDragDropBackground(event:dragdropExposeEvent):void
+			{
+				this.mouseEnabled = false;
+				this.mouseChildren = false;
+			}
+			
+			private function onDragDropEnableAll(event:dragdropExposeEvent):void
+			{
+				this.mouseEnabled = true;
+				this.mouseChildren = true;
+			}
+			
+			private function onDragDropPhoto(event:dragdropExposeEvent):void
+			{
+				this.mouseEnabled = false;	
+				this.mouseChildren = false;
+			}
+			
+			private function onDragDropClipart(event:dragdropExposeEvent):void
+			{
+				this.mouseEnabled = false;	
+				this.mouseChildren = false;
+			}
+			
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				FlexGlobals.topLevelApplication.addEventListener(clearObjectHandlesEvent.CLEARHANDLES, ClearObjectHandles);
+				
+			}
+			
+			private function ClearObjectHandles(event:clearObjectHandlesEvent):void
+			{
+				graphics.clear();
+			}
+			
+			protected function _keyUpHandler(event:KeyboardEvent):void
+			{
+				
+				if (event.keyCode == 8 || event.keyCode == 46) 
+				{
+					//Delete this component
+					var oldData:Object = singleton.CloneObject(data);
+					
+					var index:int = singleton.GetRealObjectIndex(this);
+					
+					var elementContainer:Group = this.parent as Group;
+					elementContainer.removeElement(this);
+					
+					parentObjectHandles.selectionManager.clearSelection();
+					this.graphics.clear();
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new showPoofEvent(showPoofEvent.POOF));
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.DELETE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+					
+					var editor:spreadEditor = FlexGlobals.topLevelApplication.viewer.getElementAt(0) as spreadEditor;
+					editor.photomenu.visible = false;
+					editor.shapemenu.visible = false;
+					editor.textmenu.visible = false;
+					
+					singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_DELETE_ELEMENT, index);
+					
+				}
+			}
+			
+			public function DrawBorder():void {
+				
+				borderContainer.graphics.clear();
+				
+				if (data.borderalpha.toString() == "NaN") {
+					data.borderalpha = 1;
+				}
+				
+				if (data.borderweight > 0) {
+					borderContainer.graphics.lineStyle(data.borderweight + 1, data.bordercolor, data.borderalpha, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+					borderContainer.graphics.drawRect(-data.borderweight / 2, -data.borderweight / 2, this.width + data.borderweight, this.height + data.borderweight);
+				}
+			}
+			
+			protected function _rollOverHandler(event:MouseEvent):void
+			{
+				singleton.moveAllowed = true;
+				Mouse.hide();
+				cursorID = CursorManager.setCursor(moveCursor, 2, -8 / singleton.zoomFactor, -8 / singleton.zoomFactor);	
+			}
+			
+			protected function _rollOutHandler(event:MouseEvent):void
+			{
+				CursorManager.removeCursor(cursorID);
+				Mouse.show();
+				singleton.moveAllowed = false;
+			}
+			
+			[Bindable] private var oldData:Object;
+			public function FlipHorizontal():void {
+				
+				// STORE THE OLD DATA FOR LATER UNDO //
+				oldData = singleton.CloneObject(singleton.selected_element.data);
+				
+				//Check if we allready have a horizontal flip or not, if it is reset it
+				if (data.fliphorizontal == 1) {
+					//Reset it
+					data.fliphorizontal = 0;
+					container.scaleX = 1;
+					container.validateNow();
+				} else {
+					data.fliphorizontal = 1;
+					container.scaleX = -1;
+					container.validateNow();
+				}
+				
+				container.horizontalCenter = 0;
+				container.verticalCenter = 0;
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+				
+				singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_BORDER, singleton.GetRealObjectIndex(singleton.selected_element));
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Group id="borderContainer" width="{this.width}" height="{this.height}" clipAndEnableScrolling="false" />
+	
+	<s:Group id="container" width="{this.width}" height="{this.height}" clipAndEnableScrolling="true" />
+	
+	<s:Group id="loading" visible="false" width="{this.width}" height="{this.height}">
+		<s:SWFLoader width="{48 / FlexGlobals.topLevelApplication.viewer.scaleX}" height="{48 / FlexGlobals.topLevelApplication.viewer.scaleX}" horizontalCenter="0" verticalCenter="0"
+					 smoothBitmapContent="true" source="@Embed('assets/icons/loading.swf')" />
+	</s:Group>
+	
+	<s:SWFLoader id="qualityAlert" visible="false" width="{this.width / 4}" height="{this.height / 4}" verticalAlign="middle" horizontalAlign="center"
+				 verticalCenter="0" horizontalCenter="0" scaleContent="true" smoothBitmapContent="true" source="@Embed('assets/icons/low_res.swf')"/>
+	
+</s:Group>

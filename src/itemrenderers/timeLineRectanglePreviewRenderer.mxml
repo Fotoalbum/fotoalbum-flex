@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				width="100%" height="100%" 
+				autoDrawBackground="false" 
+				currentState="normal">
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="dragging" />
+	</s:states>
+	
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.graphics.BitmapScaleMode;
+			
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			public function _creationCompleteHandler():void
+			{
+				if (data) {
+					
+					container.graphics.clear();
+					
+					if (data.@borderweight > 0) {
+						container.graphics.lineStyle(data.@borderweight + 1, data.@bordercolor, data.@fillalpha, false, "normal", CapsStyle.SQUARE, JointStyle.MITER, 2);
+					}
+					container.graphics.beginFill(data.@fillcolor, data.@fillalpha);
+					container.graphics.drawRect(0, 0, this.width, this.height);
+					container.graphics.endFill();
+					
+					//Check for shadow
+					container.filters = null;
+					if (data.@shadow == "") {
+						container.filters = null;
+					}
+					if (data.@shadow == "left") {
+						container.filters = [FlexGlobals.topLevelApplication.leftShadowFilter];
+					}
+					if (data.@shadow == "right") {
+						container.filters = [FlexGlobals.topLevelApplication.rightShadowFilter];
+					}
+					if (data.@shadow == "bottom") {
+						container.filters = [FlexGlobals.topLevelApplication.bottomShadowFilter];
+					}
+					
+				}
+			}	
+				
+		]]>
+	</fx:Script>
+	
+	<s:Group id="container" 
+			 width="{data.@objectWidth}" height="{data.@objectHeight}" 
+			 clipAndEnableScrolling="true">
+		<s:Image id="img" />
+	</s:Group>
+	
+</s:ItemRenderer>

@@ -1,0 +1,646 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   width="930" height="630" 
+				   xmlns:classes="classes.*" 
+				   xmlns:components="components.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.PageType;
+			import classes.Singleton;
+			import classes.pageclass;
+			import classes.snapshot;
+			import classes.spreadclass;
+			import classes.textflowclass;
+			import classes.textsprite;
+			
+			import events.updatePagenumberTimelineEvent;
+			
+			import flashx.textLayout.container.ContainerController;
+			import flashx.textLayout.conversion.ConversionType;
+			import flashx.textLayout.conversion.TextConverter;
+			import flashx.textLayout.edit.EditManager;
+			import flashx.textLayout.events.SelectionEvent;
+			import flashx.undo.UndoManager;
+			
+			import itemrenderers.spreadArrangeItem;
+			import itemrenderers.spreadItemRenderer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.advancedDataGridClasses.SortInfo;
+			import mx.core.FlexGlobals;
+			import mx.core.IVisualElement;
+			import mx.events.DragEvent;
+			import mx.events.SandboxMouseEvent;
+			import mx.managers.PopUpManager;
+			import mx.utils.ObjectUtil;
+			import mx.utils.UIDUtil;
+			
+			import spark.components.Image;
+			import spark.events.IndexChangeEvent;
+			import spark.layouts.supportClasses.DropLocation;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var selectedpage:int = -1;
+			[Bindable] public var _changesMade:Boolean = false;
+			[Bindable] public var navigation_selectedindex:int = -1;
+			private function navigation_dragDrop(event:DragEvent):void {
+				
+				var dropLocal:DropLocation = event.currentTarget.layout.calculateDropLocation(event); 
+				var naviList:Object = event.dragInitiator as Object;
+				
+				if (dropLocal.dropIndex <= 1 || dropLocal.dropIndex == FlexGlobals.topLevelApplication.spreadarray.length) {
+					
+					event.preventDefault();
+					
+					FlexGlobals.topLevelApplication.spreadarray.refresh();
+					
+				} else {
+					
+					if (naviList.selectedIndex < dropLocal.dropIndex) {
+						singleton.selectedspreadindex = dropLocal.dropIndex - 1;
+					} else {
+						lstSpreadArrange.selectedIndex = dropLocal.dropIndex;
+					}
+					
+					event.currentTarget.invalidateDisplayList();
+					this.callLater(UpdateSpreadPagenumbers);		
+				}
+				
+				//Select the moved node as the current one
+				lstSpreadArrange.selectedIndex = singleton.selectedspreadindex;
+				lstSpreadArrange.dispatchEvent(new IndexChangeEvent(IndexChangeEvent.CHANGE));
+				
+				_changesMade = true;
+			
+			}
+			
+			public function UpdateSpreadPagenumbers():void {
+				
+				var pagenum:int = 1;
+				
+				for (var x:int=0; x < FlexGlobals.topLevelApplication.spreadarray.length; x++) {
+					if (FlexGlobals.topLevelApplication.spreadarray[x].spreadData.pages[0].pageType.toString() == "normal") {
+						for each (var p:Object in FlexGlobals.topLevelApplication.spreadarray[x].spreadData.pages) {
+							p.pageNumber = pagenum;
+							pagenum++;
+						}
+					}
+				}
+				
+				FlexGlobals.topLevelApplication.spreadarray.refresh();
+				
+				FlexGlobals.topLevelApplication.contentRearranged = true;
+				
+			}
+			
+			private function navigation_dragStart(event:DragEvent):void {
+				
+				if (singleton._useCover == true) {
+					if (singleton.selectedspreadindex < 2 || singleton.selectedspreadindex == (FlexGlobals.topLevelApplication.spreadarray.length - 1)) {
+						event.stopImmediatePropagation();
+						event.currentTarget.layout.hideDropIndicator();
+					} else {
+						FlexGlobals.topLevelApplication.stage.addEventListener(MouseEvent.MOUSE_UP, PageManagementMouseUpOutside);
+					}
+				} else {
+					FlexGlobals.topLevelApplication.stage.addEventListener(MouseEvent.MOUSE_UP, PageManagementMouseUpOutside);
+				}
+			}
+			
+			protected function navigation_dragOver(event:DragEvent):void {
+				
+				var dropLocal:DropLocation = event.currentTarget.layout.calculateDropLocation(event); 
+				
+				if (singleton._useCover == false) {
+					if (dropLocal.dropIndex == 0 || dropLocal.dropIndex == FlexGlobals.topLevelApplication.spreadarray.length) {
+						event.stopImmediatePropagation();
+						event.currentTarget.layout.hideDropIndicator();
+					}
+				} else {
+					if (dropLocal.dropIndex <= 1 || dropLocal.dropIndex == FlexGlobals.topLevelApplication.spreadarray.length) {
+						event.stopImmediatePropagation();
+						event.currentTarget.layout.hideDropIndicator();
+					}
+				}
+				
+			}
+			
+			protected function navigation_dragExit(event:DragEvent):void {
+				//Nothing for now
+				event.stopImmediatePropagation();
+				event.currentTarget.layout.hideDropIndicator();
+			}
+			
+			[Bindable] public var addpagespopup:PagesPopup;
+			[Bindable] public var _numPages:int = 0;
+			public function AddSpreadToAlbum():void {
+				
+				if (_numPages < singleton._maxPages) {
+					
+					addpagespopup = PagesPopup(PopUpManager.createPopUp(this, PagesPopup, true));
+					PopUpManager.centerPopUp(addpagespopup);
+					addpagespopup._numPages = _numPages;
+					addpagespopup.minimum = singleton._stepSize;
+					addpagespopup.maximum = singleton._maxPages - _numPages;
+					
+				} else {
+					
+					singleton.ShowMessage("Maximum pagina's", "Maximum aantal pagina's bereikt voor dit " + singleton.platform_name);
+				}
+				
+				if (addpagespopup) {
+					addpagespopup.btnCancel.addEventListener(MouseEvent.MOUSE_UP, CloseAddPages);
+					//addpagespopup.btnCloseWindow.addEventListener(MouseEvent.MOUSE_UP, CloseAddPages);
+					addpagespopup.btnAdd.addEventListener(MouseEvent.MOUSE_UP, AddNewPages);
+				}
+				
+			}
+			
+			public function CloseAddPages(event:Event = null):void {
+				
+				PopUpManager.removePopUp(addpagespopup);
+				addpagespopup = null;
+				
+			}
+			
+			public function AddNewPages(event:Event):void {
+				
+				var newpages:int = addpagespopup.numPages.value;
+				
+				CloseAddPages();
+				
+				var spreadindex:int = -1;
+				
+				//Now add the new pages from the selected spread index
+				_numPages += newpages;
+				
+				if (selected_spread_item) {
+					
+					if (selected_spread_item.pages[0].pageType == "coverback") {
+						//This is the cover
+						spreadindex = 2;
+					} else {
+						//Check if its not a single page we are on
+						if (selected_spread_item.pages[0].singlepageFirst == true) {
+							spreadindex = 2;
+						} else if (selected_spread_item.pages[0].singlepageLast == true) {
+							//This is the last empty page
+							spreadindex = FlexGlobals.topLevelApplication.spreadarray.length - 1;
+						} else {
+							spreadindex = lstSpreadArrange.selectedIndex + 1;
+						}
+					}
+					
+				} else {
+					
+					//Add the pages to the end!
+					spreadindex = FlexGlobals.topLevelApplication.spreadarray.length - 1;
+					
+				}
+				
+				for (x=0; x < (newpages / 2); x++) {
+					
+					var spread:spreadclass = new spreadclass();
+					spread.spreadID = UIDUtil.createUID();
+					spread.totalWidth = (singleton._defaultPageWidth + singleton._defaultPageBleed) * 2;
+					spread.totalHeight = singleton._defaultPageHeight + (2 * singleton._defaultPageBleed);
+					spread.width = spread.totalWidth;
+					spread.height = spread.totalHeight;
+					spread.backgroundColor =  -1;
+					spread.backgroundAlpha = 1;
+					spread.status = "new";
+					spread.backgroundData = null;	
+					
+					var newpage:pageclass = new pageclass;
+					newpage.pageID = UIDUtil.createUID();
+					newpage.spreadID = spread.spreadID;
+					newpage.pageType = PageType.NORMAL;
+					newpage.type = PageType.NORMAL;
+					newpage.pageWidth = singleton._defaultPageWidth;
+					newpage.pageHeight = singleton._defaultPageHeight;
+					newpage.horizontalBleed = singleton._defaultPageBleed;
+					newpage.verticalBleed = singleton._defaultPageBleed;
+					newpage.width = newpage.pageWidth + singleton._defaultPageBleed;
+					newpage.height = newpage.pageHeight + (2 * singleton._defaultPageBleed);
+					newpage.pageNumber = "new";
+					newpage.pageLeftRight = "left";
+					newpage.side = "left";
+					newpage.spreadRef = spread;
+					newpage.singlepageFirst = false;
+					newpage.singlepageLast = false;
+					newpage.backgroundColor = -1;
+					newpage.backgroundAlpha = 1;
+					newpage.timelineID = spread.spreadID;
+					newpage.backgroundData = null;	
+					
+					spread.pages.addItem(newpage);
+					
+					newpage = new pageclass;
+					newpage.pageID = UIDUtil.createUID();
+					newpage.spreadID = spread.spreadID;
+					newpage.pageType = PageType.NORMAL;
+					newpage.type = PageType.NORMAL;
+					newpage.pageWidth = singleton._defaultPageWidth;
+					newpage.pageHeight = singleton._defaultPageHeight;
+					newpage.horizontalBleed = singleton._defaultPageBleed;
+					newpage.verticalBleed = singleton._defaultPageBleed;
+					newpage.width = newpage.pageWidth + singleton._defaultPageBleed;
+					newpage.height = newpage.pageHeight + (2 * singleton._defaultPageBleed);
+					newpage.pageNumber = "new";
+					newpage.pageLeftRight = "right";
+					newpage.side = "right";
+					newpage.spreadRef = spread;
+					newpage.singlepageFirst = false;
+					newpage.singlepageLast = false;
+					newpage.backgroundColor = -1;
+					newpage.backgroundAlpha = 1;
+					newpage.timelineID = spread.spreadID;
+					newpage.backgroundData = null;	
+					
+					spread.pages.addItem(newpage);
+					
+					//Create a snapshot for the back
+					var obj:Object = new Object();
+					obj.spreadData = spread;
+					
+					obj.back = null;
+					obj.spread = null;
+					obj.elements = null;
+					obj.ontopelements = null;
+					
+					FlexGlobals.topLevelApplication.spreadarray.addItemAt(obj, spreadindex);
+					FlexGlobals.topLevelApplication.spreadarray.refresh();
+					
+				}
+				
+				//Update pagenumbers!
+				var pagenum:int = 1;
+				for (x=0; x < FlexGlobals.topLevelApplication.spreadarray.length; x++) {
+					
+					if (FlexGlobals.topLevelApplication.spreadarray.getItemAt(x).spreadData.pages[0].pageType != "coverback") {
+						
+						FlexGlobals.topLevelApplication.spreadarray.getItemAt(x).spreadData.pages[0].pageNumber = pagenum;
+						pagenum++;
+						
+						if (FlexGlobals.topLevelApplication.spreadarray.getItemAt(x).spreadData.pages.length > 1) {
+							FlexGlobals.topLevelApplication.spreadarray.getItemAt(x).spreadData.pages[1].pageNumber = pagenum;
+							pagenum++;
+						}
+						
+					}
+				}
+				
+				FlexGlobals.topLevelApplication.spreadarray.refresh();
+			
+				PopUpManager.centerPopUp(this);
+				
+				_changesMade = true;
+				
+			}
+			
+			public function DeleteSpreadFromAlbum():void {
+				
+				//Check if we have multiple items selected
+				if (lstSpreadArrange.selectedIndices.length > 1) {
+					
+					var numPagesToDelete:int = 0;
+					for (var q:int=0; q < lstSpreadArrange.selectedIndices.length; q++) {
+						numPagesToDelete += FlexGlobals.topLevelApplication.spreadarray.getItemAt(lstSpreadArrange.selectedIndices[q]).spreadData.pages.length;
+					}
+					
+					if (_numPages - numPagesToDelete < singleton._minPages) {
+					
+						singleton.ShowMessage("Minimum pagina's", "Het minimaal aantal pagina's voor dit " + singleton.platform_name + " is " + singleton._minPages + ". Probeer minder pagina's te verwijderen.");
+					
+					} else {
+						
+						var spreadArr:ArrayCollection = FlexGlobals.topLevelApplication.spreadarray;
+						//Delete all the indexes
+						
+						var indexArr:Array = new Array;
+						
+						for (var i:int=0; i < lstSpreadArrange.selectedIndices.length; i++) {
+							
+							if (spreadArr.getItemAt(lstSpreadArrange.selectedIndices[i]).spreadData.singlepage == true || spreadArr.getItemAt(lstSpreadArrange.selectedIndices[i]).spreadData.pages[0].pageType == "coverback") {
+								
+								singleton.ShowMessage("Spread verwijderen", "Niet alle spreads kunnen worden verwijderd.");
+								
+							} else {
+								
+								indexArr.push(lstSpreadArrange.selectedIndices[i]);
+								
+							}
+							
+						}
+						
+						if (indexArr) {
+							DeleteSpreadWithIndex(indexArr);
+						}
+						
+					}
+					
+				} else {
+					
+					if (_numPages == singleton._minPages) {
+						
+						singleton.ShowMessage("Minimaal aantal pagina's", "Het minimaal aantal pagina's voor dit " + singleton.platform_name + " is " + singleton._minPages);
+						
+					} else {
+						
+						if (selected_spread_item.singlepage == true || selected_spread_item.pages[0].pageType == "coverback") {
+							
+							singleton.ShowMessage("Kan niet verwijderen", "Deze spread kan niet worden verwijderd.");
+							
+						} else {
+					
+							indexArr = new Array;
+							indexArr.push(lstSpreadArrange.selectedIndex);
+							DeleteSpreadWithIndex(indexArr);
+							
+						}
+						
+					}
+				}
+		
+			}
+			
+			public function DeleteSpreadWithIndex(indexArr:Array):void {
+			
+				//Check if this is not the cover or a single page?
+				var spreadarr:ArrayCollection = FlexGlobals.topLevelApplication.spreadarray;
+				
+				//Delete the spread(s)
+				indexArr.sort(Array.DESCENDING|Array.NUMERIC);
+				
+				var index:int = 0;
+				
+				for (var p:int=0; p < indexArr.length; p++) {
+					spreadarr.removeItemAt(indexArr[p]);
+					_numPages -= 2;
+					index = indexArr[p];
+				}
+				
+				spreadarr.refresh();
+				
+				//Update pagenumbers!
+				var pagenum:int = 1;
+				for (x=0; x < spreadarr.length; x++) {
+					
+					if (spreadarr.getItemAt(x).spreadData.pages[0].pageType != "coverback") {
+						
+						spreadarr.getItemAt(x).spreadData.pages[0].pageNumber = pagenum;
+						pagenum++;
+						
+						if (spreadarr.getItemAt(x).spreadData.pages.length > 1) {
+							spreadarr.getItemAt(x).spreadData.pages[1].pageNumber = pagenum;
+							pagenum++;
+						}
+						
+					} 
+				}
+				
+				spreadarr.refresh();
+				
+				PopUpManager.centerPopUp(this);
+				
+				_changesMade = true;
+				
+				//Reset the index
+				lstSpreadArrange.selectedIndex = index;
+				lstSpreadArrange.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+				
+			}
+			
+			public function DuplicateSpreadInAlbum():void {
+				
+				if (_numPages == singleton._maxPages) {
+					
+					singleton.ShowMessage("Maximum pagina's", "Het maximum aantal pagina's voor dit " + singleton.platform_name + " is " + singleton._maxPages);
+					
+				} else {
+					
+					//Check if this is not the cover or a single page?
+					if (selected_spread_item.singlepage == true || selected_spread_item.pages[0].pageType == "coverback") {	
+						singleton.ShowMessage("Kan niet dupliceren", "Deze spread kan niet worden gedupliceerd.\nProbeer een andere spread.");
+					} else {
+						
+						var spreadindex:int = lstSpreadArrange.selectedIndex;
+						
+						var spreadObject:Object = ObjectUtil.copy(selected_spread_item);
+						spreadObject.spreadID = UIDUtil.createUID();
+						var spreadObjectElements:ArrayCollection = spreadObject.elements;
+						var spreadPages:ArrayCollection = spreadObject.pages;
+						for each (var pageObject:Object in spreadPages) {
+							var oldPageID:String = pageObject.pageID.toString();
+							pageObject.pageID = UIDUtil.createUID();
+							pageObject.spreadID = spreadObject.spreadID;
+							//Update the pageID in the spread elements
+							for each (var spreadelementObject:Object in spreadObjectElements) {
+								//If this is a text element, create a new textflow!
+								if (spreadelementObject.classtype == "[class usertextclass]") {
+									
+									var tfclass:textflowclass = new textflowclass();
+									tfclass.id = UIDUtil.createUID();
+									tfclass.sprite = new textsprite();
+									
+									var oldTF:Object = singleton.GetTextFlowClassByID(spreadelementObject.tfID);
+									
+									var content:Object = TextConverter.export(oldTF.tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.STRING_TYPE);
+									tfclass.tf = TextConverter.importToFlow(content, TextConverter.TEXT_LAYOUT_FORMAT);
+									
+									spreadelementObject.tfID = tfclass.id;
+									tfclass.sprite.tfID = tfclass.id;
+									
+									var cc:ContainerController = new ContainerController(tfclass.sprite, spreadelementObject.objectWidth, spreadelementObject.objectHeight);
+									cc.container.addEventListener(KeyboardEvent.KEY_UP, FlexGlobals.topLevelApplication.ContainerChangeEvent);
+									cc.container.addEventListener(FocusEvent.MOUSE_FOCUS_CHANGE, FlexGlobals.topLevelApplication.UpdateNavigationTextflow);
+									cc.container.addEventListener(FocusEvent.MOUSE_FOCUS_CHANGE, FlexGlobals.topLevelApplication.SetTextUndo);
+									cc.container.addEventListener(Event.PASTE, FlexGlobals.topLevelApplication.onPaste);
+									tfclass.sprite.cc = cc;
+									
+									tfclass.tf.flowComposer.addController(tfclass.sprite.cc);
+									tfclass.tf.interactionManager = new EditManager(new UndoManager());	
+									
+									tfclass.tf.addEventListener(SelectionEvent.SELECTION_CHANGE, FlexGlobals.topLevelApplication.SelectionChange);
+									tfclass.tf.flowComposer.updateAllControllers();
+									
+									singleton.textflowcollection.addItem(tfclass);
+									
+								} else {
+									
+									spreadelementObject.id = UIDUtil.createUID();
+									
+								}
+							}
+						}
+						
+						_numPages += 2;
+						
+						//Create a snapshot for the back
+						var newobj:Object = new Object();
+						newobj.spreadData = spreadObject;
+						
+						//Copy the bitmap of the copied spread
+						var back:snapshot = new snapshot();
+						back.directBitmap = lstSpreadArrange.selectedItem.back.source.bitmapData.clone();
+						back.smooth = true;
+						back.validateNow();
+						
+						var spread:snapshot = new snapshot();
+						spread.directBitmap = lstSpreadArrange.selectedItem.spread.source.bitmapData.clone();
+						spread.smooth = true;
+						spread.validateNow();
+						
+						var elements:snapshot = new snapshot();
+						elements.directBitmap = lstSpreadArrange.selectedItem.elements.source.bitmapData.clone();
+						elements.smooth = true;
+						elements.validateNow();
+						
+						var ontopelements:snapshot = new snapshot();
+						ontopelements.directBitmap = lstSpreadArrange.selectedItem.ontopelements.source.bitmapData.clone();
+						ontopelements.smooth = true;
+						ontopelements.validateNow();
+						
+						newobj.back = back;
+						newobj.spread = spread;
+						newobj.elements = elements;
+						newobj.ontopelements = ontopelements;
+						
+						FlexGlobals.topLevelApplication.spreadarray.addItemAt(newobj, spreadindex);
+						
+						//Update pagenumbers!
+						var pagenum:int = 1;
+						for (x=0; x < FlexGlobals.topLevelApplication.spreadarray.length; x++) {
+							
+							if (FlexGlobals.topLevelApplication.spreadarray.getItemAt(x).spreadData.pages[0].pageType != "coverback") {
+								
+								FlexGlobals.topLevelApplication.spreadarray.getItemAt(x).spreadData.pages[0].pageNumber = pagenum;
+								pagenum++;
+								
+								if (FlexGlobals.topLevelApplication.spreadarray.getItemAt(x).spreadData.pages.length > 1) {
+									FlexGlobals.topLevelApplication.spreadarray.getItemAt(x).spreadData.pages[1].pageNumber = pagenum;
+									pagenum++;
+								}
+								
+							}
+						}
+						
+						FlexGlobals.topLevelApplication.spreadarray.refresh();
+						
+						PopUpManager.centerPopUp(this);
+						
+						_changesMade = true;
+					}
+				}
+				
+			}
+			
+			[Bindable] public var selected_spread_item:Object;
+			protected function lstSpreadArrange_clickHandler(event:MouseEvent):void
+			{
+				if (event.currentTarget.selectedIndex != -1) {
+					selectedpage = lstSpreadArrange.selectedIndex;
+					selected_spread_item = event.currentTarget.selectedItem.spreadData;
+				}
+			}
+			
+			private function PageManagementMouseUpOutside(event:MouseEvent):void {
+				
+				FlexGlobals.topLevelApplication.stage.removeEventListener(MouseEvent.MOUSE_UP, PageManagementMouseUpOutside);
+				if (FlexGlobals.topLevelApplication.spreadarray) {
+					FlexGlobals.topLevelApplication.spreadarray.refresh();
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<s:Rect width="100%" height="100%">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Label left="15" top="15" color="#4E4E4E" fontSize="18" text="Pagina beheer"/>
+	
+	<mx:HRule left="0" right="0" top="40" />
+	
+	<s:BorderContainer left="0" right="0" top="40" bottom="50"
+					   backgroundColor="#FFFFFF" borderColor="{singleton.baseColor}"
+					   borderVisible="false" borderWeight="1">
+		
+		<s:layout>
+			<s:VerticalLayout gap="10" />
+		</s:layout>
+		
+		<s:BorderContainer width="100%" backgroundColor="0xf8f8f8" borderVisible="false">
+			<s:layout>
+				<s:HorizontalLayout gap="1" verticalAlign="middle" paddingLeft="10" />	
+			</s:layout>
+			
+			<classes:pageControlButton id="btnAddSpread" 
+									   minWidth="130" height="30"
+									   buttonType="add"	
+									   buttonFont="_AppFontEnjoy"
+									   mouseDown="{AddSpreadToAlbum()}"
+									   buttonTypeLabel="&#xe616;"
+									   buttonLabel="Toevoegen"
+									   enabled="{lstSpreadArrange.selectedIndices.length &lt; 2}"/>
+			<classes:pageControlButton id="btnDeleteSpread" 
+									   minWidth="130" height="30"
+									   buttonType="delete"		
+									   buttonFont="_AppFontEnjoy"
+									   buttonTypeLabel="&#xe615;"
+									   mouseDown="{DeleteSpreadFromAlbum()}"
+									   enabled="{singleton.selected_spread_item != null}"
+									   buttonLabel="Verwijderen"/>
+			<classes:pageControlButton id="btnDuplicateSpread" 
+									   minWidth="130" height="30"
+									   buttonType="dupli"		
+									   buttonFont="_AppFontAwesome"
+									   buttonTypeLabel="&#xf0c5;"
+									   mouseDown="{DuplicateSpreadInAlbum()}"
+									   enabled="{singleton.selected_spread_item != null &amp;&amp; lstSpreadArrange.selectedIndices.length &lt; 2}"
+									   buttonLabel="Dupliceren"/>
+			
+		</s:BorderContainer>
+		
+		<s:List id="lstSpreadArrange" width="100%" height="100%" borderVisible="false"
+				contentBackgroundAlpha="0"
+				doubleClickEnabled="true"
+				dragDrop="navigation_dragDrop(event)" dragEnabled="true"
+				dragExit="navigation_dragExit(event)" dragMoveEnabled="true"
+				dragOver="navigation_dragOver(event)" dragStart="navigation_dragStart(event)"
+				dropEnabled="true" focusAlpha="0" horizontalScrollPolicy="off"
+				click="lstSpreadArrange_clickHandler(event)"
+				allowMultipleSelection="true" requireSelection="true"
+				itemRenderer="itemrenderers.spreadArrangeItem" rollOverColor="#9C9C9C"
+				selectionColor="#D4D4D4" useVirtualLayout="false">
+			<s:layout>
+				<s:TileLayout orientation="rows" 
+							  paddingLeft="10" paddingRight="10" 
+							  paddingTop="10" paddingBottom="10"
+							  rowHeight="130" columnWidth="180"
+							  horizontalGap="10" verticalGap="10"/>
+			</s:layout>
+		</s:List>
+		
+	</s:BorderContainer>
+	
+	<s:HGroup bottom="10" right="20">
+		
+		<s:Button id="btnCancel" width="100"
+				  skinClass="skins.btnGraySkin" label="Annuleren" />
+		
+		<s:Button id="btnOK" width="120"
+				  skinClass="skins.btnBlueSkin" label="Opslaan" />
+	</s:HGroup>
+	
+	<s:Label id="btnCloseWindow" right="5" top="5"
+			 fontFamily="_AppFontEnjoy" fontSize="18" color="#4e4e4e" text="&#xe614;" />
+	
+</s:BorderContainer>

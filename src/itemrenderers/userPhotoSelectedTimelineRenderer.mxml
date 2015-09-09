@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				width="70" height="70" autoDrawBackground="false" currentState="normal"
+				filters="{dropShadow}">
+	
+	<fx:Declarations>
+		<s:DropShadowFilter id="dropShadow" distance="2" color="0" alpha=".6" angle="45" blurX="5" blurY="5" />
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="dragging" />
+	</s:states>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.photoclass;
+			
+			import events.selectPhotoEvent;
+			import events.updateTimelineEvent;
+			
+			import mx.core.DragSource;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.DragEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.managers.DragManager;
+			
+			import spark.components.Image;
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				FlexGlobals.topLevelApplication.addEventListener(updateTimelineEvent.UPDATETIMELINEPHOTO, updatePhotoSelected);
+				
+				_creationCompleteHandler();
+				
+			}
+		
+			public function _creationCompleteHandler():void
+			{
+				if (data) {
+					
+					img.source = data.source;
+					img.scaleMode = BitmapScaleMode.LETTERBOX;
+					img.verticalAlign = VerticalAlign.MIDDLE;
+					img.horizontalAlign = HorizontalAlign.CENTER;
+					
+					img.validateNow();
+					
+				}
+			}		
+			
+			[Bindable] private var clone:Image;
+			[Bindable] private var imgOrig:Image;
+			[Bindable] private var sizeObj:Object;
+			protected function img_mouseDownHandler(event:MouseEvent):void
+			{
+				
+				try {
+					
+					event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+					event.currentTarget.addEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+					
+					clone = new Image();
+					clone.scaleMode = BitmapScaleMode.LETTERBOX;
+					clone.width = 80;
+					clone.height = 80;
+					clone.source = event.currentTarget.source.clone()
+					clone.validateNow();
+					
+				} catch (err:Error) {
+					
+					trace("Image has no source!");
+				}
+				
+			}
+			
+			private function DragItem(event:MouseEvent):void 
+			{
+				
+				currentState = "dragging";
+				
+				//Start drag
+				var ds:DragSource = new DragSource();
+				ds.addData("PHOTO", "type");
+				ds.addData(clone, "snap");
+				ds.addData(data, "data");
+				
+				//Start dragging
+				var xOffset:int = -1 * mouseX + (clone.width / 2);
+				var yOffset:int = -1 * mouseY + (clone.height / 2);
+				
+				/*
+				if (imgContainer.rotation == 90 || imgContainer.rotation == -90) {
+					xOffset = -1 * mouseX + (clone.height / 2);
+					yOffset = -1 * mouseY + (clone.width / 2);
+				}
+				*/
+				
+				DragManager.doDrag(event.currentTarget as UIComponent, ds, event, clone, xOffset, yOffset, 0.7, false);
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+			}
+			
+			private function dragComplete(event:DragEvent):void 
+			{
+				
+				currentState = "normal";
+				
+				event.currentTarget.removeEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+			}
+			
+			protected function img_mouseUpHandler(event:MouseEvent):void
+			{
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+				currentState = "normal";
+				
+				clone = null;
+				imgOrig = null;
+				sizeObj = null;
+				singleton.photodrag_data = null;
+				
+			}
+			
+			private function updatePhotoSelected(event:updateTimelineEvent):void {
+				
+				if (data) {
+					
+					if (data.id == event.photoID) {
+						
+						data.usedinstoryboard = true;
+						
+						//Move to hidden photos if the checkbox is on!
+						singleton.userphotosforupload.refresh();
+						
+						if (FlexGlobals.topLevelApplication.settings_popup.cbHideSelected.selected == true) {
+							FlexGlobals.topLevelApplication.settings_popup.cbHideSelected.dispatchEvent(new Event(Event.CHANGE));
+						}
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Image id="img" width="70" height="70" mouseEnabled="true" useHandCursor="true" buttonMode="true" 
+			 mouseDown="img_mouseDownHandler(event)" 
+			 mouseUp="img_mouseUpHandler(event)"  />
+	
+	<s:Image id="photoUsed" right="-3" top="-3" source="@Embed('assets/icons/marked.png')" visible="{data.usedinstoryboard &amp;&amp; data.usedinstoryboard == true}"
+			 buttonMode="false" mouseEnabled="false" excludeFrom="dragging" />
+	
+</s:ItemRenderer>

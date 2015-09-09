@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				width="100" height="100">
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import components.photoelement;
+			import components.textelement;
+			
+			import events.barMenuEvent;
+			import events.dragdropExposeEvent;
+			
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.core.DragSource;
+			import mx.core.FlexGlobals;
+			import mx.events.DragEvent;
+			import mx.managers.DragManager;
+			import mx.utils.ObjectUtil;
+			
+			import spark.components.Image;
+			
+			[Bindable] public var _PAGEWIDTH:Number = 100;
+			[Bindable] public var _PAGEHEIGHT:Number = 100;
+			[Bindable] public var elements:XMLListCollection = new XMLListCollection;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value;
+				
+				creationCompleteHandler();
+				
+			}
+			
+			[Bindable] public var zoom:Number = 0;
+			[Bindable] public var page_width:Number;
+			[Bindable] public var page_height:Number;
+			private function creationCompleteHandler():void {
+			
+				pagelayout_container.removeAllElements();
+				
+				//Set the format
+				switch (singleton._productFormat) {
+				
+					case "1": //Square
+						_PAGEWIDTH = 100;
+						_PAGEHEIGHT = 100;
+						break;
+				
+					case "2": //Portrait
+						_PAGEWIDTH = 100;
+						_PAGEHEIGHT = 141;
+						break;
+			
+					case "3": //Landscape
+						_PAGEWIDTH = 141;
+						_PAGEHEIGHT = 100;
+						break;
+					
+				}
+				
+				page_width = _PAGEWIDTH;
+				page_height = _PAGEHEIGHT;
+				
+				var found:Boolean = false;
+				zoom = 0;
+				while (!found) {
+					zoom += 0.01;
+					var w:Number = page_width * zoom;
+					var h:Number = page_height * zoom;
+					if (w >= (100) || h >= (100)) {
+						zoom -= 0.02;
+						found = true;
+					}
+				}
+				
+				elements = new XMLListCollection(XML(data.layout.toString())..item);
+				
+				for each (var element:Object in elements) {
+					
+					if (element.@type.toString() == "text") {
+						
+						var eText:textelement = new textelement();
+						eText.selected = false;
+						eText.id = element.@id;
+						eText.left = _PAGEWIDTH * (parseFloat(element.@left.toString()) / 100);
+						eText.top = _PAGEHEIGHT * (parseFloat(element.@top.toString()) / 100);
+						eText.right = _PAGEWIDTH * (parseFloat(element.@right.toString()) / 100);
+						eText.bottom = _PAGEHEIGHT * (parseFloat(element.@bottom.toString()) / 100);
+						eText.rotation = element.@r;
+						eText.width = page_width - parseFloat(eText.left.toString()) - parseFloat(eText.right.toString());
+						eText.height = page_height - parseFloat(eText.top.toString()) - parseFloat(eText.bottom.toString());
+						pagelayout_container.addElement(eText);
+						
+						eText.redraw();
+						
+					}
+					
+					if (element.@type.toString() == "photo") {
+						
+						var ePhoto:photoelement = new photoelement();
+						ePhoto.selected = false;
+						ePhoto.id = element.@id;
+						ePhoto.left = _PAGEWIDTH * (parseFloat(element.@left.toString()) / 100);
+						ePhoto.top = _PAGEHEIGHT * (parseFloat(element.@top.toString()) / 100);
+						ePhoto.right = _PAGEWIDTH * (parseFloat(element.@right.toString()) / 100);
+						ePhoto.bottom = _PAGEHEIGHT * (parseFloat(element.@bottom.toString()) / 100);
+						ePhoto.rotation = element.@r;
+						ePhoto.width = page_width - parseFloat(ePhoto.left.toString()) - parseFloat(ePhoto.right.toString());
+						ePhoto.height = page_height - parseFloat(ePhoto.top.toString()) - parseFloat(ePhoto.bottom.toString());
+						pagelayout_container.addElement(ePhoto);
+						
+						ePhoto.redraw();
+						
+					}
+				}		
+			}
+			
+			protected function mouseDownHandler(event:MouseEvent):void
+			{
+				event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.addEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+			}
+			
+			private function DragItem(event:MouseEvent):void 
+			{
+				//Start drag
+				var ds:DragSource = new DragSource();
+				
+				ds.addData("PAGELAYOUT", "type");
+				
+				//Start dragging
+				var xOffset:int = 0; //-1 * mouseX + (img.width / 2);
+				var yOffset:int = 0; //-1 * mouseY + (img.height / 2);
+				
+				var dataClone:Object = new Object();
+				dataClone = singleton.CloneObject(data);
+				ds.addData(dataClone, "data");
+				
+				var bmd:BitmapData = new BitmapData(_PAGEWIDTH, _PAGEHEIGHT, false);
+				bmd.draw(pagelayoutExample);
+				var img:Image = new Image();
+				img.source  = bmd;
+				
+				DragManager.doDrag(event.currentTarget as BorderContainer, ds, event, img, 0, 0, 1, false);
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+				//Call the viewer page to expose the background
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.BACKGROUNDS));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARDISABLED));
+				
+			}
+			
+			private function dragComplete(event:DragEvent):void {
+				
+				event.currentTarget.removeEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+				
+				var se:spreadEditor = FlexGlobals.topLevelApplication.viewer.getElementAt(0) as spreadEditor;
+				se.elementcontainer.mouseEnabled = false;
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+			}
+			
+			protected function img_mouseUpHandler(event:MouseEvent):void
+			{
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+				
+				var se:spreadEditor = FlexGlobals.topLevelApplication.viewer.getElementAt(0) as spreadEditor;
+				se.elementcontainer.mouseEnabled = false;
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+			}
+			
+			protected function mouseUpHandler(event:MouseEvent):void
+			{
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.removeEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+			}
+			
+		]]>
+		
+	</fx:Script>
+	
+	<s:BorderContainer id="pagelayoutExample" width="100%" height="100%"
+					   borderVisible="false" backgroundAlpha="0"
+					   scaleX="{zoom}"
+					   scaleY="{zoom}"
+					   mouseDown="mouseDownHandler(event)"
+					   mouseUp="mouseUpHandler(event)">
+		<s:BorderContainer width="{page_width + 2}" height="{page_height + 2}" verticalCenter="0" horizontalCenter="0">
+			<s:Group id="pagelayout_container" width="{page_width + 2}" height="{page_height + 2}" clipAndEnableScrolling="true" />
+		</s:BorderContainer>
+	</s:BorderContainer>
+	
+</s:ItemRenderer>

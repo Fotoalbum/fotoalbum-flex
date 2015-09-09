@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="20" 
+		 height="20"
+		 clipAndEnableScrolling="false" 
+		 visible="false"
+		 creationComplete="_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.countUsedPhotosEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.components.Label;
+			
+			[Bindable] public var _data:Object;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				FlexGlobals.topLevelApplication.addEventListener(countUsedPhotosEvent.COUNT, GetPhotoNumUsed);
+				
+				if (_data) {
+					
+					if (_data.used == 1)
+					{
+						this.graphics.clear();
+						this.graphics.beginFill(0x39b54a, 1);
+						this.graphics.drawRect(0, 0, 20, 20);
+						this.graphics.endFill();
+						
+						var label:Label = new Label;
+						label.text = _data.numused.toString();
+						label.setStyle("color", 0xFFFFFF);
+						label.setStyle("fontSize", 12);
+						label.horizontalCenter = 0;
+						label.verticalCenter = 1;
+						this.addElement(label);
+						this.visible = true;
+						
+					} else {
+						
+						this.visible = false;
+						this.graphics.clear();
+						this.removeAllElements();
+					}
+				}
+				
+			}
+			
+			private function GetPhotoNumUsed(e:countUsedPhotosEvent=null):void
+			{
+				
+				if (_data) 
+				{
+					
+					var num:int = singleton.GetNumPhotosUsed(_data.id);
+					
+					if (num > 0)
+					{
+						
+						if (this.numElements == 0) {
+							
+							this.graphics.clear();
+							this.graphics.beginFill(0x39b54a, 1);
+							this.graphics.drawRect(0, 0, 20, 20);
+							this.graphics.endFill();
+							
+							var label:Label = new Label;
+							label.text = num.toString();
+							label.setStyle("color", 0xFFFFFF);
+							label.setStyle("fontSize", 12);
+							label.horizontalCenter = 0;
+							label.verticalCenter = 1;
+							this.addElement(label);
+							
+						} else {
+							
+							label = this.getElementAt(0) as Label;
+							label.text = num.toString();
+						}
+						
+						this.visible = true;
+						
+						_data.used = 1;
+						
+					} else {
+						
+						_data.used = 0;
+						
+						this.visible = false;
+						//this.graphics.clear();
+					}
+					
+					_data.numused = num;
+					
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+</s:Group>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false">
+	<s:layout>
+		<s:VerticalLayout gap="0" />
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.updateTimelineEvent;
+			
+			import flash.utils.setTimeout;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.DragEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.managers.DragManager;
+			import mx.utils.UIDUtil;
+			
+			import spark.components.Image;
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var photocol:XMLListCollection;
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			
+			public function _creationCompleteHandler():void
+			{
+				if (data) {
+					photocol = new XMLListCollection(data.photos..photo);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer id="container" backgroundColor="0xFFFFFF" borderWeight="1" backgroundAlpha="1"
+					   contentBackgroundColor="#FFFFFF" dropShadowVisible="false"
+					   rollOut="container_rollOutHandler(event)"
+					   rollOver="container_rollOverHandler(event)">		
+	</s:BorderContainer>
+	
+</s:ItemRenderer>

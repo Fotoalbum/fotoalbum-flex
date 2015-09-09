@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   width="100%" height="100%" backgroundColor="0xFFFFFF"
+				   borderVisible="false" borderWeight="0"
+				   creationComplete="_creationCompleteHandler(event)" 
+				   xmlns:components="components.*">
+	
+	<fx:Script>
+		
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.SelectMenuItemEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+		
+			/**************************************************************************
+			 SINGLETON INSTANCE / Create the singleton instance
+			 ***************************************************************************/
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			
+			[Bindable] public var passepartouts_ondate:XMLListCollection;
+			[Bindable] public var passepartouts_ontheme:XMLListCollection;
+			[Bindable] public var passepartouts_onstyle:XMLListCollection;
+			[Bindable] public var passepartouts_ontype:XMLListCollection;
+				
+			[Bindable] public var passepartout_items:ArrayCollection;
+			
+			[Bindable] public var selected_cat_id:String;
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				FlexGlobals.topLevelApplication.GetPassepartoutCategories();
+			}
+			
+			protected function btnOnDate_clickHandler(event:MouseEvent):void
+			{
+				if (btnOnDate.selected) {
+					
+					lstContentOnDate.percentHeight = 100;
+					lstContentOnDate.visible = true;
+					
+				} else {
+					
+					lstContentOnDate.percentHeight = null;
+					lstContentOnDate.height = 0;
+					lstContentOnDate.visible = false;
+				}
+			}
+			
+			protected function btnOnTheme_clickHandler(event:MouseEvent):void
+			{
+				/*
+				if (btnOnTheme.selected) {
+					
+					lstContentOnTheme.percentHeight = 100;
+					lstContentOnTheme.visible = true;
+					
+				} else {
+					
+					lstContentOnTheme.percentHeight = null;
+					lstContentOnTheme.height = 0;
+					lstContentOnTheme.visible = false;
+				}
+				*/
+			}
+			
+			protected function btnOnStyle_clickHandler(event:MouseEvent):void
+			{
+				/*
+				if (btnOnStyle.selected) {
+					
+					lstContentOnStyle.percentHeight = 100;
+					lstContentOnStyle.visible = true;
+					
+				} else {
+					
+					lstContentOnStyle.percentHeight = null;
+					lstContentOnStyle.height = 0;
+					lstContentOnStyle.visible = false;
+				}
+				*/
+			}
+			
+			protected function btnOnType_clickHandler(event:MouseEvent):void
+			{
+				/*
+				if (btnOnType.selected) {
+					
+					lstContentOnType.percentHeight = 100;
+					lstContentOnType.visible = true;
+					
+				} else {
+					
+					lstContentOnType.percentHeight = null;
+					lstContentOnType.height = 0;
+					lstContentOnType.visible = false;
+				}
+				*/
+			}
+			
+			protected function lstContentOnDate_mouseUpHandler(event:MouseEvent):void
+			{
+				
+				if (event.currentTarget.selectedItem) {
+				
+					passepartout_items = new ArrayCollection();
+					passepartout_items.refresh();
+					
+					selected_cat_id = event.currentTarget.selectedItem.id;
+					
+					//Get the clipart for this category
+					var ast:AsyncToken = FlexGlobals.topLevelApplication.api_cms.api_get_by_submodel("Mask", "Type", selected_cat_id); //2nd, Type or Styke
+					ast.addResponder(new mx.rpc.Responder(onGetPassepartoutByIDResult, onGetPassepartoutByIDFail));
+					
+				}
+			}		
+			
+			private function onGetPassepartoutByIDResult(e:ResultEvent):void
+			{
+				
+				for each (var obj:Object in e.result) {
+					if (obj.id) {
+						passepartout_items.addItem(obj);
+					}
+				}
+				
+				passepartout_items.refresh();
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new SelectMenuItemEvent(SelectMenuItemEvent.SELECTMENUITEM, selected_cat_id));
+				
+			}
+			
+			private function onGetPassepartoutByIDFail(e:FaultEvent):void 
+			{
+				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n FindPassepartoutPopup|onGetPassepartoutByIDFail|" + e.fault.faultString);
+				singleton.ReportError(e.fault.faultString);
+			}
+
+			private function SelectAllPhotos():void {
+				
+				try {
+					
+					if (passepartout_items) {
+						
+						if (!FlexGlobals.topLevelApplication.menuside.passepartout_selected) {
+							FlexGlobals.topLevelApplication.menuside.passepartout_selected = new ArrayCollection();
+						}
+						
+						for (var x:int=0; x < passepartout_items.length; x++) {
+						
+							//Remove it if it excist
+							var excist:Boolean = false;
+							
+							for (var y:int=0; y < FlexGlobals.topLevelApplication.menuside.passepartout_selected.length; y++) {
+								if (FlexGlobals.topLevelApplication.menuside.passepartout_selected.getItemAt(y).id == passepartout_items.getItemAt(x).id) {
+									excist = true;
+									break;
+								}
+							}
+								
+							if (!excist) {
+								//Add the photo to the selection
+								FlexGlobals.topLevelApplication.menuside.passepartout_selected.addItem(passepartout_items.getItemAt(x));
+							}
+						}
+						
+						FlexGlobals.topLevelApplication.menuside.passepartout_selected.refresh();
+						passepartout_items.refresh();
+					}
+					
+				} catch (err:Error) {
+					
+					singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n "+ err.message);
+				}
+			}
+			
+			private function DeSelectAllPhotos():void {
+				
+				try {
+					
+					if (FlexGlobals.topLevelApplication.menuside.passepartout_selected && passepartout_items) {
+						
+						for (var x:int=0; x < passepartout_items.length; x++) {
+							for (var y:int=0; y < FlexGlobals.topLevelApplication.menuside.passepartout_selected.length; y++) {
+								if (FlexGlobals.topLevelApplication.menuside.passepartout_selected.getItemAt(y).id == passepartout_items.getItemAt(x).id) {
+									if (!FlexGlobals.topLevelApplication.menuside.passepartout_selected.getItemAt(y).used == true) {
+										FlexGlobals.topLevelApplication.menuside.passepartout_selected.removeItemAt(y);
+									}
+									break;
+								}
+							}
+							
+						}
+						
+						FlexGlobals.topLevelApplication.menuside.passepartout_selected.refresh();
+						passepartout_items.refresh();
+					}
+					
+				} catch (err:Error) {
+					
+					singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n " + err.message);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Style source="styles/oem_stylesheet.css" />
+	
+	<s:BorderContainer width="100%" height="35" backgroundColor="{singleton.baseColor}" borderVisible="false">
+		<s:layout>
+			<s:HorizontalLayout gap="0" verticalAlign="middle" paddingLeft="10" paddingRight="10" />
+		</s:layout>
+		
+		<s:HGroup width="100%" horizontalAlign="center">
+			<s:Label color="0xFFFFFF" fontSize="20"
+					 text="Zoek naar passepartouts"/>
+		</s:HGroup>
+		
+	</s:BorderContainer>
+	
+	<s:HGroup width="100%" height="100%" top="50">
+		
+		<s:VGroup width="300" height="100%" gap="0">
+			
+			<s:ToggleButton id="btnOnDate" 
+							width="100%" height="30" 
+							skinClass="skins.btnToggleOpenCloseButtonWithArrow"
+							label="Categorieën" 
+							click="btnOnDate_clickHandler(event)"
+							selected="true"/>
+			
+			<s:List id="lstContentOnDate" visible="true" width="100%" height="100%"
+					borderVisible="false" contentBackgroundAlpha="1"
+					contentBackgroundColor="#FFFFFF"
+					mouseUp="lstContentOnDate_mouseUpHandler(event)"
+					dataProvider="{singleton.passepartout_categories}" horizontalScrollPolicy="off"
+					itemRenderer="itemrenderers.CMSLabelRenderer" useVirtualLayout="false">
+				<s:layout>
+					<s:VerticalLayout gap="1"
+									  paddingBottom="0" paddingLeft="0"
+									  paddingRight="0" paddingTop="0"/>
+				</s:layout>
+			</s:List>
+			
+			<!--
+			<s:ToggleButton id="btnOnTheme" 
+							width="100%" height="30" 
+							skinClass="skins.btnToggleOpenCloseButtonWithArrow"
+							label="Op thema" 
+							click="btnOnTheme_clickHandler(event)"
+							selected="false"/>
+			
+			<s:List id="lstContentOnTheme" width="100%" height="0" visible="false"
+					contentBackgroundAlpha="1" contentBackgroundColor="#707070"
+					dataProvider="{passepartouts_ontheme}" horizontalScrollPolicy="off"
+					useVirtualLayout="true"
+					borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout gap="1"
+									  paddingBottom="0" paddingLeft="0"
+									  paddingRight="0" paddingTop="0"/>
+				</s:layout>
+			</s:List>
+				
+			<s:ToggleButton id="btnOnStyle" 
+							width="100%" height="30" 
+							skinClass="skins.btnToggleOpenCloseButtonWithArrow"
+							label="Op stijl" 
+							click="btnOnStyle_clickHandler(event)"
+							selected="false"/>
+			
+			<s:List id="lstContentOnStyle" width="100%" height="0" visible="false"
+					contentBackgroundAlpha="1" contentBackgroundColor="#707070"
+					dataProvider="{passepartouts_onstyle}" horizontalScrollPolicy="off"
+					useVirtualLayout="true"
+					borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout gap="1"
+									  paddingBottom="0" paddingLeft="0"
+									  paddingRight="0" paddingTop="0"/>
+				</s:layout>
+			</s:List>
+			
+			<s:ToggleButton id="btnOnType" 
+							width="100%" height="30" 
+							skinClass="skins.btnToggleOpenCloseButtonWithArrow"
+							label="Op type" 
+							click="btnOnType_clickHandler(event)"
+							selected="false"/>
+			
+			<s:List id="lstContentOnType" width="100%" height="0" visible="false"
+					contentBackgroundAlpha="1" contentBackgroundColor="#707070"
+					dataProvider="{passepartouts_ontype}" horizontalScrollPolicy="off"
+					useVirtualLayout="true"
+					borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout gap="1"
+									  paddingBottom="0" paddingLeft="0"
+									  paddingRight="0" paddingTop="0"/>
+				</s:layout>
+			</s:List>
+			-->	
+			
+		</s:VGroup>
+		
+		<mx:ViewStack id="content" width="100%" height="100%">
+			
+			<s:NavigatorContent width="100%" height="100%" label="PassepartoutSelectionView">
+				
+				<s:BorderContainer width="100%" height="30"
+								   borderVisible="false" backgroundColor="{singleton.bgBaseColor}">
+					<s:layout>
+						<s:HorizontalLayout gap="10" paddingLeft="10" paddingRight="10" verticalAlign="middle" />
+					</s:layout>
+					
+					<s:Label color="0x58595B" fontSize="11"
+							 text="Aantal stickers geselecteerd: {FlexGlobals.topLevelApplication.menuside.passepartout_selected.length}"/>
+					
+					<s:HGroup width="100%" height="30" gap="2" verticalAlign="middle" horizontalAlign="right">
+						<s:Label text="Selecteer:" fontSize="12" color="0x58595B" />
+						<s:Button label="Alles" click="{SelectAllPhotos()}" enabled="{passepartout_items &amp;&amp; passepartout_items.length > 0}"
+								  skinClass="skins.btnBlueSkin"/>
+						<s:Button label="Geen" click="{DeSelectAllPhotos()}" enabled="{passepartout_items &amp;&amp; passepartout_items.length > 0}" 
+								  skinClass="skins.btnGraySkin" />
+					</s:HGroup>
+					
+				</s:BorderContainer>
+				
+				<s:List id="lstPassepartoutPhotos" left="10" right="10" top="40" bottom="50"
+						borderVisible="false" contentBackgroundAlpha="0"
+						horizontalScrollPolicy="off"
+						useVirtualLayout="true"
+						dataProvider="{passepartout_items}"
+						itemRenderer="itemrenderers.passepartoutCmsRenderer">
+					<s:layout>
+						<s:TileLayout columnWidth="100" horizontalAlign="center"
+									  horizontalGap="10" orientation="rows" paddingLeft="0"
+									  paddingTop="0" rowHeight="100" paddingBottom="10"
+									  verticalAlign="middle" verticalGap="10"/>
+					</s:layout>
+				</s:List>
+				
+			</s:NavigatorContent>
+			
+		</mx:ViewStack>
+		
+	</s:HGroup>
+	
+	<s:HGroup right="10" bottom="10">
+		
+		<s:Button id="btnCancel" label="Annuleren" skinClass="skins.btnGraySkin" />
+		<s:Button id="btnAdd" label="Toevoegen" skinClass="skins.btnGreenSkin" />
+		
+	</s:HGroup>
+	
+	<s:Label id="btnCloseWindow" right="5" top="5"
+			 fontFamily="_AppFontEnjoy" fontSize="18" color="#FFFFFF" text="&#xe614;" />
+	
+	<s:SWFLoader source="@Embed('assets/iconset/vinkje.swf')" width="25" height="25" scaleContent="true"
+				 horizontalAlign="center" verticalAlign="middle" right="-7" bottom="-7" 
+				 visible="{!this.enabled}" />
+	
+</s:BorderContainer>

@@ -1,0 +1,707 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				rollOver="{btnMenu_rollOver()}" 
+				rollOut="{btnMenu_rollOut()}"
+				mouseUp="_mouseUpHandler(event)"
+				width="75" height="75"
+				creationComplete="_creationCompleteHandler()"
+				xmlns:components="components.*">
+	
+	<!-- dataChange="_dataChangeHandler(event)" -->
+	
+	<fx:Declarations>
+		<s:Fade id="showEff" alphaFrom="0.0" alphaTo="1.0" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.photoclass;
+			import classes.snapshot;
+			import classes.userphotoclass;
+			
+			import events.barMenuEvent;
+			import events.countUsedPhotosEvent;
+			import events.dragdropExposeEvent;
+			import events.selectPhotoEvent;
+			import events.showPhotoMenuEvent;
+			import events.updateUploadedPhotoEvent;
+			
+			import flash.utils.setTimeout;
+			
+			import mx.controls.Alert;
+			import mx.controls.ProgressBar;
+			import mx.core.DragSource;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.CloseEvent;
+			import mx.events.DragEvent;
+			import mx.events.FlexEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.managers.DragManager;
+			import mx.managers.PopUpManager;
+			import mx.utils.ObjectUtil;
+			
+			import spark.components.Application;
+			import spark.components.Label;
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var usedinapp:Boolean = false;
+			[Bindable] private var scale:Number = 1;
+			
+			/*
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+			*/
+			
+			protected function _creationCompleteHandler(event:Event = null):void 
+			{
+			
+				FlexGlobals.topLevelApplication.addEventListener(selectPhotoEvent.SELECTUSERPHOTO, SelectUserPhoto);
+				
+				//this.alpha = .7;
+				
+				background.graphics.clear();
+				background.graphics.beginFill(0x58595B, .3);
+				background.graphics.drawRect(0, 0, 75, 75);
+				background.graphics.endFill();
+				
+				//SetImage();
+				setTimeout(SetImage, 100);
+				
+			} 
+			
+			private function SelectUserPhoto(event:selectPhotoEvent):void {
+				
+				selectedOverlay.graphics.clear();
+				
+				if (data) {
+					
+					if (event.photoID == data.id) {
+						
+						selectedOverlay.graphics.lineStyle(2, 0xFFFFFF, 1);
+						
+						//Check for rotation
+						selectedOverlay.rotation = imgContainer.rotation;
+						selectedOverlay.horizontalCenter = 0;
+						selectedOverlay.verticalCenter = 0;
+						
+						selectedOverlay.graphics.drawRect(0, 0, selectedOverlay.width, selectedOverlay.height);
+					}
+					
+				}
+				
+			}
+			
+			private function SetImage():void {
+				
+				if (data) {
+					
+					if (data.origin == "3rdparty") {
+						
+						var request:URLRequest = new URLRequest(encodeURI(data.thumb_url));
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, on3rdPartyComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+						
+					} else if (data.source) { //Thumbnail
+				
+						img.source = data.source;
+						img.scaleMode = BitmapScaleMode.LETTERBOX;
+						img.horizontalAlign = HorizontalAlign.CENTER;
+						img.verticalAlign = VerticalAlign.MIDDLE;
+						img.smooth = true;
+						
+						if (img.source.bitmapData) {
+							if (img.source.bitmapData.width >= img.source.bitmapData.height) {
+								scale = 70 / img.source.bitmapData.width;
+							} else {
+								if (img.source.bitmapData.height > img.source.bitmapData.width) {
+									scale = 70 / img.source.bitmapData.height;
+								}
+							} 
+						}
+						
+						//Check for wrong dimension
+						if ((img.source.width > img.source.height &&
+							data.originalWidth < data.originalHeight) ||
+							(img.source.width < img.source.height &&
+								data.originalWidth > data.originalHeight)) {
+							//Modify the original data
+							var w:String = data.originalWidth;
+							data.originalWidth = data.originalHeight;
+							data.originalHeight = w;
+						}
+						
+						img.horizontalCenter = 0;
+						img.verticalCenter = 0;
+						img.cacheAsBitmap = true;
+						img.validateNow();
+						
+						this.callLater(ClearLoader);
+						
+					} else {
+					
+						if (singleton.imageCache[singleton.assets_url + data.lowres_url])
+						{
+							img.source = new Bitmap (singleton.imageCache[singleton.assets_url + data.lowres_url]);
+							img.scaleMode = BitmapScaleMode.LETTERBOX;
+							img.smooth = true;
+							img.horizontalCenter = 0;
+							img.verticalCenter = 0;
+							img.cacheAsBitmap = true;
+							img.validateNow();		
+							
+							if (img.source.bitmapData) {
+								if (img.source.bitmapData.width >= img.source.bitmapData.height) {
+									scale = 70 / img.source.bitmapData.width;
+								} else {
+									if (img.source.bitmapData.height > img.source.bitmapData.width) {
+										scale = 70 / img.source.bitmapData.height;
+									}
+								} 
+							}
+							
+							//Check for wrong dimension
+							if ((img.source.width > img.source.height &&
+								data.originalWidth < data.originalHeight) ||
+								(img.source.width < img.source.height &&
+									data.originalWidth > data.originalHeight)) {
+									//Modify the original data
+									w = data.originalWidth;
+									data.originalWidth = data.originalHeight;
+									data.originalHeight = w;
+							}
+							
+							this.callLater(ClearLoader);
+						
+						}
+						else
+						{
+							
+							//Check if the lowres has the correct extension, if not, update it
+							var checkLowres:String = data.lowres.toString();
+							var lowresArr:Array = checkLowres.split(".");
+							if (lowresArr[lowresArr.length -1].toString().toLowerCase() != "jpg") {
+								if (lowresArr[lowresArr.length -1].toString().toLowerCase() != "png") {
+									//Modify
+									var lowres:String =  checkLowres.substring(0, checkLowres.length - lowresArr[lowresArr.length - 1].length);
+									data.lowres = lowres + "JPEG";
+									data.lowres_url = data.lowres_url.replace(checkLowres, data.lowres);
+									var thumb:String = data.thumb.toString();
+									var thumbStr:String =  thumb.substring(0, thumb.length - lowresArr[lowresArr.length - 1].length);
+									data.thumb = thumbStr + "JPEG";
+									data.thumb_url = data.thumb_url.replace(thumb, data.thumb);
+									var hires:String = data.hires.toString();
+									var hiresStr:String =  hires.substring(0, hires.length - lowresArr[lowresArr.length - 1].length);
+									data.hires = hiresStr + "JPEG";
+									data.hires_url = data.hires_url.replace(hires, data.hires);
+								}
+							}
+							
+							request = new URLRequest(encodeURI(singleton.assets_url + data.thumb_url));
+							context = new LoaderContext();
+							context.checkPolicyFile = true;
+							if (Capabilities.isDebugger == false) {
+								context.securityDomain = SecurityDomain.currentDomain;
+								context.applicationDomain = ApplicationDomain.currentDomain;
+							}
+							
+							loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+							loader.load(request, context);
+						}
+						
+					}
+				}
+					
+			}
+			
+			private function onComplete(e:Event):void 
+			{
+				
+				var bmd:BitmapData = e.target.content.bitmapData;
+				if (!singleton.imageCache[singleton.assets_url + data.thumb_url]) {
+					singleton.imageCache[singleton.assets_url + data.thumb_url] = bmd;
+				}
+				
+				img.source = singleton.imageCache[singleton.assets_url + data.thumb_url];
+				img.scaleMode = BitmapScaleMode.LETTERBOX;
+				img.smooth = true;
+				
+				/*
+				if (data.exif) {
+					var rot:String = data.exif.@orientation.toString();
+					//Check for the orientation now and correct it if necessary!
+					switch (rot) {
+						case "1": //Normal orientation
+							imgContainer.rotation = 0;
+							break;
+						case "6": //Right rotation 90 degrees
+							imgContainer.rotation = 90;
+							break;
+						case "8": //Left rotation 270 degrees
+							imgContainer.rotation = -90;
+							break;
+						case "3": //180 degrees
+							imgContainer.rotation = 180;
+							break;
+					}
+					
+					imgContainer.validateNow();
+					
+				}
+				*/
+				
+				img.horizontalCenter = 0;
+				img.verticalCenter = 0;
+				img.cacheAsBitmap = true;
+				img.validateNow();
+				
+				if (img.source) {
+					if (img.source.width >= img.source.height) {
+						scale = 70 / img.source.width;
+					} else {
+						if (img.source.height > img.source.width) {
+							scale = 70 / img.source.height;
+						}
+					}
+				}
+				
+				//Check for wrong dimension
+				if ((img.source.width > img.source.height &&
+					data.originalWidth < data.originalHeight) ||
+					(img.source.width < img.source.height &&
+						data.originalWidth > data.originalHeight)) {
+						//Modify the original data
+						var w:String = data.originalWidth;
+						data.originalWidth = data.originalHeight;
+						data.originalHeight = w;
+				}
+				
+				this.callLater(ClearLoader);
+				
+			}
+			
+			private function on3rdPartyComplete(e:Event):void 
+			{
+				
+				var bmd:BitmapData = e.target.content.bitmapData;
+				if (!singleton.imageCache[data.lowres_url]) {
+					singleton.imageCache[data.lowres_url] = bmd;
+				}
+				img.horizontalCenter = 0;
+				img.verticalCenter = 0;
+				img.source = singleton.imageCache[data.lowres_url];
+				img.scaleMode = BitmapScaleMode.LETTERBOX;
+				img.smooth = true;
+				img.cacheAsBitmap = true;
+				img.validateNow();
+				
+				if (img.source.bitmapData) {
+					if (img.source.bitmapData.width >= img.source.bitmapData.height) {
+						scale = 70 / img.source.bitmapData.width;
+					} else {
+						if (img.source.bitmapData.height > img.source.bitmapData.width) {
+							scale = 70 / img.source.bitmapData.height;
+						}
+					} 
+				}
+				
+				this.callLater(ClearLoader);
+			}
+			
+			private function ClearLoader():void {
+		
+				this.alpha = 1;
+				
+				this.validateNow();
+				
+				try {
+					
+					selectedOverlay.width = img.source.bitmapData.width * scale;
+					selectedOverlay.height = img.source.bitmapData.height * scale;
+					
+				} catch (err:Error) {
+					
+					selectedOverlay.width = img.source.width * scale;
+					selectedOverlay.height = img.source.height * scale;
+				}
+				
+			}
+			
+			private function onError(e:Event):void {
+				trace(e);
+			}
+			
+			[Bindable] private var clone:Image;
+			[Bindable] private var imgOrig:Image;
+			[Bindable] private var sizeObj:Object;
+			protected function img_mouseDownHandler(event:MouseEvent):void
+			{
+				
+				event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.addEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+				var maxHeight:Number = singleton._defaultPageHeight / 2;
+				var maxWidth:Number = maxHeight * 1.5;
+				
+				var z:Number = 0;
+				var w:Number = 0;
+				var h:Number = 0;
+				var found:Boolean = false;
+				
+				var ow:Number;
+				var oh:Number;
+				ow = data.originalWidth;
+				oh = data.originalHeight;
+				
+				while (found == false) 
+				{
+					w = ow * z;
+					h = oh * z;
+					if (w >= maxWidth || h >= maxHeight) {
+						z -= 0.01;
+						w = ow * z;
+						h = oh * z;
+						found = true;
+					}
+					z += 0.01;
+				}
+				
+				sizeObj = new Object();
+				sizeObj.w = w * FlexGlobals.topLevelApplication.viewer.scaleX;
+				sizeObj.h = h * FlexGlobals.topLevelApplication.viewer.scaleX;
+					
+				var bmdata:BitmapData;
+				if (data.origin == "3rdparty") {
+					
+					if (img.bitmapData) {
+						bmdata = img.bitmapData;
+					} else {
+						bmdata = img.source.bitmapData;
+					}
+					
+				} else {
+					
+					if (data.source) {
+						bmdata = data.source.bitmapData;
+					} else {
+						if (img.bitmapData) {
+							bmdata = img.bitmapData;
+						} else {
+							bmdata = img.source.bitmapData;
+						}
+					}
+					
+				}
+				
+				var bitmap:Bitmap = new Bitmap(bmdata);
+				clone = new Image();
+				if (img.source.constructor.toString() == "[class BitmapData]") {
+					clone.source = img.source.clone();
+				} else {
+					clone.source = img.source.bitmapData.clone();
+				}
+				clone.scaleMode = BitmapScaleMode.ZOOM;
+				clone.width = w * FlexGlobals.topLevelApplication.viewer.scaleX;
+				clone.height = h * FlexGlobals.topLevelApplication.viewer.scaleX;
+				clone.horizontalCenter = 0;
+				clone.verticalCenter = 0;
+				clone.validateNow();
+				
+				sizeObj.cloneW = clone.width;
+				sizeObj.cloneH = clone.height;
+				
+				var cloneBitmap:Bitmap = new Bitmap(bmdata);
+				imgOrig = new Image();
+				imgOrig.rotation = 0; //imgContainer.rotation;
+				imgOrig.width = data.originalWidth;
+				imgOrig.height = data.originalHeight;
+				imgOrig.source = cloneBitmap;
+				imgOrig.validateNow();
+			
+			}
+			
+			private function DragItem(event:MouseEvent):void 
+			{
+				
+				//Start drag
+				var ds:DragSource = new DragSource();
+				ds.addData("PHOTO", "type");
+				ds.addData(clone, "snap");
+				ds.addData(imgOrig, "orig");
+				ds.addData(sizeObj, "sizes");
+				
+				var photodata:photoclass = new photoclass();
+				
+				if (data.origin == "3rdparty") {
+					photodata.status = "done";
+					photodata.id = data.id;
+					photodata.fullPath = "";
+					photodata.bytesize = data.bytesize;
+					photodata.thumb = data.thumb;
+					photodata.thumb_url = data.thumb_url;
+					photodata.lowres = data.lowres;
+					photodata.lowres_url = data.lowres_url;
+					photodata.hires = data.hires;
+					photodata.hires_url = data.hires_url;
+					photodata.origin = data.origin;
+					photodata.origin_type = data.origin_type;
+					photodata.originalWidth = data.originalWidth;
+					photodata.originalHeight = data.originalHeight;
+					photodata.path = "";
+					photodata.exif = <root/>;
+					photodata.userID = "";
+					photodata.usedinstoryboard = data.usedinstoryboard;
+				} else {
+					photodata.status = data.status;
+					photodata.id = data.id;
+					photodata.fullPath = data.fullPath;
+					photodata.bytesize = data.bytesize;
+					photodata.hires = data.hires;
+					photodata.hires_url = data.hires_url;
+					photodata.lowres = data.lowres;
+					photodata.lowres_url = data.lowres_url;
+					photodata.origin = data.origin;
+					photodata.originalWidth = data.originalWidth;
+					photodata.originalHeight = data.originalHeight;
+					photodata.path = data.path;
+					photodata.thumb = data.thumb;
+					photodata.thumb_url = data.thumb_url;
+					photodata.usedinstoryboard = data.usedinstoryboard;
+					if (data.exif) {
+						photodata.exif = data.exif.copy();
+					}
+					photodata.userID = data.userID;
+				}
+				
+				ds.addData(photodata, "data");
+				
+				//Start dragging
+				var xOffset:int = 0;
+				var yOffset:int = 0;
+				
+				/*
+				if (clone.rotation == 90 || clone.rotation == -90 || clone.rotation == 270) {
+					xOffset = (-1 * mouseX) - (clone.height / 2);
+					yOffset = (-1 * mouseY) + (clone.width / 2);
+				} else if (clone.rotation == 180) {
+					xOffset = (-1 * mouseX) - (clone.width / 2);
+					yOffset = (-1 * mouseY) - (clone.height / 2);
+				} else { 
+				xOffset = (-1 * mouseX) + (clone.width / 2);
+				yOffset = (-1 * mouseY) + (clone.height / 2);
+				}*/
+				
+				xOffset = (-1 * mouseX) + (clone.width / 2);
+				yOffset = (-1 * mouseY) + (clone.height / 2);
+				
+				sizeObj.xOffset = xOffset;
+				sizeObj.yOffset = yOffset;
+				
+				DragManager.doDrag(dragContainer as UIComponent, ds, event, clone, xOffset, yOffset, 0.7, false);
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				
+				if (FlexGlobals.topLevelApplication.vsView.selectedIndex == 0) {
+					//Call the viewer page to expose the elementcontainer
+					FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.PHOTOS));
+					singleton.selected_spread_editor.elementcontainer.mouseEnabled = true;
+					FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARDISABLED));
+				}
+				
+			}
+			
+			private function dragComplete(event:DragEvent):void 
+			{
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.removeEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+				if (FlexGlobals.topLevelApplication.vsView.selectedIndex == 0) {
+					
+					FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+					var se:spreadEditor = FlexGlobals.topLevelApplication.viewer.getElementAt(0) as spreadEditor;
+					se.elementcontainer.mouseEnabled = false;
+				}
+				
+				setTimeout(FlexGlobals.topLevelApplication.CheckForReloadPhotos, 1000);
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+				
+			}
+			
+			protected function img_mouseUpHandler(event:MouseEvent):void
+			{
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.removeEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+				if (FlexGlobals.topLevelApplication.vsView.selectedIndex == 0) {
+					FlexGlobals.topLevelApplication.dispatchEvent(new dragdropExposeEvent(dragdropExposeEvent.ENABLEALL));
+					if (parentApplication.viewer.numElements > 0) {
+						var se:spreadEditor = FlexGlobals.topLevelApplication.viewer.getElementAt(0) as spreadEditor;
+						se.elementcontainer.mouseEnabled = false;
+					}
+				}
+				
+				clone = null;
+				imgOrig = null;
+				sizeObj = null;
+				singleton.photodrag_data = null;
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new barMenuEvent(barMenuEvent.SETBARENABLED));
+				
+			}
+			
+			protected function btnMenu_clickHandler(event:MouseEvent):void
+			{
+				FlexGlobals.topLevelApplication.dispatchEvent(new showPhotoMenuEvent(showPhotoMenuEvent.SHOWPHOTOMENU, data, new Point(FlexGlobals.topLevelApplication.mouseX, FlexGlobals.topLevelApplication.mouseY)));
+			}
+			
+			private function btnMenu_rollOver():void {
+				
+				//btnDelete.visible = true;
+			}
+			
+			private function btnMenu_rollOut():void {
+				
+				btnDelete.visible = false;
+			}
+			
+			protected function btnDelete_clickHandler(event:MouseEvent):void
+			{
+				singleton.AlertWithQuestion("Foto verwijderen", "Weet je zeker dat je deze foto wilt verwijderen?", RemoveUserPhoto, "NEE", "JA", false);
+				
+			}
+			
+			private function RemoveUserPhoto(event:Event):void {
+				
+				singleton.CloseAlertWithQuestion();
+				
+				if (singleton._userLoggedIn == false) {
+					for (var x:int=0; x < singleton.userphotos.length; x++) {
+						if (singleton.userphotos.getItemAt(x).id == data.id) {
+							singleton.userphotos.removeItemAt(x);
+							break;
+						}
+					}
+				}
+				
+				singleton.userphotos.refresh();
+				
+				singleton._changesMade = true;
+				singleton.UpdateWindowStatus();
+				
+			}
+			
+			/*
+			protected function _dataChangeHandler(event:FlexEvent):void
+			{
+				GetPhotoNumUsed();
+			}
+			*/
+			
+			protected function _mouseUpHandler(event:MouseEvent):void
+			{
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTUSERPHOTO, data.id, true));
+			
+				singleton.selected_userphoto = data;
+			}
+			
+			protected function img_rollOverHandler(event:MouseEvent):void
+			{
+				//Show exploded example
+				var bitmap:Bitmap = new Bitmap(img.bitmapData.clone());
+				var clone:Image = new Image();
+				var gr:Group = new Group();
+				gr.width = 150;
+				gr.height = 150;
+				gr.filters = [FlexGlobals.topLevelApplication.dropShadow];
+				
+				clone.scaleMode = BitmapScaleMode.ZOOM;
+				clone.width = 150;
+				clone.height = 150;
+				clone.horizontalCenter = 0;
+				clone.verticalCenter = 0;
+				clone.source = bitmap;
+				clone.mouseEnabled = false;
+				clone.cacheAsBitmap = true;
+				clone.validateNow();
+				
+				gr.addElement(clone);
+				
+				FlexGlobals.topLevelApplication.explodedView.removeAllElements();
+				FlexGlobals.topLevelApplication.explodedView.addElement(gr);
+				FlexGlobals.topLevelApplication.explodedView.x = FlexGlobals.topLevelApplication.mouseX;
+				FlexGlobals.topLevelApplication.explodedView.y = FlexGlobals.topLevelApplication.mouseY;
+				
+				if ((FlexGlobals.topLevelApplication.explodedView.y + 150) > FlexGlobals.topLevelApplication.height) {
+					FlexGlobals.topLevelApplication.explodedView.y = FlexGlobals.topLevelApplication.mouseY - 150;
+				}
+				
+				FlexGlobals.topLevelApplication.explodedView.visible = true;
+				FlexGlobals.topLevelApplication.explodedView.mouseEnabled = false;
+				
+			}
+			
+			protected function img_rollOutHandler(event:MouseEvent):void
+			{
+				//Hide exploded example
+				FlexGlobals.topLevelApplication.explodedView.removeAllElements();
+				FlexGlobals.topLevelApplication.explodedView.visible = false;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:SpriteVisualElement id="background" width="75" height="75" visible="true" />
+	
+	<s:Group id="dragContainer" width="75" height="75"
+			 horizontalCenter="0" verticalCenter="0"
+			 mouseDown="img_mouseDownHandler(event)" 
+			 mouseUp="img_mouseUpHandler(event)">
+		
+			<s:Group id="imgContainer" maxWidth="70" maxHeight="70" mouseEnabled="false"
+					 horizontalCenter="0" verticalCenter="0">
+				
+				<s:Image id="img" maxWidth="70" maxHeight="70" mouseEnabled="false"
+							 verticalCenter="0" horizontalCenter="0"
+							 rollOver="img_rollOverHandler(event)"
+							 rollOut="img_rollOutHandler(event)"/>
+	
+			</s:Group>
+			
+	</s:Group>
+	
+	<s:SpriteVisualElement id="selectedOverlay" maxWidth="70" maxHeight="70" 
+						   horizontalCenter="0" verticalCenter="0" mouseEnabled="false" />
+	
+	<s:Image id="btnDelete" click="btnDelete_clickHandler(event)" source="@Embed('/assets/icons/delete_photo.png')" 
+			 width="22" height="22"
+			 left="2" top="2" visible="false" />
+	
+	<components:photoUsedCounter _data="{data}" width="20" height="20" right="1" top="1" />
+	
+</s:ItemRenderer>

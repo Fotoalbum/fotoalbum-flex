@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				width="70" height="70"
+				rollOver="_rollOverHandler(event)"
+				rollOut="_rollOutHandler(event)">
+	
+	<fx:Declarations>
+		<s:Fade id="showEff" alphaFrom="0.0" alphaTo="1.0" />
+		<s:DropShadowFilter id="dropShadow" distance="2" color="0" alpha=".6" angle="45" blurX="5" blurY="5" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			import classes.photoclass;
+			
+			import events.selectPhotoEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.graphics.BitmapScaleMode;
+			
+			import spark.components.Image;
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+				_creationCompleteHandler();
+				
+			}
+		
+			public function _creationCompleteHandler():void
+			{
+				if (data) {
+					
+					if (data.source) {
+						
+						img.source = data.source;
+						
+						img.scaleMode = BitmapScaleMode.LETTERBOX;
+						img.verticalAlign = VerticalAlign.MIDDLE;
+						img.horizontalAlign = HorizontalAlign.CENTER;
+						img.validateNow();
+						
+						nameStr.text = data.name;
+						
+						if (data.exif) {
+							
+							if (data.exif.toXMLString() != "") {
+								/*
+								var rot:String = data.exif.@orientation.toString();
+								//Check for the orientation now and correct it if necessary!
+								switch (rot) {
+									case "1": //Normal orientation
+										img.rotation = 0;
+										break;
+									case "6": //Right rotation 90 degrees
+										img.rotation = 90;
+										break;
+									case "8": //Left rotation 270 degrees
+										img.rotation = -90;
+										break;
+									case "3": //180 degrees
+										img.rotation = 180;
+										break;
+								}
+								*/
+								
+								img.horizontalCenter = 0;
+								img.verticalCenter = 0;
+								
+								img.validateNow();
+							}
+						}
+						
+					} else {
+						
+						var request:URLRequest = new URLRequest(singleton.assets_url + data.thumb_url);
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+						
+					}
+				}
+			}		
+			
+			private function onComplete(e:Event):void 
+			{
+				img.source = e.target.content;
+				img.scaleMode = BitmapScaleMode.LETTERBOX;
+				img.verticalAlign = VerticalAlign.MIDDLE;
+				img.horizontalAlign = HorizontalAlign.CENTER;
+				img.validateNow();
+				
+				nameStr.text = data.name;
+				
+				if (data.exif) {
+					
+					if (data.exif.toXMLString() != "") {
+						/*
+						var rot:String = data.exif.@orientation.toString();
+						//Check for the orientation now and correct it if necessary!
+						switch (rot) {
+							case "1": //Normal orientation
+								img.rotation = 0;
+								break;
+							case "6": //Right rotation 90 degrees
+								img.rotation = 90;
+								break;
+							case "8": //Left rotation 270 degrees
+								img.rotation = -90;
+								break;
+							case "3": //180 degrees
+								img.rotation = 180;
+								break;
+						}
+						*/
+						
+						img.horizontalCenter = 0;
+						img.verticalCenter = 0;
+						
+						img.validateNow();
+					}
+				}
+			}
+			
+			private function onError(err:IOErrorEvent):void {
+				singleton.DebugPrint(err.toString());
+			}
+			
+			protected function btnDelete_clickHandler(event:MouseEvent):void
+			{
+				
+				if (singleton.userphotosfromhdu) {
+					
+					for (var x:int=0; x < singleton.userphotosfromhdu.length; x++) {
+						//Set the selectedforupload to false
+						if (singleton.userphotosfromhdu.getItemAt(x).id == data.id) {
+							singleton.userphotosfromhdu.getItemAt(x).selectedforupload = false;
+							FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.userphotosfromhdu.getItemAt(x).id, false));
+							break;
+						}
+					}
+					singleton.userphotosfromhdu.refresh();
+				}
+				
+				if (singleton.foldercollection) {
+					if (singleton.foldercollection.length > 0) {
+						for each (var xml:XML in singleton.foldercollection[0]..photo) {
+							if (xml.@id == data.id) {
+								xml.@selectedforupload = "false";
+							}
+						}
+						singleton.foldercollection.refresh();
+					}
+				}
+				
+				if (singleton.otherprojectphotos) {
+					for each (var obj:Object in singleton.otherprojectphotos) {
+						if (obj.id == data.id) {
+							obj.selectedforupload = false;
+						}
+					}
+					singleton.otherprojectphotos.refresh();
+				}
+				
+				if (singleton.photosfromalbums) {
+					for (x=0; x < singleton.photosfromalbums.length; x++) {
+						if (singleton.photosfromalbums.getItemAt(x).id == data.id) {
+							singleton.photosfromalbums.getItemAt(x).selectedforupload = false;
+						}
+					}
+					singleton.photosfromalbums.refresh();
+				}
+				
+				if (singleton.userphotosfromalbum) {
+					
+					for (x=0; x < singleton.userphotosfromalbum.length; x++) {
+						//Remove the photo from the selection
+						if (singleton.userphotosfromalbum.getItemAt(x).id == data.id) {
+							singleton.userphotosfromalbum.getItemAt(x).selectedforupload = false;
+							FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.userphotosfromalbum.getItemAt(x).id, false));
+							break;
+						}
+					}
+					singleton.userphotosfromalbum.refresh();
+				}
+				
+				if (singleton.facebookCollectionSelected) {
+					
+					for (x=0; x < singleton.facebookCollectionSelected.length; x++) {
+						//Remove the photo from the selection
+						if (singleton.facebookCollectionSelected.getItemAt(x).@id == data.id) {
+							singleton.facebookCollectionSelected.getItemAt(x).@selectedforupload = false;
+							FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.facebookCollectionSelected.getItemAt(x).@id, false));
+							break;
+						}
+					}
+					singleton.facebookCollectionSelected.refresh();
+				}
+				
+				if (singleton.instagramCollectionSelected) {
+					
+					for (x=0; x < singleton.instagramCollectionSelected.length; x++) {
+						//Remove the photo from the selection
+						if (singleton.instagramCollectionSelected.getItemAt(x).@id == data.id) {
+							singleton.instagramCollectionSelected.getItemAt(x).@selectedforupload = false;
+							FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.instagramCollectionSelected.getItemAt(x).@id, false));
+							break;
+						}
+					}
+					singleton.instagramCollectionSelected.refresh();
+				}
+				
+				if (singleton.googleCollectionSelected) {
+					
+					for (x=0; x < singleton.googleCollectionSelected.length; x++) {
+						//Remove the photo from the selection
+						if (singleton.googleCollectionSelected.getItemAt(x).@id == data.id) {
+							singleton.googleCollectionSelected.getItemAt(x).@selectedforupload = false;
+							FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.googleCollectionSelected.getItemAt(x).@id, false));
+							break;
+						}
+					}
+					singleton.googleCollectionSelected.refresh();
+				}
+				
+				if (singleton.userphotos) {
+					
+					for (x=0; x < singleton.userphotos.length; x++) {
+						//Remove the photo from the selection
+						if (singleton.userphotos.getItemAt(x).id == data.id) {
+							singleton.userphotos.getItemAt(x).selectedforupload = false;
+							FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTPHOTOFORIMPORT, singleton.userphotos.getItemAt(x).id, false));
+							break;
+						}
+					}
+					singleton.userphotos.refresh();
+				}
+				
+				for (x=0; x < singleton.userphotosforupload.length; x++) {
+				
+					//Remove the photo from the selection
+					if (singleton.userphotosforupload.getItemAt(x).id == data.id) {
+						singleton.userphotosforupload.removeItemAt(x);
+						break;
+					}
+				}
+				
+				singleton.userphotosforupload.refresh();
+				
+			}
+			
+			protected function _rollOverHandler(event:MouseEvent):void
+			{
+				btnDelete.visible = true;
+			}
+			
+			protected function _rollOutHandler(event:MouseEvent):void
+			{
+				btnDelete.visible = false;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BitmapImage id="img" width="70" height="60" horizontalCenter="0" filters="{dropShadow}" />
+	
+	<s:VGroup width="70" bottom="-10" gap="2" horizontalAlign="center" clipAndEnableScrolling="true">
+		<s:Label id="nameStr" fontSize="8" color="#000000" width="70" maxDisplayedLines="1" />
+	</s:VGroup>
+	
+	<s:Image id="btnDelete" right="-6" top="-6" source="@Embed('assets/icons/delete_photo.png')" visible="false"
+			 buttonMode="true" mouseEnabled="true" useHandCursor="true" click="btnDelete_clickHandler(event)" />
+	
+</s:ItemRenderer>

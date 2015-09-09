@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   backgroundColor="0xFFFFFF"
+				   maxHeight="640" maxWidth="640"
+				   borderVisible="false" borderWeight="0"
+				   creationComplete="_creationCompleteHandler(event)" 
+				   xmlns:components="components.*">
+	<s:layout>
+		<s:VerticalLayout gap="5" horizontalAlign="left" 
+						  paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" />
+	</s:layout>
+	
+	<fx:Script>
+		
+		<![CDATA[
+			import classes.Singleton;
+			
+			import mx.events.FlexEvent;
+			
+			/**************************************************************************
+			 SINGLETON INSTANCE / Create the singleton instance
+			 ***************************************************************************/
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			[Bindable] public var minimum:int = 0;
+			[Bindable] public var maximum:int = 0;
+			[Bindable] public var _numPages:int = 0;
+			[Bindable] public var currentvalue:int = 0;
+			
+			protected function _creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Style source="styles/oem_stylesheet.css" />
+	
+	<s:HGroup width="100%" paddingLeft="20" paddingRight="20" paddingTop="20" paddingBottom="20">
+		<s:Label color="0x4E4E4E" fontSize="20" text="Pagina's toevoegen"/>
+	</s:HGroup>
+	
+	<mx:HRule width="100%" />
+	
+	<s:HGroup width="100%" paddingLeft="20" paddingRight="20" paddingTop="20" paddingBottom="20">
+		<s:VGroup gap="10" width="100%">
+			
+			<s:Label fontSize="18" text="Hoeveel pagina's wil je toevoegen?"/>
+			
+			<s:HGroup width="100%" verticalAlign="middle">
+				<s:Label width="100%" fontSize="16" text="Aantal pagina's:"/>
+				<s:NumericStepper id="numPages" fontSize="16" maximum="{maximum}" minimum="{minimum}"
+								  stepSize="{singleton._stepSize}" value="{currentvalue}"/>
+			</s:HGroup>
+			
+		</s:VGroup>
+		
+		<mx:VRule height="100%" width="1" />
+		
+		<s:VGroup width="200" height="100%" paddingLeft="10" paddingRight="10" gap="5">
+			
+			<s:Label width="100%" color="#58595B" fontSize="16" text="Informatie:"/>
+			
+			<mx:HRule width="100%" height="1" />
+			
+			<s:Label width="100%" color="#ACACAC" fontSize="12" text="Huidige aantal pagina's:"/>
+			
+			<s:Label width="100%" color="#58595B" fontSize="16" text="{_numPages}"/>
+			
+			<mx:HRule width="100%" height="1" />
+			
+			<s:Label width="100%" color="#ACACAC" fontSize="12" text="Minimum aantal pagina's:"/>
+			
+			<s:Label width="100%" color="#58595B" fontSize="16" text="{singleton._minPages}"/>
+			
+			<mx:HRule width="100%" height="1" />
+			
+			<s:Label width="100%" color="#ACACAC" fontSize="12" text="Maximum aantal pagina's:"/>
+			
+			<s:Label width="100%" color="#58595B" fontSize="16" text="{singleton._maxPages}"/>
+			
+			<mx:HRule width="100%" height="1" />
+			
+			<s:Label width="100%" color="#ACACAC" fontSize="12" text="Stapgrootte:"/>
+			
+			<s:Label width="100%" color="#58595B" fontSize="16" text="{singleton._stepSize}"/>
+			
+		</s:VGroup>
+	</s:HGroup>
+	
+	<mx:HRule width="100%" />
+	
+	<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="right" gap="10" paddingLeft="20" paddingRight="20" paddingTop="10" paddingBottom="10">	
+		<s:Button id="btnCancel" label="Annuleren" skinClass="skins.btnGraySkin" />
+		<s:Button id="btnAdd" label="Toevoegen" skinClass="skins.btnBlueSkin" />
+	</s:HGroup>
+	
+</s:BorderContainer>

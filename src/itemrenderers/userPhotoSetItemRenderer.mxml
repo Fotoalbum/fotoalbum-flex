@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				width="260" height="44" autoDrawBackground="false"
+				creationComplete="{_creationCompleteHandler()}"
+				rollOver="_rollOverHandler(event)"
+				rollOut="_rollOutHandler(event)"
+				xmlns:classes="classes.*">
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.countUsedPhotosInFolderEvent;
+			import events.selectFolderEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ListCollectionView;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectUtil;
+			
+			import spark.components.Label;
+			import spark.components.List;
+			[Bindable] public var _selected:Boolean = false;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			protected function _creationCompleteHandler():void
+			{
+				
+				if (data) {
+					
+					folderName.text = data.name;
+				
+					FlexGlobals.topLevelApplication.addEventListener(countUsedPhotosInFolderEvent.COUNTINFOLDER, GetUserPhotoCount);
+					FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosInFolderEvent(countUsedPhotosInFolderEvent.COUNTINFOLDER, data.id));
+					FlexGlobals.topLevelApplication.addEventListener(selectFolderEvent.HIDEFOLDER, HideFolderBackground);
+					FlexGlobals.topLevelApplication.addEventListener(selectFolderEvent.SELECTFOLDER, SelectFolderBackground);
+				}
+			}
+			
+			public function SelectFolderBackground(event:selectFolderEvent):void {
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new selectFolderEvent(selectFolderEvent.HIDEFOLDER));
+				
+				var own:List = owner as List;
+				
+				if (event.selIndex == (own.dataProvider as ListCollectionView).getItemIndex(data)) {
+					this.callLater(SelectBackground);
+				}
+			}
+			
+			public function HideFolderBackground(event:selectFolderEvent):void {
+				_selected = false;
+				background.setStyle("backgroundAlpha", 0);
+			}
+			
+			public function SelectBackground():void {
+				_selected = true;
+				background.setStyle("backgroundAlpha", .8);
+			}
+			
+			public function GetUserPhotoCount(event:countUsedPhotosInFolderEvent):void {
+				
+				if (numLabel) {
+				
+					var total:int = 0;
+					
+					if (singleton.userphotos) {
+						//Count the connected userphotos
+						for (var x:int=0; x < singleton.userphotos.length; x++) {
+							if (singleton.userphotos.getItemAt(x).folderID == data.id)
+							{
+								if (singleton.userphotos.getItemAt(x).status != "deleted") {
+									if (singleton.userphotos.getItemAt(x).otherproject == true) {
+										if (singleton.userphotos.getItemAt(x).status == "done") {
+											total++;	
+										}
+									} else {
+										total++;
+									}
+									
+								}
+							}
+						}
+					}
+				
+					numLabel.text = "(" + total.toString() + ")";
+				}
+			}
+			
+			protected function folderName_updateCompleteHandler(event:Event):void
+			{
+				
+				UpdateFolderNames();
+				
+			}
+			
+			private function UpdateFolderNames():void {
+				
+				if (data.name.toString() != folderName.text) {
+					
+					//Update all the photos (field: name_folder) in the xhibit_documents table with the new name
+					var keys:Array = new Array();
+					var values:Array = new Array();
+					
+					for each (var obj:Object in singleton.userphotos) {
+						if (obj.folderID == data.id) {
+							keys.push(obj.id);
+							values.push(folderName.text);
+						}
+					}
+					
+					if (keys.length > 0) {
+						var ast:AsyncToken = FlexGlobals.topLevelApplication.api.api_updateUserDocumentsByField("name_folder", keys, values);
+						ast.addResponder(new mx.rpc.Responder(onUpdateFolderNameResult, onUpdateFolderNameFail));
+					}
+					
+					data.name = folderName.text;
+					
+				}
+				
+				borderFolder.setStyle("borderVisible", false);
+				borderFolder.setStyle("backgroundAlpha", 0);
+				folderName.setStyle("color", 0xFFFFFF);
+				folderName.selectRange(-1,-1);
+				
+			}
+			
+			private function onUpdateFolderNameFail(event:FaultEvent):void {
+				//do nothing for now
+			}
+			
+			private function onUpdateFolderNameResult(event:ResultEvent):void {
+				//do nothing for now
+			}
+			
+			private function onSaveFolderResult(result:ResultEvent):void
+			{
+				
+				trace("Folder updated!");
+				
+			}
+			
+			private function onSaveFolderFail(e:FaultEvent):void 
+			{
+				
+				trace(e.fault.message);
+				
+			}
+			
+			protected function _clickHandler(event:MouseEvent):void
+			{
+				FlexGlobals.topLevelApplication.GetUserPhotoCollection(event);
+			}
+			
+			protected function _rollOverHandler(event:MouseEvent):void
+			{
+				background.setStyle("backgroundAlpha", .8);
+			}
+			
+			protected function _rollOutHandler(event:MouseEvent):void
+			{
+				if (!_selected) {
+					background.setStyle("backgroundAlpha", 0);
+				}
+			}
+			
+			protected function folderName_focusInHandler(event:FocusEvent):void
+			{
+				borderFolder.setStyle("borderVisible", true);
+				borderFolder.setStyle("backgroundAlpha", 1);
+				folderName.setStyle("color", 0x0095DA);
+			
+			}
+			
+			protected function folderName_keyUpHandler(event:KeyboardEvent):void
+			{
+				
+				if (event.keyCode == Keyboard.ENTER) {
+					UpdateFolderNames();
+				} else if (event.keyCode == Keyboard.ESCAPE) {
+					folderName.text = data.name;
+					borderFolder.setStyle("borderVisible", false);
+					borderFolder.setStyle("backgroundAlpha", 0);
+					folderName.setStyle("color", 0xFFFFFF);
+					folderName.selectRange(-1,-1);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer id="background" width="100%" height="100%" backgroundColor="{singleton.baseColor}" backgroundAlpha="0" borderVisible="false">
+		<s:layout>
+			<s:HorizontalLayout gap="2" paddingLeft="5" paddingRight="5" paddingTop="2" paddingBottom="2" verticalAlign="middle"/>
+		 </s:layout>
+		
+		<s:Image id="img" width="32" height="32" smooth="true" smoothingQuality="high" source="@Embed('assets/icons/folder.png')" />
+		
+		<s:BorderContainer id="borderFolder" width="100%" height="100%" borderVisible="false" borderColor="#0095DA"
+						   color="#0095DA" backgroundAlpha="0">
+			<s:layout>
+				<s:HorizontalLayout verticalAlign="middle"/>
+			</s:layout>
+			
+			<s:TextInput id="folderName" borderVisible="false" color="0xFFFFFF"
+						 contentBackgroundAlpha="0.0" focusAlpha="0"
+						 focusIn="folderName_focusInHandler(event)"
+						 keyUp="folderName_keyUpHandler(event)"
+						 width="100%"
+						 focusOut="folderName_updateCompleteHandler(event)" fontFamily="_AppFontRoboto"
+						 fontSize="16" restrict="a-zA-Z0-9\ " skinClass="skins.folderMapSkin"
+						 textAlign="left" maxChars="20" />
+			
+		</s:BorderContainer>
+		
+		<s:Label id="numLabel" color="#FFFFFF" fontFamily="_AppFontRoboto" fontSize="16"/>
+		
+		<classes:menuButton width="35" height="35"
+							_source="@Embed('assets/icons/arrow_right.swf')"
+							buttonMode="true" enabled="true"
+							mouseChildren="false" toolTip="Map openen"
+							useHandCursor="true"
+							click="_clickHandler(event)"/>
+		
+	</s:BorderContainer>
+	
+</s:ItemRenderer>

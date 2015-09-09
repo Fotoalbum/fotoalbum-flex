@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" minWidth="21">
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			
+		]]>
+	</fx:Script>
+	
+    <fx:Metadata>
+    <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.Button")]
+    ]]>
+    </fx:Metadata> 
+    
+     <!-- states -->
+    <s:states>
+        <s:State name="up" />
+        <s:State name="over" />
+        <s:State name="down" />
+        <s:State name="disabled" />
+    </s:states>
+    
+    <s:Rect id="fill" left="0" right="0" top="0" bottom="0" radiusX="0" radiusY="0">
+        <s:fill>
+            <s:SolidColor color="#f8f8f8" alpha="1" />
+        </s:fill>
+    </s:Rect>
+    
+    <s:Path right="3" verticalCenter="0" id="arrow"
+          data="M 4.0 4.0 L 4.0 3.0 L 5.0 3.0 L 5.0 2.0 L 6.0 2.0 L 6.0 1.0 L 7.0 1.0 L 7.0 0.0 L 0.0 0.0 L 0.0 1.0 L 1.0 1.0 L 1.0 2.0 L 2.0 2.0 L 2.0 3.0 L 3.0 3.0 L 3.0 4.0 L 4.0 4.0">
+        <s:fill>
+             <s:RadialGradient rotation="90" focalPointRatio="1">   
+                <s:GradientEntry id="arrowFill1" color="0" alpha="0.6" />
+                <s:GradientEntry id="arrowFill2" color="0" alpha="0.8" />
+            </s:RadialGradient>
+        </s:fill>
+    </s:Path>
+</s:SparkSkin>

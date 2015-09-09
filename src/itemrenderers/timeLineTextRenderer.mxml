@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				width="80" height="80" 
+				autoDrawBackground="false" 
+				currentState="normal"
+				filters="{dropShadow}" 
+				rollOut="_rollOutHandler(event)"
+				rollOver="_rollOverHandler(event)"
+				mouseDown="_mouseDownHandler(event)"
+				mouseUp="_mouseUpHandler(event)">
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="dragging" />
+	</s:states>
+	
+	<fx:Declarations>
+		<s:DropShadowFilter id="dropShadow" distance="2" color="0" alpha=".6" angle="45" blurX="5" blurY="5" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import classes.Singleton;
+			
+			import events.updateTimelineEvent;
+			import events.updateTimelinePhotoPreviewEvent;
+			
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.controls.SWFLoader;
+			import mx.core.DragSource;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.DragEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.managers.DragManager;
+			import mx.utils.ObjectUtil;
+			
+			import spark.components.BorderContainer;
+			import spark.components.Image;
+			import spark.layouts.HorizontalAlign;
+			import spark.layouts.VerticalAlign;
+			
+			[Embed(source="../assets/iconset/tekstvak.swf")]
+			[Bindable] private var addtext:Class;
+			
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
+			override public function set data(value:Object):void {
+				
+				super.data = value; // set the Item Renderer's data object
+				
+			}
+			
+			protected function _rollOverHandler(event:MouseEvent):void
+			{
+				if (btnDelete) {
+					btnDelete.visible = true;
+				}
+				if (btnEdit) {
+					btnEdit.visible = true;
+				}
+			}
+			
+			protected function _rollOutHandler(event:MouseEvent):void
+			{
+				if (btnDelete) {
+					btnDelete.visible = false;
+				}
+				if (btnEdit) {
+					btnEdit.visible = false;
+				}
+			}
+			
+			protected function btnDelete_clickHandler(event:MouseEvent):void
+			{
+				
+				try {
+					
+					if (data) {
+					
+						var done:Boolean = false;
+						
+						for (var x:int=0; x < singleton.albumtimeline.length; x++) {
+							
+							if (done) {
+								break;
+							}
+							
+							var pages:XMLList = singleton.albumtimeline.getItemAt(x)..page;
+							
+							for (var p:int=0; p < pages.length(); p++) {
+								
+								if (data.@pageID == pages[p].@pageID) {
+									
+									var elements:XMLList = pages[p]..element;
+									var spreadelements:XMLList = singleton.albumtimeline.getItemAt(x).elements..element;
+									
+									for (var e:int=0; e < elements.length(); e++) {
+										
+										if (elements[e].@id == data.@id) {
+											
+											delete elements[e];
+											
+											trace("!!!!! ****** TODO REMOVE TEXTFLOW HERE ****** !!!!!");
+											
+											for (var s:int=0; s < spreadelements.length(); s++) {
+												if (spreadelements[s].@id == data.@id) {
+													delete spreadelements[e];
+													break;
+												}
+											}
+											
+											//Redesign the page layout
+											var numPhotos:int = 0;
+											var numText:int = 0;
+											
+											for each (var elm:XML in elements) {
+												if (elm.@type == "photo") {
+													numPhotos++;
+												}
+												if (elm.@type == "text") {
+													numText++;
+												}
+											}
+												
+											var pagelayout:Object = singleton.GetRandomPagelayoutOnFixedNumPhotos(numPhotos, numText) as Object;
+											var autoElements:XMLList = XML(pagelayout.layout)..item;
+											var pageWidth:Number = 0;
+											var pageHeight:Number = 0; 
+											var margin:Number = 0;
+											
+											if (pages[p].@type == "coverback" || pages[p].@type == "coverfront") {
+												pageWidth = singleton._defaultCoverWidth + singleton._defaultCoverWrap + singleton._defaultCoverBleed;
+												pageHeight = singleton._defaultCoverHeight + (2 * singleton._defaultCoverWrap) + (2 * singleton._defaultCoverBleed);
+												if (pages[p].@type == "coverfront") {
+													margin = singleton._defaultCoverWidth + singleton._defaultCoverWrap + singleton._defaultCoverBleed + singleton._defaultCoverSpine;
+												} else {
+													margin = 0;
+												}
+											} else {
+												pageWidth = singleton._defaultPageWidth + singleton._defaultPageBleed;
+												pageHeight = singleton._defaultPageHeight + (2 * singleton._defaultPageBleed);
+												if (pages[p].@side == "right") {
+													margin = singleton._defaultPageWidth + singleton._defaultPageBleed;
+												} else {
+													margin = 0;
+												}
+											}
+											
+											//Update all the photos on this page
+											var counter:int = 0;
+											
+											for (var q:int=0; q < (numPhotos + numText); q++) {
+												
+												var auto:XML = autoElements[counter].copy();
+												
+												if (elements[q].@type == "photo") {
+												
+													elements[q].@objectX = margin + ((parseFloat(auto.@left.toString()) / 100) * pageWidth);
+													elements[q].@objectY = (parseFloat(auto.@top.toString()) / 100) * pageHeight;
+													elements[q].@objectWidth = pageWidth - ((parseFloat(auto.@right.toString()) / 100) * pageWidth) - parseFloat(elements[q].@objectX) + margin;
+													elements[q].@objectHeight = pageHeight - ((parseFloat(auto.@bottom.toString()) / 100) * pageHeight) - parseFloat(elements[q].@objectY);
+													elements[q].@rotation = auto.@r;
+													
+													//Calculate
+													singleton.CalculateImageZoomAndPosition(elements[q]);
+													
+													//Get the other info from the original image
+													elements[q].@refOffsetX = elements[q].@offsetX;
+													elements[q].@refOffsetY = elements[q].@offsetY;
+													elements[q].@refWidth = elements[q].@imageWidth;
+													elements[q].@refHeight = elements[q].@imageHeight;
+													elements[q].@refScale = elements[q].@scaling;
+													
+													counter++;
+												}
+												
+												if (elements[q].@type == "text") {
+													
+													elements[q].@objectX = margin + ((parseFloat(auto.@left.toString()) / 100) * pageWidth);
+													elements[q].@objectY = (parseFloat(auto.@top.toString()) / 100) * pageHeight;
+													elements[q].@objectWidth = pageWidth - ((parseFloat(auto.@right.toString()) / 100) * pageWidth) - parseFloat(elements[q].@objectX) + margin;
+													elements[q].@objectHeight = pageHeight - ((parseFloat(auto.@bottom.toString()) / 100) * pageHeight) - parseFloat(elements[q].@objectY);
+													elements[q].@rotation = auto.@r;
+													
+													counter++;
+												}
+											}
+											
+											singleton.albumtimeline.getItemAt(x).elements.setChildren(singleton.albumtimeline.getItemAt(x).pages..element.copy());
+											
+											//Reorder the elements
+											singleton.albumtimeline.getItemAt(x).elements.setChildren(singleton.ReorderElementsInTimeline(singleton.albumtimeline.getItemAt(x).elements..element)..element.copy());
+											
+											FlexGlobals.topLevelApplication.dispatchEvent(new updateTimelineEvent(updateTimelineEvent.UPDATETIMELINEPAGE, null, null, pages[p]));
+											
+											done = true;
+											break;
+										}
+									}
+								}
+							}
+						}
+							
+						singleton._changesMade = true;
+						singleton.UpdateWindowStatus();
+						
+					}
+				} catch (err:Error) {
+					
+					trace(err.toString());
+				}
+			}
+			
+			protected function _mouseDownHandler(event:MouseEvent):void
+			{
+				
+				currentState = "dragging";
+				
+				singleton.selectedTextDataForDrag = data;
+				singleton.selectedTextForDrag = this;
+				
+				event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.addEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+			}
+			
+			private function DragItem(event:MouseEvent):void 
+			{
+				
+				//Start drag
+				var ds:DragSource = new DragSource();
+				ds.addData("TEXT", "type");
+				ds.addData(singleton.selectedTextDataForDrag, "data");
+				
+				DragManager.doDrag(event.currentTarget as UIComponent, ds, event);
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+			}
+			
+			private function dragComplete(event:DragEvent):void 
+			{
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.removeEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+			}
+			
+			protected function _mouseUpHandler(event:MouseEvent):void
+			{
+				
+				event.currentTarget.removeEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+				event.currentTarget.removeEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+				
+				currentState = "normal";
+				
+			}
+			
+			protected function btnEdit_clickHandler(event:MouseEvent):void
+			{
+			
+				singleton.EditTextFromTimeline(data);
+				
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<s:SWFLoader source="{addtext}" width="80" height="80" />
+		
+	<s:SWFLoader id="btnDelete" width="20" height="20" left="-5" bottom="-5" source="@Embed('assets/iconset/kruisje.swf')" visible="false"
+			 buttonMode="true" mouseEnabled="true" useHandCursor="true" click="btnDelete_clickHandler(event)"
+			 excludeFrom="dragging" verticalAlign="middle" horizontalAlign="center" 
+			 maintainAspectRatio="true" scaleContent="true" 
+			 toolTip="Tekst element verwijderen..."/>
+	
+	<s:SWFLoader id="btnEdit" width="20" height="20" right="-5" top="-5" source="@Embed('assets/iconset/dots.swf')" visible="false"
+				 buttonMode="true" mouseEnabled="true" useHandCursor="true" click="btnEdit_clickHandler(event)"
+				 excludeFrom="dragging" verticalAlign="middle" horizontalAlign="center" 
+				 maintainAspectRatio="true" scaleContent="true"
+				 toolTip="Tekst bewerken..."/>
+	
+</s:ItemRenderer>
