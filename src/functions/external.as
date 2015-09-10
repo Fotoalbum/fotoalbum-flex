@@ -737,6 +737,8 @@ public function getBookData():* {
 		
 		var jsonString:String;
 			
+		values.push("ok");
+		
 		for (var s:int=0; s < singleton.spreadcollection.length; s++) {
 			
 			var spread:Object = singleton.spreadcollection.getItemAt(s) as Object;
@@ -2280,20 +2282,20 @@ public function pagesToFlex(result:String):void {
 			
 			if (spread.backgroundData != null) {
 				
-				if (spread.backgroundData.origin != "cms") {
+				if (spread.backgroundData.status != "done") {
 			
-					spread.backgroundData.bytesize = spreadlist[x].backgroundData.@bytesize;
-					spread.backgroundData.path = spreadlist[x].backgroundData.@path;
-					spread.backgroundData.fullPath = spreadlist[x].backgroundData.@fullPath;
-					spread.backgroundData.originalWidth = spreadlist[x].backgroundData.@originalWidth;
-					spread.backgroundData.originalHeight = spreadlist[x].backgroundData.@originalHeight;
-					spread.backgroundData.hires = spreadlist[x].backgroundData.@hires;
-					spread.backgroundData.hires_url = spreadlist[x].backgroundData.@hires_url;
-					spread.backgroundData.lowres = spreadlist[x].backgroundData.@lowres;
-					spread.backgroundData.lowres_url = spreadlist[x].backgroundData.@lowres_url;
-					spread.backgroundData.thumb = spreadlist[x].backgroundData.@thumb;
-					spread.backgroundData.thumb_url = spreadlist[x].backgroundData.@thumb_url;
-				    spread.backgroundData.status = spreadlist[x].backgroundData.@status;
+					spread.backgroundData.bytesize = spreadlist[x].backgroundData.@bytesize.toString();
+					spread.backgroundData.path = spreadlist[x].backgroundData.@path.toString();
+					spread.backgroundData.fullPath = spreadlist[x].backgroundData.@fullPath.toString();
+					spread.backgroundData.originalWidth = spreadlist[x].backgroundData.@originalWidth.toString();
+					spread.backgroundData.originalHeight = spreadlist[x].backgroundData.@originalHeight.toString();
+					spread.backgroundData.hires = spreadlist[x].backgroundData.@hires.toString();
+					spread.backgroundData.hires_url = spreadlist[x].backgroundData.@hires_url.toString();
+					spread.backgroundData.lowres = spreadlist[x].backgroundData.@lowres.toString();
+					spread.backgroundData.lowres_url = spreadlist[x].backgroundData.@lowres_url.toString();
+					spread.backgroundData.thumb = spreadlist[x].backgroundData.@thumb.toString();
+					spread.backgroundData.thumb_url = spreadlist[x].backgroundData.@thumb_url.toString();
+				    spread.backgroundData.status = spreadlist[x].backgroundData.@status.toString();
 					try {
 						if (spreadlist[x].backgroundData.hasOwnProperty("exif")) {
 							spread.backgroundData.exif = XML(spreadlist[x].backgroundData.exif.toXMLString());
@@ -2313,19 +2315,19 @@ public function pagesToFlex(result:String):void {
 				var page:Object = spread.pages.getItemAt(p) as Object;
 				
 				if (page.backgroundData != null) {
-					if (page.backgroundData.origin != "cms") {
-						page.backgroundData.bytesize = spreadpages[p].backgroundData.@bytesize;
-						page.backgroundData.path = spreadpages[p].backgroundData.@path;
-						page.backgroundData.fullPath = spreadpages[p].backgroundData.@fullPath;
-						page.backgroundData.originalWidth = spreadpages[p].backgroundData.@originalWidth;
-						page.backgroundData.originalHeight = spreadpages[p].backgroundData.@originalHeight;
-						page.backgroundData.hires = spreadpages[p].backgroundData.@hires;
-						page.backgroundData.hires_url = spreadpages[p].backgroundData.@hires_url;
-						page.backgroundData.lowres = spreadpages[p].backgroundData.@lowres;
-						page.backgroundData.lowres_url = spreadpages[p].backgroundData.@lowres_url;
-						page.backgroundData.thumb = spreadpages[p].backgroundData.@thumb;
-						page.backgroundData.thumb_url = spreadpages[p].backgroundData.@thumb_url;
-						page.backgroundData.status = spreadpages[p].backgroundData.@status;
+					if (page.backgroundData.status != "done") {
+						page.backgroundData.bytesize = spreadpages[p].backgroundData.@bytesize.toString();
+						page.backgroundData.path = spreadpages[p].backgroundData.@path.toString();
+						page.backgroundData.fullPath = spreadpages[p].backgroundData.@fullPath.toString();
+						page.backgroundData.originalWidth = spreadpages[p].backgroundData.@originalWidth.toString();
+						page.backgroundData.originalHeight = spreadpages[p].backgroundData.@originalHeight.toString();
+						page.backgroundData.hires = spreadpages[p].backgroundData.@hires.toString();
+						page.backgroundData.hires_url = spreadpages[p].backgroundData.@hires_url.toString();
+						page.backgroundData.lowres = spreadpages[p].backgroundData.@lowres.toString();
+						page.backgroundData.lowres_url = spreadpages[p].backgroundData.@lowres_url.toString();
+						page.backgroundData.thumb = spreadpages[p].backgroundData.@thumb.toString();
+						page.backgroundData.thumb_url = spreadpages[p].backgroundData.@thumb_url.toString();
+						page.backgroundData.status = spreadpages[p].backgroundData.@status.toString();
 						try {
 							if (spreadpages[p].backgroundData.hasOwnProperty("exif")) {
 								page.backgroundData.exif = XML(spreadpages[p].backgroundData.exif.toXMLString());
@@ -2354,17 +2356,17 @@ public function pagesToFlex(result:String):void {
 							//singleton.DebugPrint(JSON.stringify(element));
 							//singleton.DebugPrint(spreadelements[e].toString());
 							
-							element.bytesize = spreadelements[e].@bytesize;
-							element.fullPath = spreadelements[e].@fullPath;
-							element.originalWidth = spreadelements[e].@originalWidth;
-							element.originalHeight = spreadelements[e].@originalHeight;
-							element.hires = spreadelements[e].@hires;
-							element.hires_url = spreadelements[e].@hires_url;
-							element.lowres = spreadelements[e].@lowres;
-							element.lowres_url = spreadelements[e].@lowres_url;
-							element.thumb = spreadelements[e].@thumb;
-							element.thumb_url = spreadelements[e].@thumb_url;
-							element.status = spreadelements[e].@status;
+							element.bytesize = spreadelements[e].@bytesize.toString();
+							element.fullPath = spreadelements[e].@fullPath.toString();
+							element.originalWidth = spreadelements[e].@originalWidth.toString();
+							element.originalHeight = spreadelements[e].@originalHeight.toString();
+							element.hires = spreadelements[e].@hires.toString();
+							element.hires_url = spreadelements[e].@hires_url.toString();
+							element.lowres = spreadelements[e].@lowres.toString();
+							element.lowres_url = spreadelements[e].@lowres_url.toString();
+							element.thumb = spreadelements[e].@thumb.toString();
+							element.thumb_url = spreadelements[e].@thumb_url.toString();
+							element.status = spreadelements[e].@status.toString();
 							try {
 								if (spreadelements[e].hasOwnProperty("exif")) {
 									element.exif = XML(spreadelements[e].exif.toXMLString());

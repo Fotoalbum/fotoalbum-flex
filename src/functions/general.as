@@ -340,9 +340,9 @@ private function onCreationComplete():void
 	
 	//Debug
 	/*
-	singleton._userID = "96174"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "15"; //10 // themebuilder = 106843
-	singleton._userProductID = "9390"; //3045
+	singleton._userID = "4"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "47"; //10 // themebuilder = 106843
+	singleton._userProductID = "13730"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {
@@ -11047,7 +11047,7 @@ public function CreatePhotoAlbum():void {
 					back.backgroundData.path = singleton.albumtimeline.getItemAt(u)..page[0].background.@path;
 					back.backgroundData.preview = singleton.albumtimeline.getItemAt(u)..page[0].background.@preview;
 					back.backgroundData.status = singleton.albumtimeline.getItemAt(u)..page[0].background.@status;
-					back.backgroundData.status = singleton.albumtimeline.getItemAt(u)..page[0].background.@url;
+					back.backgroundData.url = singleton.albumtimeline.getItemAt(u)..page[0].background.@url;
 					back.backgroundData.thumb = singleton.albumtimeline.getItemAt(u)..page[0].background.@thumb;
 					back.backgroundData.thumb_url = singleton.albumtimeline.getItemAt(u)..page[0].background.@thumb_url;
 					back.backgroundData.timeCreated = singleton.albumtimeline.getItemAt(u)..page[0].background.@timeCreated;
@@ -11615,7 +11615,7 @@ public function CreatePhotoAlbum():void {
 					back.backgroundData.path = singleton.albumtimeline.getItemAt(u)..page[0].background.@path;
 					back.backgroundData.preview = singleton.albumtimeline.getItemAt(u)..page[0].background.@preview;
 					back.backgroundData.status = singleton.albumtimeline.getItemAt(u)..page[0].background.@status;
-					back.backgroundData.status = singleton.albumtimeline.getItemAt(u)..page[0].background.@url;
+					back.backgroundData.url = singleton.albumtimeline.getItemAt(u)..page[0].background.@url;
 					back.backgroundData.thumb = singleton.albumtimeline.getItemAt(u)..page[0].background.@thumb;
 					back.backgroundData.thumb_url = singleton.albumtimeline.getItemAt(u)..page[0].background.@thumb_url;
 					back.backgroundData.timeCreated = singleton.albumtimeline.getItemAt(u)..page[0].background.@timeCreated;

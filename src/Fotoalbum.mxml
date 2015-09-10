@@ -498,7 +498,7 @@
 			<s:Button label="Grid" click="{ShowGrid()}" skinClass="skins.btnBlueSkin"/>
 			<s:Button label="UpdateTitle" click="{UpdateTitle()}" skinClass="skins.btnBlueSkin"/>
 		-->
-		<s:Button label="Order from HTML" click="{OrderFromHtml()}" skinClass="skins.btnBlueSkin"
+		<s:Button label="getBookData" click="{getBookData()}" skinClass="skins.btnBlueSkin"
 				  enabled="{singleton.spreadcollection != null || singleton.albumtimeline != null}"/>
 		<s:Button label="Save" click="{Save()}" skinClass="skins.btnBlueSkin"
 				  enabled="{singleton._changesMade}"/>

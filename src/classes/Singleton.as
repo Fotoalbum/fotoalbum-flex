@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.1.7";
+		public const version:String = "3.1.9";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -139,7 +139,7 @@ package classes
 		[Bindable] public var _productName:String;
 		[Bindable] public var _userProductID:String;
 		[Bindable] public var _userProductName:String;
-		[Bindable] public var _appPlatform:String = "enjoy"; //www or fenf
+		[Bindable] public var _appPlatform:String = "development"; //www or fenf
 		[Bindable] public var _referer_url:String = "http://enjoy.fotoalbum.nl";
 		[Bindable] public var _appBackground:String = "http://www.xhibit.com/appsettings/background.jpg";
 		[Bindable] public var _appLogo:String = "http://www.xhibit.com/appsettings/logo.png";
