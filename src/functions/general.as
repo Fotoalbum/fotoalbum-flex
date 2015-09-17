@@ -339,10 +339,11 @@ private function onCreationComplete():void
 	}
 	
 	//Debug
-
+	/*
 	singleton._userID = "111111210"; //96174 // studio@fotoalbum.nl - themebuilder
 	singleton._productID = "313"; //10 // themebuilder = 106843
 	singleton._userProductID = "13783"; //3045
+	*/
 	
 	if (singleton._checkenabled == true) {
 		
@@ -788,6 +789,8 @@ public function CreateNewStoryBoard():void
 {
 	
 	var continueSB:Boolean = false;
+	
+	singleton.HideWaitBox();
 	
 	singleton.ShowWaitBox("Je fotoalbum wordt gemaakt, dit kan heel even duren...");
 		
@@ -9785,7 +9788,6 @@ public function SetUserProductID(value:*):void {
 [Bindable] public var snapCoverHeight:Number = 605;
 public function UploadPreviews():void {
 	
-	
 	singleton.DebugPrint("Starting uploading previews....");
 	
 	lstPreviewSpreads.removeAllElements();
@@ -10064,8 +10066,15 @@ public function loadPreviewCompleteHandler(event:Event):void {
 		lstPreviewSpreads.removeAllElements();
 		previewNum = 0;
 		
-		if (ExternalInterface.available) {
-			ExternalInterface.call("orderFromApp", singleton._userProductID);
+		if (singleton._uploadPreviewOnly == true) {
+			if (ExternalInterface.available) {
+				singleton._uploadPreviewOnly = false;
+				ExternalInterface.call("doneCreatingPreview", true);
+			}
+		} else {
+			if (ExternalInterface.available) {
+				ExternalInterface.call("orderFromApp", singleton._userProductID);
+			}
 		}
 		
 	}

@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.1.9";
+		public const version:String = "3.2.1";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -184,6 +184,8 @@ package classes
 		[Bindable] public var _numPages:int;
 		[Bindable] public var _currentPrice:String = "";
 		[Bindable] public var _shop_price:String = "";
+		
+		[Bindable] public var _uploadPreviewOnly:Boolean = false;
 		
 		/**************************************************************************
 		 DATA COLLECTIONS

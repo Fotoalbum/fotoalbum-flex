@@ -130,6 +130,12 @@ public function initAppExtCalls():void
 	ExternalInterface.addCallback("getbookdata", getBookData);
 	ExternalInterface.addCallback("removePhotoFromBook", removePhotoFromBook);	
 	
+	ExternalInterface.addCallback("showMessageFromHtml", showMessageFromHtml);	
+	ExternalInterface.addCallback("hideMessageFromHtml", hideMessageFromHtml);	
+	
+	ExternalInterface.addCallback("createPreviewInFlex", createPreviewInFlex);	
+	
+	
 	//ExternalInterface.addCallback("CheckEverythingUploaded", CheckIfWeDontHaveEmptyPages);
 	
 	/* TODO
@@ -137,6 +143,18 @@ public function initAppExtCalls():void
 	ExternalInterface.addCallback("autoFill", AutoFill); //
 	*/
 }  
+
+public function showMessageFromHtml(msg:String):String {
+
+	singleton.ShowWaitBox(msg);
+	
+	return "ok";
+}
+
+public function hideMessageFromHtml():void {
+	
+	singleton.HideWaitBox();
+}
 
 public function setAutoFill(result:String):void {
 	singleton._autofill = result.toString().toLowerCase() == "true";
@@ -2045,10 +2063,10 @@ public function ThumbsFromHtml(result:String):void {
 		
 		for each (var src:Object in json) {
 		
-			//singleton.DebugPrint("flex: " + src.id + " filename: " + src.filename);
-			
 			var photo:photoclass = new photoclass();
 			photo.id = src.id;
+			photo.guid = src.id;
+			photo.bytesize = src.bytesize;
 			photo.name = src.filename;
 			photo.origin = src.origin;
 			photo.status = src.status;
@@ -2056,7 +2074,27 @@ public function ThumbsFromHtml(result:String):void {
 			photo.preview = true;
 			photo.originalWidth = src.width;
 			photo.originalHeight = src.height;
+			
 			photo.exif = XML(src.exif.toString());
+
+			/*
+			photo.exif = <exif/>;
+			
+			if (src.exif != "") {
+				var exifdata:Object = JSON.parse(src.exif);
+				photo.exif.@date = exifdata.date;
+				photo.exif.@time = exifdata.time;
+				photo.exif.@make = exifdata.time;
+				photo.exif.@model = exifdata.time;
+				photo.exif.@orientation = exifdata.orientation;
+				photo.exif.@GPSLatitudeRef = exifdata.GPSLatitudeRef;
+				photo.exif.@GPSLatitude = exifdata.GPSLatitude;
+				photo.exif.@GPSLongitudeRef = exifdata.GPSLongitudeRef;
+				photo.exif.@GPSLongitude = exifdata.GPSLongitude;
+			}
+			*/
+			
+			//singleton.DebugPrint(JSON.stringify(photo));
 			
 			singleton.userphotosfromhdu.addItem(photo);
 			
@@ -2111,6 +2149,7 @@ private function UpdatePhotos(result:String):void {
 			photo.status = src.status;
 			photo.url = src.url;
 			photo.preview = true;
+			photo.bytesize = src.bytesize;
 			photo.originalWidth = src.width;
 			photo.originalHeight = src.height;
 			photo.exif = XML(src.exif.toString());

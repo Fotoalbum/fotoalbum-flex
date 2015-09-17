@@ -960,6 +960,16 @@
 			
 				FlexGlobals.topLevelApplication.startup.visible = false;
 				
+				setTimeout(CallSoftwareDoneLoading, 3000);
+				
+				
+			}
+			
+			public function CallSoftwareDoneLoading():void {
+				if (ExternalInterface.available) {
+					singleton.DebugPrint("Software done loading: setReadyForCommands called");
+					ExternalInterface.call("setReadyForCommands", true);
+				}
 			}
 			
 			public function updateLowresSpreadBackgroundFromExternal(source:Bitmap):void {
