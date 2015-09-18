@@ -9,12 +9,14 @@ import popups.previewPopup;
 
 [Bindable] public var previewScreen:previewPopup;
 
-public function createPreviewInFlex():void {
+public function createPreviewInFlex():String {
 	
 	//Create preview and when done send a message to HTML we are finished
 	singleton._uploadPreviewOnly = true;
 	
 	UploadPreviews();
+	
+	return "createPreviewInFlex command received";
 	
 }
 
