@@ -13284,9 +13284,9 @@ public function DeleteBackgroundClick(spread:Boolean):void {
 public function onPaste(event:Event):void {
 	
 	//trace(event);
-	event.preventDefault();
-	event.stopImmediatePropagation();
-	event.stopPropagation();
+	//event.preventDefault();
+	//event.stopImmediatePropagation();
+	//event.stopPropagation();
 	
 }
 
