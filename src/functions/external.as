@@ -447,6 +447,7 @@ public function ObjectPaste(event:Event = null):void {
 		
 		//Now remove the cutArray
 		singleton.cutArray = null;
+		singleton.copyArray = null;
 		
 	}
 	

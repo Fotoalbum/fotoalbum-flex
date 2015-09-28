@@ -2979,23 +2979,10 @@ private function onGetUserProductResult(e:ResultEvent):void
 	
 	if (continueLoading == false) {
 		
-		//This user is not allowed to view this book, return to the site
-		switch (singleton._appPlatform) {
-			case "fenf":
-				navigateToURL(new URLRequest("http://www.bonusboek.nl"), "_self");
-				break;
-			case "hampshire":
-				navigateToURL(new URLRequest("http://hampshire.fotoalbum.nl"), "_self");
-				break;
-			case "new":
-				navigateToURL(new URLRequest("http://mijn.fotoboek-maken.nl"), "_self");
-				break;
-			case "enjoy":
-				navigateToURL(new URLRequest("http://enjoy.fotoalbum.nl"), "_self");
-				break;
-			default:
-				navigateToURL(new URLRequest("http://enjoy.fotoalbum.nl"), "_self");
-				break;
+		//Return to the original website -> not allowed here
+		if (ExternalInterface.available) {
+			var wrapperFunction:String = "notAllowed";
+			ExternalInterface.call(wrapperFunction, singleton._appPlatform);
 		}
 	
 	} else {
