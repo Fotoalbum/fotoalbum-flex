@@ -372,9 +372,17 @@ public function ObjectPaste(event:Event = null):void {
 		
 		objArr = new Array();
 		
+		var found:Boolean = false;
+		
 		//Copy the elements and put them in the current spread
 		for (x=0; x < singleton.copyArray.length; x++) {
+			if (found) {
+				break;
+			}
 			for (s=0; s < singleton.spreadcollection.length; s++) {
+				if (found) {
+					break;
+				}
 				e = singleton.spreadcollection.getItemAt(s).elements;
 				for (t=0; t < e.length; t++) {
 					if (e.getItemAt(t).id == singleton.copyArray[x]) {
@@ -416,7 +424,7 @@ public function ObjectPaste(event:Event = null):void {
 							singleton.textflowcollection.addItem(tfclass);
 							
 						}
-						
+						found = true;
 						objArr.push(newObj);
 						break;
 					}

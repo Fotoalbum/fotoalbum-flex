@@ -474,11 +474,13 @@
 	
 	<s:HGroup visible="false" left="10" top="0" gap="1">
 		
-		<!--
+		
 			<s:Button label="Copy" mouseDown="{ObjectCopy(event)}" enabled="{singleton.selected_element || (selectedObjects &amp;&amp; selectedObjects.length &gt; 0)}" skinClass="skins.btnBlueSkin" />
 			<s:Button label="Cut" mouseDown="{ObjectCut(event)}" enabled="{singleton.selected_element || (selectedObjects &amp;&amp; selectedObjects.length &gt; 0)}" skinClass="skins.btnBlueSkin" />
 			<s:Button label="Paste" mouseDown="{ObjectPaste(event)}" enabled="{(singleton.copyArray &amp;&amp; singleton.copyArray.length &gt; 0) || (singleton.cutArray &amp;&amp; singleton.cutArray.length &gt; 0)}" skinClass="skins.btnBlueSkin" />
-			<s:Button label="Delete" mouseDown="{ObjectDelete(event)}" enabled="{singleton.selected_element}" skinClass="skins.btnBlueSkin" />
+		
+		<!--
+		<s:Button label="Delete" mouseDown="{ObjectDelete(event)}" enabled="{singleton.selected_element}" skinClass="skins.btnBlueSkin" />
 			<s:Button label="Upload Previews" click="{UploadPreviews()}" skinClass="skins.btnBlueSkin"
 					  enabled="{singleton.spreadcollection != null || singleton.albumtimeline != null}"/>
 			<s:Button label="Order from HTML" click="{OrderFromHtml()}" skinClass="skins.btnBlueSkin"
