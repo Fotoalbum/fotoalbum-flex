@@ -3378,46 +3378,61 @@ private function onGetUserProductResult(e:ResultEvent):void
 				singleton._userProductInformation.textflow_xml = fontStr;
 				
 				var textflowList:XMLList = XML(singleton._userProductInformation.textflow_xml.toString())..tflow;
+				
+				var chkstr:String = singleton.pages_xml.toString();
+				//var counttf:int = 0;
+				
 				for (var t:int=0; t < textflowList.length(); t++) {
-					var tfclass:textflowclass = new textflowclass();
-					tfclass.id = textflowList[t].@id;
-					tfclass.tf = new TextFlow();
-					tfclass.tf = TextConverter.importToFlow(textflowList[t].children().toString(), TextConverter.TEXT_LAYOUT_FORMAT);
-					tfclass.tf.invalidateAllFormats();
 					
-					tfclass.sprite = new textsprite();
-					tfclass.sprite.tfID = tfclass.id;
+					//Check if this textflow is being used in the product
+					var check_id:String = textflowList[t].@id.toString();
 					
-					var w:Number = 0;
-					var h:Number = 0;
-					//Get the object Width and Height for the controller
-					for (var q:int=0; q < spreadlist.length(); q++) {
-						var elements:XMLList = spreadlist[q].elements..element;
-						for each (var elementTFXML:XML in elements) {
-							if (elementTFXML.@type == "text") {
-								if (elementTFXML.@tfID == tfclass.id) {
-									//Found it, set the width and height
-									w = elementTFXML.@objectWidth;
-									h = elementTFXML.@objectHeight;
-									break;
+					var textnumfound:int = chkstr.indexOf(check_id);
+					
+					if (textnumfound > -1) {
+					
+						var tfclass:textflowclass = new textflowclass();
+						tfclass.id = textflowList[t].@id;
+						tfclass.tf = new TextFlow();
+						tfclass.tf = TextConverter.importToFlow(textflowList[t].children().toString(), TextConverter.TEXT_LAYOUT_FORMAT);
+						tfclass.tf.invalidateAllFormats();
+						
+						tfclass.sprite = new textsprite();
+						tfclass.sprite.tfID = tfclass.id;
+						
+						var w:Number = 0;
+						var h:Number = 0;
+						//Get the object Width and Height for the controller
+						for (var q:int=0; q < spreadlist.length(); q++) {
+							var elements:XMLList = spreadlist[q].elements..element;
+							for each (var elementTFXML:XML in elements) {
+								if (elementTFXML.@type == "text") {
+									if (elementTFXML.@tfID == tfclass.id) {
+										//Found it, set the width and height
+										w = elementTFXML.@objectWidth;
+										h = elementTFXML.@objectHeight;
+										break;
+									}
 								}
 							}
 						}
+						
+						var cc:ContainerController = new ContainerController(tfclass.sprite, w, h);
+						cc.container.addEventListener(KeyboardEvent.KEY_UP, ContainerChangeEvent);
+						cc.container.addEventListener(FocusEvent.MOUSE_FOCUS_CHANGE, UpdateNavigationTextflow);
+						cc.container.addEventListener(Event.PASTE, onPaste);
+						tfclass.sprite.cc = cc;
+						
+						tfclass.tf.flowComposer.addController(tfclass.sprite.cc);
+						tfclass.tf.interactionManager = new EditManager(new UndoManager());	
+						
+						tfclass.tf.addEventListener(SelectionEvent.SELECTION_CHANGE, SelectionChange);
+						tfclass.tf.flowComposer.updateAllControllers();
+						
+						singleton.textflowcollection.addItem(tfclass);
+						
+						//counttf++;
 					}
-					
-					var cc:ContainerController = new ContainerController(tfclass.sprite, w, h);
-					cc.container.addEventListener(KeyboardEvent.KEY_UP, ContainerChangeEvent);
-					cc.container.addEventListener(FocusEvent.MOUSE_FOCUS_CHANGE, UpdateNavigationTextflow);
-					cc.container.addEventListener(Event.PASTE, onPaste);
-					tfclass.sprite.cc = cc;
-					
-					tfclass.tf.flowComposer.addController(tfclass.sprite.cc);
-					tfclass.tf.interactionManager = new EditManager(new UndoManager());	
-					
-					tfclass.tf.addEventListener(SelectionEvent.SELECTION_CHANGE, SelectionChange);
-					tfclass.tf.flowComposer.updateAllControllers();
-					
-					singleton.textflowcollection.addItem(tfclass);
 				}
 			}
 			
