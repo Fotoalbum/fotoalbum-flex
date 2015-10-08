@@ -1115,8 +1115,6 @@ public function ContinueCreateStoryBoard():void {
 			var pageNum:int = 1;
 			var firstPage:Boolean = true;
 			var lastPage:Boolean = false;
-			
-			//singleton.DebugPrint("totalSpreads: " + totalSpreads.toString());
 				
 			for (var u:int=0; u < totalSpreads; u++) {
 				

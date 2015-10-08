@@ -122,9 +122,9 @@
 						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
 						loader.load(request, context);
 						
-					} else if (data.source) { //Thumbnail
+					} else if (data.url) { //Thumbnail
 				
-						img.source = data.source;
+						img.source = data.url;
 						img.scaleMode = BitmapScaleMode.LETTERBOX;
 						img.horizontalAlign = HorizontalAlign.CENTER;
 						img.verticalAlign = VerticalAlign.MIDDLE;
@@ -158,120 +158,65 @@
 						
 						this.callLater(ClearLoader);
 						
-					} else {
+					} else if (data.lowres_url !== "") {
 					
-						if (singleton.imageCache[singleton.assets_url + data.lowres_url])
-						{
-							img.source = new Bitmap (singleton.imageCache[singleton.assets_url + data.lowres_url]);
-							img.scaleMode = BitmapScaleMode.LETTERBOX;
-							img.smooth = true;
-							img.horizontalCenter = 0;
-							img.verticalCenter = 0;
-							img.cacheAsBitmap = true;
-							img.validateNow();		
-							
-							if (img.source.bitmapData) {
-								if (img.source.bitmapData.width >= img.source.bitmapData.height) {
-									scale = 70 / img.source.bitmapData.width;
-								} else {
-									if (img.source.bitmapData.height > img.source.bitmapData.width) {
-										scale = 70 / img.source.bitmapData.height;
-									}
-								} 
+						//Check if the lowres has the correct extension, if not, update it
+						var checkLowres:String = data.lowres.toString();
+						var lowresArr:Array = checkLowres.split(".");
+						if (lowresArr[lowresArr.length -1].toString().toLowerCase() != "jpg") {
+							if (lowresArr[lowresArr.length -1].toString().toLowerCase() != "png") {
+								//Modify
+								var lowres:String =  checkLowres.substring(0, checkLowres.length - lowresArr[lowresArr.length - 1].length);
+								data.lowres = lowres + "JPEG";
+								data.lowres_url = data.lowres_url.replace(checkLowres, data.lowres);
+								var thumb:String = data.thumb.toString();
+								var thumbStr:String =  thumb.substring(0, thumb.length - lowresArr[lowresArr.length - 1].length);
+								data.thumb = thumbStr + "JPEG";
+								data.thumb_url = data.thumb_url.replace(thumb, data.thumb);
+								var hires:String = data.hires.toString();
+								var hiresStr:String =  hires.substring(0, hires.length - lowresArr[lowresArr.length - 1].length);
+								data.hires = hiresStr + "JPEG";
+								data.hires_url = data.hires_url.replace(hires, data.hires);
 							}
-							
-							//Check for wrong dimension
-							if ((img.source.width > img.source.height &&
-								data.originalWidth < data.originalHeight) ||
-								(img.source.width < img.source.height &&
-									data.originalWidth > data.originalHeight)) {
-									//Modify the original data
-									w = data.originalWidth;
-									data.originalWidth = data.originalHeight;
-									data.originalHeight = w;
-							}
-							
-							this.callLater(ClearLoader);
-						
-						}
-						else
-						{
-							
-							//Check if the lowres has the correct extension, if not, update it
-							var checkLowres:String = data.lowres.toString();
-							var lowresArr:Array = checkLowres.split(".");
-							if (lowresArr[lowresArr.length -1].toString().toLowerCase() != "jpg") {
-								if (lowresArr[lowresArr.length -1].toString().toLowerCase() != "png") {
-									//Modify
-									var lowres:String =  checkLowres.substring(0, checkLowres.length - lowresArr[lowresArr.length - 1].length);
-									data.lowres = lowres + "JPEG";
-									data.lowres_url = data.lowres_url.replace(checkLowres, data.lowres);
-									var thumb:String = data.thumb.toString();
-									var thumbStr:String =  thumb.substring(0, thumb.length - lowresArr[lowresArr.length - 1].length);
-									data.thumb = thumbStr + "JPEG";
-									data.thumb_url = data.thumb_url.replace(thumb, data.thumb);
-									var hires:String = data.hires.toString();
-									var hiresStr:String =  hires.substring(0, hires.length - lowresArr[lowresArr.length - 1].length);
-									data.hires = hiresStr + "JPEG";
-									data.hires_url = data.hires_url.replace(hires, data.hires);
-								}
-							}
-							
-							request = new URLRequest(encodeURI(singleton.assets_url + data.thumb_url));
-							context = new LoaderContext();
-							context.checkPolicyFile = true;
-							if (Capabilities.isDebugger == false) {
-								context.securityDomain = SecurityDomain.currentDomain;
-								context.applicationDomain = ApplicationDomain.currentDomain;
-							}
-							
-							loader = new Loader();
-							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
-							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
-							loader.load(request, context);
 						}
 						
+						request = new URLRequest(encodeURI(singleton.assets_url + data.thumb_url));
+						context = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+						
+					} else if (data.url !== "") {
+						
+						request = new URLRequest(encodeURI(data.url));
+						context = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
 					}
-				}
-					
+				}	
 			}
 			
 			private function onComplete(e:Event):void 
 			{
 				
-				var bmd:BitmapData = e.target.content.bitmapData;
-				if (!singleton.imageCache[singleton.assets_url + data.thumb_url]) {
-					singleton.imageCache[singleton.assets_url + data.thumb_url] = bmd;
-				}
-				
-				img.source = singleton.imageCache[singleton.assets_url + data.thumb_url];
+				img.source = e.currentTarget;
 				img.scaleMode = BitmapScaleMode.LETTERBOX;
 				img.smooth = true;
-				
-				/*
-				if (data.exif) {
-					var rot:String = data.exif.@orientation.toString();
-					//Check for the orientation now and correct it if necessary!
-					switch (rot) {
-						case "1": //Normal orientation
-							imgContainer.rotation = 0;
-							break;
-						case "6": //Right rotation 90 degrees
-							imgContainer.rotation = 90;
-							break;
-						case "8": //Left rotation 270 degrees
-							imgContainer.rotation = -90;
-							break;
-						case "3": //180 degrees
-							imgContainer.rotation = 180;
-							break;
-					}
-					
-					imgContainer.validateNow();
-					
-				}
-				*/
-				
 				img.horizontalCenter = 0;
 				img.verticalCenter = 0;
 				img.cacheAsBitmap = true;

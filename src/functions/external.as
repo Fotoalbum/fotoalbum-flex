@@ -2086,27 +2086,9 @@ public function ThumbsFromHtml(result:String):void {
 			
 			photo.exif = XML(src.exif.toString());
 
-			/*
-			photo.exif = <exif/>;
-			
-			if (src.exif != "") {
-				var exifdata:Object = JSON.parse(src.exif);
-				photo.exif.@date = exifdata.date;
-				photo.exif.@time = exifdata.time;
-				photo.exif.@make = exifdata.time;
-				photo.exif.@model = exifdata.time;
-				photo.exif.@orientation = exifdata.orientation;
-				photo.exif.@GPSLatitudeRef = exifdata.GPSLatitudeRef;
-				photo.exif.@GPSLatitude = exifdata.GPSLatitude;
-				photo.exif.@GPSLongitudeRef = exifdata.GPSLongitudeRef;
-				photo.exif.@GPSLongitude = exifdata.GPSLongitude;
-			}
-			*/
-			
-			//singleton.DebugPrint(JSON.stringify(photo));
-			
 			singleton.userphotosfromhdu.addItem(photo);
 			
+			/*
 			var ba:ByteArray;		
 			
 			var arr:Array = src.source.split(",");
@@ -2120,6 +2102,7 @@ public function ThumbsFromHtml(result:String):void {
 			loader.name = photo.id;
 			loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loaderCompleteHandler);
 			loader.loadBytes(ba);
+			*/
 			
 		}
 		
