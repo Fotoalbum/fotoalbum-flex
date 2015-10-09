@@ -2964,7 +2964,7 @@ private function onGetUserProductResult(e:ResultEvent):void
 				continueLoading = false;
 			}
 		} else {
-			if (singleton._userID !== "") {
+			if (singleton._userID != "") {
 				continueLoading = false;
 			}
 		}

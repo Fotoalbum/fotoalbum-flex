@@ -292,55 +292,6 @@
 													}
 												}
 												
-											} else {
-												
-												photo.tempImage = new Image();
-												var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id));
-												if (bitmap.bitmapData) {
-													photo.tempImage.source = bitmap;
-												} else {
-													//Get the image from loading it
-													var bobj:Object = singleton.GetOriginalImageData(photo_class.original_image_id);
-													
-													if (bobj) {
-														
-														//Update this object and continue
-														photo_class.status = "done";
-														photo_class.bytesize = bobj.bytesize;
-														photo_class.exif = bobj.exif.copy();
-														photo_class.guid = bobj.guid;
-														photo_class.hires = bobj.hires;
-														photo_class.hires_url = bobj.hires_url;
-														photo_class.lowres = bobj.lowres;
-														photo_class.lowres_url = bobj.lowres_url;
-														photo_class.thumb = bobj.thumb;
-														photo_class.thumb_url = bobj.thumb_url;
-														
-														singleton._changesMade = true;
-														singleton.UpdateWindowStatus();
-														
-														photo.tempImage = null;
-														
-													} else {
-														
-														//Object can really NOT be found, so empty it!
-														//Update this object and continue
-														photo_class.status = "empty";
-														photo_class.original_image_id = "";
-														photo_class.hires = "";
-														photo_class.hires_url = "";
-														photo_class.lowres = "";
-														photo_class.lowres_url = "";
-														photo_class.thumb = "";
-														photo_class.thumb_url = "";
-														
-														singleton._changesMade = true;
-														singleton.UpdateWindowStatus();
-														
-														photo.tempImage = null;
-														
-													}
-												}
 											}
 										}
 										photo.CreateImage(true);
@@ -851,27 +802,18 @@
 						spreadbackgroundcontainer.graphics.drawRect(0, 0, spreadData.totalWidth, spreadData.totalHeight);
 						spreadbackgroundcontainer.graphics.endFill();
 						
-						var img:Image = new Image();
-						var bmp:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(spreadData.backgroundData.id), "auto", true);
-						img.source = bmp;
-						img.scaleMode = BitmapScaleMode.STRETCH;
-						img.cacheAsBitmap = true;
-						
-						img.filters = null;
-						if (spreadData.backgroundData.imageFilter == "bw") {
-							img.filters = [singleton.bwfilter];
-						}
-						if (spreadData.backgroundData.imageFilter == "sepia") {
-							img.filters = [singleton.sepiafilter];
+						var request:URLRequest = new URLRequest(encodeURI(singleton.GetOriginalBitmapData(spreadData.backgroundData.id)));
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
 						}
 						
-						img.x = spreadData.backgroundData.x;
-						img.y = spreadData.backgroundData.y;
-						img.width = spreadData.backgroundData.width;
-						img.height = spreadData.backgroundData.height;						
-						
-						spreadbackgroundcontainer.addElement(img);
-						img.validateNow();
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+						loader.load(request, context);
 						
 					} else {
 						
@@ -1093,17 +1035,8 @@
 								
 								if (photo_class.status != "empty") {
 									
-									if (!photo.tempImage) {
-										if (photo_class.status != "done") {
-											photo.tempImage = new Image();
-											var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id));
-											photo.tempImage.source = bitmap;
-										}
-										photo.CreateImage(true);
-									} else {
-										photo.CreateImage(true);
-									}
-									
+									photo.CreateImage(true);
+						
 								}
 								
 								photo.DrawBorder();
@@ -1316,20 +1249,7 @@
 							
 							photo.data = photo_class;
 							
-							if (photo_class.status == "empty") 
-							{
-								photo.RemoveImage(true);
-							} else 
-							{
-								if (photo_class.status != "done") {
-									var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id), "auto", true);
-									photo.tempImage = new Image();
-									photo.tempImage.source = bitmap;
-								} else {
-									//Load the lowres image
-									photo.tempImage = null;
-								}
-							}
+							photo.RemoveImage(true);
 							
 							elementcontainer.addElement(photo);
 							
@@ -2176,13 +2096,6 @@
 								if (photo_class.status == "empty")
 								{
 									photo.RemoveImage(false);
-								} else
-								{
-									if (photo_class.status != "done") {
-										var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id));
-										photo.tempImage = new Image();
-										photo.tempImage.source = bitmap;
-									}
 								}
 								
 								elementcontainer.addElementAt(photo, undoitem.index);
@@ -2553,15 +2466,6 @@
 													if (undoitem.undoaction == undoActions.ACTION_CHANGE_IMAGE) {
 													
 														photo.tempImage = null;
-														
-														if (obj.data.status == "new") {	
-															//Create a bitmap from the original source
-															bitmap = new Bitmap(singleton.GetOriginalBitmapData(updatedata.original_image_id), "auto", true);
-															photo.tempImage = new Image();
-															photo.tempImage.source = bitmap;
-															photo.tempImage.cacheAsBitmap = true;
-															photo.tempImage.validateNow();
-														}
 														
 														//Set the image data
 														photo.CreateImage(true, false);

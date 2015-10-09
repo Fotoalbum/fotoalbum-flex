@@ -282,302 +282,53 @@
 				if (data) 
 				{
 					
-					if (!isNav) {
-						//loading.visible = true;
-					} else {
-						//loading.visible = false;
-					}
+					//Check if we have an original image?
+					if (data.lowres_url && data.lowres_url != "") {
+						
+						if (nav == false) {
+							if (data.origin == "3rdparty") {
+								var request:URLRequest = new URLRequest(encodeURI(data.lowres_url));
+							} else {
+								request = new URLRequest(encodeURI(singleton.assets_url + data.lowres_url));
+							}
+						} else {
+							if (data.origin == "3rdparty") {
+								request = new URLRequest(encodeURI(data.lowres_url));
+							} else {
+								request = new URLRequest(encodeURI(singleton.assets_url + data.lowres_url));
+							}
+						}
+						
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
+						}
+						
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
+						
+						grpAddImage.visible = false;
+						
+					} else if (data.url != "") {
 					
-					if (tempImage) {
-						
-						container.removeAllElements();
-						
-						imagecontainer = new Group();
-						imagecontainer.clipAndEnableScrolling = true;
-						
-						if (data.imageRotation == "90" || data.imageRotation == "270") {
-							imagecontainer.height = objectWidth;
-							imagecontainer.width = objectHeight;
-						} else {
-							imagecontainer.height = objectHeight;
-							imagecontainer.width = objectWidth;
+						request = new URLRequest(encodeURI(data.url));
+						context = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
 						}
 						
-						if (data.fliphorizontal == 1) {
-							imagecontainer.scaleX = -1;
-						}
+						loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
+						loader.load(request, context);
 						
-						container.addElement(imagecontainer);
-						
-						img = new Image();
-						if (tempImage.source.hasOwnProperty("bitmapData")) {
-							if (tempImage.source.bitmapData) {
-								img.source = tempImage.source.bitmapData.clone();
-							}
-						} else {
-							img.source = tempImage.source.clone();
-						}
-						
-						if (!isNav) {
-							img.rotation = data.imageRotation;
-						}
-						
-						img.x = data.offsetX;
-						img.y = data.offsetY;
-						img.width = data.imageWidth;
-						img.height = data.imageHeight;
-						img.scaleMode = BitmapScaleMode.STRETCH;
-						img.cacheAsBitmap = true;
-						img.alpha = data.imageAlpha;
-						img.smooth = true;
-						
-						imagecontainer.addElement(img);
-						
-						var par:Object = this.parentDocument;
-						
-						if (par.constructor.toString() == "[class spreadEditor]") {
-							
-							try {
-								
-								if (data.origin != "3rdparty") {
-									
-									setTimeout(GetLowResImage, 200);
-									
-									//loading.visible = false;
-									
-								} else {
-									
-									request = new URLRequest(encodeURI(data.lowres_url));
-									context = new LoaderContext();
-									context.checkPolicyFile = true;
-									if (Capabilities.isDebugger == false) {
-										context.securityDomain = SecurityDomain.currentDomain;
-										context.applicationDomain = ApplicationDomain.currentDomain;
-									}
-									
-									loader = new Loader();
-									loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
-									loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
-									loader.load(request, context);
-								}
-							} catch (err:Error) {
-								//do nothing
-							}
-						
-						} else {
-						
-							if (tempImage.source.hasOwnProperty("bitmapData")) {
-								if (tempImage.source.bitmapData) {
-									img.source = new Bitmap(tempImage.source.bitmapData.clone());
-								}
-							} else {
-								img.source = new Bitmap(tempImage.source.clone());
-							}
-							
-							img.x = data.offsetX;
-							img.y = data.offsetY;
-							img.width = data.imageWidth;
-							img.height = data.imageHeight;
-							img.scaleMode = BitmapScaleMode.STRETCH;
-							img.cacheAsBitmap = true;
-							img.alpha = data.imageAlpha;
-							img.smooth = true;
-							
-							img.filters = null;
-							if (data.imageFilter != "") {
-								if (data.imageFilter == "bw") {
-									img.filters = [singleton.bwfilter];
-								}
-								if (data.imageFilter == "sepia") {
-									img.filters = [singleton.sepiafilter];
-								}
-							}
-							
-							img.validateNow();
-							
-							imagecontainer.addElement(img);
-							
-							container.addElement(imagecontainer);
-							
-							if (img.source) {
-								if (img.width == 0 || img.height == 0 || setnewphoto == true) {
-									singleton.CalculateImageDimensions(imagecontainer, img, data, true, _model, this);
-								} 
-							}
-							
-							if (!isNav) {
-								qualityAlert.visible = singleton.CheckQuality(img, this);
-							}
-							
-							FlexGlobals.topLevelApplication.addEventListener(updateUploadedPhotoEvent.UPDATEPHOTO, ChangePhotoAfterUpload);
-							FlexGlobals.topLevelApplication.addEventListener(updateUploadedPhotoEvent.DELETEPHOTO, DeletePhoto);
-						
-							//loading.visible = false;
-							
-							grpAddImage.visible = false;
-							
-							//Set rotation
-							SetImageRotation();
-							
-							if (img) {
-								
-								if (data.mask_lowres_url) {
-									
-									var request:URLRequest;
-									if (nav) {
-										request = new URLRequest(encodeURI(singleton.assets_url + data.mask_lowres_url));
-									} else {
-										request = new URLRequest(encodeURI(singleton.assets_url + data.mask_lowres_url));
-									}
-									var context:LoaderContext = new LoaderContext();
-									context.checkPolicyFile = true;
-									if (Capabilities.isDebugger == false) {
-										context.securityDomain = SecurityDomain.currentDomain;
-										context.applicationDomain = ApplicationDomain.currentDomain;
-									}
-									
-									var loader:Loader = new Loader();
-									loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteMask);
-									loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
-									loader.load(request, context);
-								
-								} else {
-									
-									if (data.overlay_thumb_url) {
-										
-										if (nav) {
-											request = new URLRequest(encodeURI(singleton.assets_url + data.overlay_lowres_url));
-										} else {
-											request = new URLRequest(encodeURI(singleton.assets_url + data.overlay_lowres_url));
-										}
-										context = new LoaderContext();
-										context.checkPolicyFile = true;
-										if (Capabilities.isDebugger == false) {
-											context.securityDomain = SecurityDomain.currentDomain;
-											context.applicationDomain = ApplicationDomain.currentDomain;
-										}
-										
-										loader = new Loader();
-										loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onCompleteOverlay);
-										loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
-										loader.load(request, context);
-										
-									}
-								}
-							}
-							
-							preview.removeAllElements();
-						}
-						
-					} else {
-						
-						//Check and clear the imagecache
-						if (singleton.imageCache[data.original_image_id]) {
-							delete singleton.imageCache[data.original_image_id];
-						}
-						
-						//Check if we have an original image?
-						if (data.lowres_url) {
-							
-							if (nav == false) {
-								if (data.origin == "3rdparty") {
-									request = new URLRequest(encodeURI(data.lowres_url));
-								} else {
-									request = new URLRequest(encodeURI(singleton.assets_url + data.lowres_url));
-								}
-							} else {
-								if (data.origin == "3rdparty") {
-									request = new URLRequest(encodeURI(data.lowres_url));
-								} else {
-									request = new URLRequest(encodeURI(singleton.assets_url + data.lowres_url));
-								}
-							}
-							
-							context = new LoaderContext();
-							context.checkPolicyFile = true;
-							if (Capabilities.isDebugger == false) {
-								context.securityDomain = SecurityDomain.currentDomain;
-								context.applicationDomain = ApplicationDomain.currentDomain;
-							}
-							
-							loader = new Loader();
-							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
-							loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);
-							loader.load(request, context);
-							
-							grpAddImage.visible = false;
-							
-						} else {
-							
-							if (nav && data.original_thumb) {
-								
-								container.removeAllElements();
-								
-								imagecontainer = new Group();
-								imagecontainer.clipAndEnableScrolling = true;
-								if (data.imageRotation == "90" || data.imageRotation == "270") {
-									imagecontainer.height = data.objectWidth;
-									imagecontainer.width = data.objectHeight;
-								} else {
-									imagecontainer.height = data.objectHeight;
-									imagecontainer.width = data.objectWidth;
-								}
-								
-								container.addElement(imagecontainer);
-								
-								img = new Image();
-								img.source = new Bitmap(singleton.GetOriginalBitmapData(data.original_image_id), "auto", true);
-								img.x = data.offsetX;
-								img.y = data.offsetY;
-								img.width = data.imageWidth;
-								img.height = data.imageHeight;
-								img.cacheAsBitmap = true;
-								img.alpha = data.imageAlpha;
-								img.scaleMode = BitmapScaleMode.STRETCH;
-								img.smooth = true;
-								
-								img.filters = null;
-								if (data.imageFilter != "") {
-									if (data.imageFilter == "bw") {
-										img.filters = [singleton.bwfilter];
-									}
-									if (data.imageFilter == "sepia") {
-										img.filters = [singleton.sepiafilter];
-									}
-								}
-								
-								img.validateNow();
-								
-								imagecontainer.addElement(img);
-								
-								container.addElement(imagecontainer);
-								
-								if (img.width == 0 || img.height == 0) {
-									singleton.CalculateImageDimensions(imagecontainer, img, data, true);
-								} 
-								
-								FlexGlobals.topLevelApplication.addEventListener(updateUploadedPhotoEvent.UPDATEPHOTO, ChangePhotoAfterUpload);
-								
-								//loading.visible = false;
-								
-								grpAddImage.visible = false;
-								
-								//Set rotation
-								SetImageRotation();
-								
-								preview.removeAllElements();
-							
-							} else {
-								
-								container.width = this.width;
-								container.height = this.height;
-								
-								container.graphics.clear();
-								container.graphics.beginFill(0xE0E0E0, .8);
-								container.graphics.drawRect(0, 0, container.width, container.height);
-								container.graphics.endFill();
-							}
-						}
+						grpAddImage.visible = false;
 					}
 					
 					//Check for shadow
@@ -1504,37 +1255,6 @@
 					snap.scaleMode = BitmapScaleMode.ZOOM;
 					snap.rotation = 0;
 					
-					//Rotate if we have exif data
-					if (refObject.exif) {
-						
-						
-						/*
-						var rot:String = refObject.exif.@orientation.toString();
-						
-						switch (rot) {
-							case "1": //Normal orientation
-								snap.rotation = 0;
-								break;
-							case "6": //Right rotation 90 degrees
-								snap.rotation = 90;
-								var newW:Number = objectWidth;
-								snap.width = objectHeight;
-								snap.height = newW;
-								break;
-							case "8": //Left rotation 270 degrees
-								snap.rotation = 270;
-								newW = objectWidth;
-								snap.width = objectHeight;
-								snap.height = newW;
-								break;
-							case "3": //180 degrees
-								snap.rotation = 180;
-								break;
-						}
-						*/
-						
-					}
-					
 					preview.addElement(snap);
 					preview.validateNow();
 					
@@ -1606,11 +1326,17 @@
 					data.path = refObject.path || "";
 					data.thumb = refObject.thumb || "";
 					data.thumb_url = refObject.thumb_url || "";
+					data.url = refObject.url || "";
 					data.userID = refObject.userID || singleton._userID || "";
-					data.original_image = origImage;
-					data.original_thumb = origThumb;
+					data.original_image = null;
+					data.original_thumb = null;
 					data.scaling = 0;
-					data.exif = refObject.exif.copy() || <exif/>;
+					if (refObject.exif) {
+						data.exif = refObject.exif.copy() || <exif/>;
+					} else {
+						data.exif = <exif/>;
+					}
+					
 					data.imageWidth = 0;
 					data.imageHeight = 0;
 					data.offsetX = 0;
@@ -1627,29 +1353,9 @@
 						data.thumb_url = "";
 					}
 					
-					if (data.status != "done") {
-						
-						//This element has not been uploaded yet, add a fileref
-						var bitmap:Bitmap;
-						if (origImage.source.constructor.toString() == "[class BitmapData]") {
-							bitmap = new Bitmap(origImage.source.clone());
-						} else {
-							bitmap = new Bitmap(origImage.source.bitmapData.clone());
-						}
-						tempImage = new Image();
-						tempImage.source = bitmap;
-						
-						CreateImage(false, true);
-						
-					} else {
-						
-						//Remove the fileref from this element
-						tempImage = null;
-						
-						CreateImage(false, true);
-						
-					}
-					
+					tempImage = null;
+					CreateImage(false, true);
+				
 					FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, data, false, null, true, true));
 					
 					//Update the source as well
@@ -1667,11 +1373,16 @@
 					refObject.path = sourceData.path || "";
 					refObject.thumb = sourceData.thumb || "";
 					refObject.thumb_url = sourceData.thumb_url || "";
+					refObject.url = sourceData.url || "";
 					refObject.userID = sourceData.userID || singleton._userID || "";
 					refObject.original_image = null;
 					refObject.original_thumb = null;
 					refObject.scaling = 0;
-					refObject.exif = sourceData.exif || <exif/>;
+					if (sourceData.exif) {
+						refObject.exif = sourceData.exif.copy() || <exif/>;
+					} else {
+						refObject.exif = <exif/>;
+					}
 					refObject.imageWidth = 0;
 					refObject.imageHeight = 0;
 					refObject.offsetX = 0;
@@ -1693,31 +1404,10 @@
 					draggedSource.RemoveImage(false);
 					FlexGlobals.topLevelApplication.dispatchEvent(new updateUploadedPhotoEvent(updateUploadedPhotoEvent.DELETEPHOTO, draggedSource.data.id)); 
 					
-					if (refObject.status != "done") {
-						
-						//This element has not been uploaded yet, add a fileref
-						if (img) {
-							
-							if (img.source.constructor.toString() == "[class BitmapData]") {
-								bitmap = new Bitmap(img.source.clone());
-							} else {
-								bitmap = new Bitmap(img.source.bitmapData.clone());
-							}
-							draggedSource.tempImage = new Image();
-							draggedSource.tempImage.source = bitmap;
-							
-							draggedSource.CreateImage(false, true);
-						
-						} 
-						
-					} else {
-						
-						//Remove the fileref from this element
-						draggedSource.tempImage = null;
-						draggedSource.CreateImage(false, true);
-						
-					}
-					
+					//Remove the fileref from this element
+					draggedSource.tempImage = null;
+					draggedSource.CreateImage(false, true);
+				
 					FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, refObject, false, null, true, true));
 					
 				}
@@ -1738,6 +1428,7 @@
 					data.path = refObject.path || "";
 					data.thumb = refObject.thumb || "";
 					data.thumb_url = refObject.thumb_url || "";
+					data.url = refObject.url || "";
 					data.userID = refObject.userID || singleton._userID || "";
 					data.original_image = origImage;
 					data.original_thumb = origThumb;
@@ -1754,24 +1445,11 @@
 			
 					}	
 					
-					if (data.status != "done") {
-						
-						//This element has not been uploaded yet, add a fileref
-						bitmap = new Bitmap(origImage.source.bitmapData);
-						tempImage = new Image();
-						tempImage.source = bitmap;
-						
-						CreateImage(false, true);
-						
-					} else {
-						
-						//Remove the fileref from this element
-						tempImage = null;
-						
-						CreateImage(false, true);
-						
-					}
+					//Remove the fileref from this element
+					tempImage = null;
 					
+					CreateImage(false, true);
+				
 					FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.UPDATE, singleton.selected_spread.spreadID, singleton.selected_element.data, false, null, true, true));
 						
 				}
@@ -1900,7 +1578,7 @@
 				}
 				
 				this.callLater(addUndo, [type]);
-				
+					
 			} 
 			
 			private function addUndo(type:String):void {

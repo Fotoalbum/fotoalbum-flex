@@ -609,59 +609,18 @@ package classes
 						background.setStyle("backgroundColor", 0xFFFFFF);
 						background.removeAllElements();
 						
-						var img:Image = new Image();
-						var bmp:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(backgroundData.id), "auto", true);
-						img.source = bmp;
-						img.cacheAsBitmap = true;
-						
-						background.alpha = data.backgroundAlpha;
-						if (backgroundData.hasOwnProperty("fliphorizontal")) {
-							if (backgroundData.fliphorizontal.toString() == "1") {
-								background.scaleX = -1;
-							} else {
-								background.scaleX = 1;
-							}
+						var request:URLRequest = new URLRequest(encodeURI(singleton.GetOriginalBitmapData(backgroundData.id)));
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
 						}
 						
-						background.horizontalCenter = 0;
-						background.verticalCenter = 0;
-					
-						background.rotation = backgroundData.imageRotation;
-						if (background.rotation == 90 || background.rotation == 270 || background.rotation == -90) {
-							background.height = backgroundWidth;
-							background.width = backgroundHeight;
-						} else {
-							background.height = backgroundHeight;
-							background.width = backgroundWidth;
-						}
-						
-						img.filters = null;
-						if (backgroundData.imageFilter == "bw") {
-							img.filters = [singleton.bwfilter];
-						}
-						if (backgroundData.imageFilter == "sepia") {
-							img.filters = [singleton.sepiafilter];
-						}
-						
-						img.scaleMode = BitmapScaleMode.STRETCH;
-						img.mouseEnabled = false;
-						img.x = backgroundData.x;
-						img.y = backgroundData.y;
-						img.width = backgroundData.width;
-						img.height = backgroundData.height;
-						img.validateNow();
-						
-						background.addElement(img);
-						
-						if (!isNav && !singleton.previewMode) {
-							qualityAlert.visible = singleton.CheckQuality(img, this);
-						}
-						
-						if (singleton.imageCache[backgroundData.id]) {
-							updateLowresSpreadBackgroundFromExternal(new Bitmap(singleton.imageCache[backgroundData.id]));
-						} else {
-							setTimeout(GetLowResImage, 2000);
-						}
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+						loader.load(request, context);
 						
 					}
 				}
@@ -1251,12 +1210,7 @@ package classes
 							background.verticalCenter = 0;
 							
 							var img:Image = new Image();
-							if (singleton.imageCache[backgroundData.id]) {
-								img.source = new Bitmap(singleton.imageCache[backgroundData.id]);
-							} else {
-								var bmp:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(backgroundData.id), "auto", true);
-								img.source = bmp;
-							}
+							img.source = singleton.GetOriginalBitmapData(backgroundData.id);
 							img.mouseEnabled = false;
 							img.scaleMode = BitmapScaleMode.STRETCH;
 							img.cacheAsBitmap = true;
@@ -1465,50 +1419,19 @@ package classes
 						background.setStyle("backgroundColor", 0xFFFFFF);
 						background.removeAllElements();
 						
-						var img:Image = new Image();
-						var bmp:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(backgroundData.id), "auto", true);
-						img.source = bmp;
-						background.alpha = data.backgroundAlpha;
-						
-						if (backgroundData.fliphorizontal) {
-							if (backgroundData.fliphorizontal.toString() == "1") {
-								background.scaleX = -1;
-							} else {
-								background.scaleX = 1;
-							}
+						var request:URLRequest = new URLRequest(encodeURI(singleton.GetOriginalBitmapData(backgroundData.id)));
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
 						}
 						
-						background.horizontalCenter = 0;
-						background.verticalCenter = 0;
-						
-						singleton.CalculateBackgroundDimensions(background, backgroundData, data);
-						
-						img.mouseEnabled = false;
-						img.scaleMode = BitmapScaleMode.STRETCH;
-						img.cacheAsBitmap = true;
-						img.x = backgroundData.x;
-						img.y = backgroundData.y;
-						img.width = backgroundData.width;
-						img.height = backgroundData.height;
-						
-						img.filters = null;
-						if (backgroundData.imageFilter == "bw") {
-							img.filters = [singleton.bwfilter];
-						}
-						if (backgroundData.imageFilter == "sepia") {
-							img.filters = [singleton.sepiafilter];
-						}
-						
-						background.addElement(img);
-						img.validateNow();
-						
-						if (!isNav) {
-							qualityAlert.visible = singleton.CheckQuality(img, this);
-						}
-						
-						if (isNav) {
-							singleton.selected_undoredomanager.AddUndo(singleton.oldbackgrounddata, data, singleton.selectedspreadindex, undoActions.ACTION_BACKGROUND_CHANGE, -1);
-						}
+						newbackground = true;
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+						loader.load(request, context);
 					}
 				}
 				
@@ -1629,51 +1552,18 @@ package classes
 						background.setStyle("backgroundColor", 0xFFFFFF);
 						background.removeAllElements();
 						
-						var img:Image = new Image();
-						var bmp:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(backgroundData.id), "auto", true);
-						img.source = bmp;
-						background.alpha = data.backgroundAlpha;
-						
-						if (backgroundData.fliphorizontal) {
-							if (backgroundData.fliphorizontal.toString() == "1") {
-								background.scaleX = -1;
-							} else {
-								background.scaleX = 1;
-							}
+						var request:URLRequest = new URLRequest(encodeURI(singleton.GetOriginalBitmapData(backgroundData.id)));
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
 						}
 						
-						background.rotation = backgroundData.imageRotation;
-						if (backgroundData.rotation == 90 || backgroundData.rotation == 270 || backgroundData.rotation == -90) {
-							background.height = backgroundWidth;
-							background.width = backgroundHeight;
-						} else {
-							background.height = backgroundHeight;
-							background.width = backgroundWidth;
-						}
-						
-						background.horizontalCenter = 0;
-						background.verticalCenter = 0;
-						
-						img.mouseEnabled = false;
-						img.scaleMode = BitmapScaleMode.STRETCH;
-						img.cacheAsBitmap = true;
-						img.x = backgroundData.x;
-						img.y = backgroundData.y;
-						img.width = backgroundData.width;
-						img.height = backgroundData.height;
-						img.validateNow();
-						
-						img.filters = null;
-						if (backgroundData.imageFilter == "bw") {
-							img.filters = [singleton.bwfilter];
-						}
-						if (backgroundData.imageFilter == "sepia") {
-							img.filters = [singleton.sepiafilter];
-						}
-						
-						background.addElement(img);
-						
-						qualityAlert.visible = singleton.CheckQuality(img, this);
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+						loader.load(request, context);
 						
 					}
 				
@@ -1827,7 +1717,6 @@ package classes
 			}
 			
 			if (type == "PAGELAYOUT") {
-				
 				
 				//Set the new layout
 				var sc:spreadcomponent = this.parentDocument as spreadcomponent;
@@ -2047,6 +1936,7 @@ package classes
 							photo.hires_url = currentPhotoData.hires_url || "";
 							photo.lowres = currentPhotoData.lowres || "";
 							photo.lowres_url = currentPhotoData.lowres_url || "";
+							photo.url = currentPhotoData.url || "";
 							photo.origin = currentPhotoData.origin || "";
 							photo.originalWidth = currentPhotoData.originalWidth || 0;
 							photo.originalHeight = currentPhotoData.originalHeight || 0;
@@ -2120,6 +2010,7 @@ package classes
 							photo.path = "";
 							photo.thumb = "";
 							photo.thumb_url = "";
+							photo.url = "";
 							photo.userID = "";
 							photo.index = singleton.selected_spread.elements.length;
 							photo.objectX = xpos + (parseFloat(item.@left.toString()) / 100) * pagewidth;
@@ -2604,18 +2495,13 @@ package classes
 								photo.path = currentPhotoData.path || "";
 								photo.thumb = currentPhotoData.thumb || "";
 								photo.thumb_url = currentPhotoData.thumb_url || "";
+								photo.url = currentPhotoData.url || "";
 								photo.userID = currentPhotoData.userID || "";
 								photo.index = singleton.selected_spread.elements.length || -1;
 								photo.objectX = xpos + ((parseFloat(item.@left.toString()) / 100) * pagewidth);
 								photo.objectY = ypos + ((parseFloat(item.@top.toString()) / 100) * pageheight); 
 								photo.objectWidth = xpos + pagewidth - ((parseFloat(item.@right.toString()) / 100) * pagewidth) - photo.objectX;
 								photo.objectHeight = ypos + pageheight - ((parseFloat(item.@bottom.toString()) / 100) * pageheight) - photo.objectY;
-								/*
-								photo.objectX = xpos + (parseFloat(item.@left.toString()) / 100) * xwidth;
-								photo.objectY = ypos + (parseFloat(item.@top.toString()) / 100) * xheight; 
-								photo.objectWidth = xpos + xwidth - ((parseFloat(item.@right.toString()) / 100) * xwidth) - photo.objectX;
-								photo.objectHeight = ypos + xheight - ((parseFloat(item.@bottom.toString()) / 100) * xheight) - photo.objectY;
-								*/
 								photo.rotation = parseFloat(item.@r.toString()) || 0;
 								photo.imageRotation = currentPhotoData.imageRotation || 0;
 								photo.scaling = 0;
@@ -2675,18 +2561,13 @@ package classes
 								photo.path = "";
 								photo.thumb = "";
 								photo.thumb_url = "";
+								photo.url = "";
 								photo.userID = "";
 								photo.index = singleton.selected_spread.elements.length;
 								photo.objectX = xpos + ((parseFloat(item.@left.toString()) / 100) * pagewidth);
 								photo.objectY = ypos + ((parseFloat(item.@top.toString()) / 100) * pageheight); 
 								photo.objectWidth = xpos + pagewidth - ((parseFloat(item.@right.toString()) / 100) * pagewidth) - photo.objectX;
 								photo.objectHeight = ypos + pageheight - ((parseFloat(item.@bottom.toString()) / 100) * pageheight) - photo.objectY;
-								/*
-								photo.objectX = xpos + (parseFloat(item.@left.toString()) / 100) * xwidth;
-								photo.objectY = ypos + (parseFloat(item.@top.toString()) / 100) * xheight; 
-								photo.objectWidth = xpos + xwidth - ((parseFloat(item.@right.toString()) / 100) * xwidth) - photo.objectX;
-								photo.objectHeight = ypos + xheight - ((parseFloat(item.@bottom.toString()) / 100) * xheight) - photo.objectY;
-								*/
 								photo.rotation = item.@r;
 								photo.refOffsetX = 0;
 								photo.refOffsetY = 0;

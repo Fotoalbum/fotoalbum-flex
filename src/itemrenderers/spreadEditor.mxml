@@ -556,14 +556,6 @@
 									{
 										photo.RemoveImage();
 									}
-									else
-									{
-										if (photo_class.status != "done") {
-											photo.tempImage = new Image();
-											var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id));
-											photo.tempImage.source = bitmap;
-										}
-									}
 									
 									if (!photo_class.allwaysontop) {
 										elementcontainer.addElement(photo);
@@ -1393,33 +1385,18 @@
 						spreadbackgroundcontainer.graphics.drawRect(0, 0, spreadData.totalWidth, spreadData.totalHeight);
 						spreadbackgroundcontainer.graphics.endFill();
 						
-						var img:Image = new Image();
-						var bmp:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(spreadData.backgroundData.id), "auto", true);
-						img.source = bmp;
-						img.scaleMode = BitmapScaleMode.STRETCH;
-						img.cacheAsBitmap = true;
-						
-						img.filters = null;
-						if (spreadData.backgroundData.imageFilter == "bw") {
-							img.filters = [singleton.bwfilter];
-						}
-						if (spreadData.backgroundData.imageFilter == "sepia") {
-							img.filters = [singleton.sepiafilter];
+						var request:URLRequest = new URLRequest(encodeURI(singleton.GetOriginalBitmapData(spreadData.backgroundData.id)));
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
 						}
 						
-						img.x = spreadData.backgroundData.x;
-						img.y = spreadData.backgroundData.y;
-						img.width = spreadData.backgroundData.width;
-						img.height = spreadData.backgroundData.height;						
-						
-						spreadbackgroundcontainer.addElement(img);
-						img.validateNow();
-						
-						if (singleton.imageCache[spreadData.backgroundData.id]) {
-							updateLowresSpreadBackgroundFromExternal(new Bitmap(singleton.imageCache[spreadData.backgroundData.id]));
-						} else {
-							setTimeout(GetLowResImage, 2000);
-						}
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+						loader.load(request, context);
 						
 					} else {
 						
@@ -1672,6 +1649,7 @@
 					photo.path = refObject.path;
 					photo.thumb = refObject.thumb;
 					photo.thumb_url = refObject.thumb_url;
+					photo.url = refObject.url;
 					photo.userID = refObject.userID;
 					photo.original_image = origImage;
 					photo.original_thumb = origThumb;
@@ -1962,14 +1940,6 @@
 									if (photo_class.status == "empty") 
 									{
 										photo.RemoveImage();
-									}
-									else
-									{
-										if (photo_class.status != "done") {
-											photo.tempImage = new Image();
-											var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id));
-											photo.tempImage.source = bitmap;
-										}
 									}
 									
 									if (!photo_class.allwaysontop) {
@@ -2524,13 +2494,6 @@
 							if (photo_class.status == "empty") 
 							{
 								photo.RemoveImage(true);
-							} else 
-							{
-								if (photo_class.status != "done") {
-									var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id), "auto", true);
-									photo.tempImage = new Image();
-									photo.tempImage.source = bitmap;
-								}
 							}
 							
 							dataModel = new SimpleDataModel;
@@ -3223,13 +3186,6 @@
 								if (photo_class.status == "empty")
 								{
 									photo.RemoveImage(false);
-								} else
-								{
-									if (photo_class.status != "done") {
-										var bitmap:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(photo_class.original_image_id));
-										photo.tempImage = new Image();
-										photo.tempImage.source = bitmap;
-									}
 								}
 								
 								var dataModel:SimpleDataModel = new SimpleDataModel;
@@ -3724,29 +3680,10 @@
 														
 														photo.tempImage = null;
 														
-														if (obj.data.status == "new") {	
-															//Create a bitmap from the original source
-															bitmap = new Bitmap(singleton.GetOriginalBitmapData(updatedata.original_image_id), "auto", true);
-															photo.tempImage = new Image();
-															photo.tempImage.source = bitmap;
-														}
-														
 														//Set the image data
 														photo.CreateImage(false, false);
 														
 													} else {
-														
-														/*
-														photo.tempImage = null;
-														
-														if (obj.data.status == "new") {	
-															
-															//Create a bitmap from the original source
-															bitmap = new Bitmap(singleton.GetOriginalBitmapData(updatedata.original_image_id), "auto", true);
-															photo.tempImage = new Image();
-															photo.tempImage.source = bitmap;
-														}
-														*/
 														
 														//Set the image data
 														photo.CreateImage(false, false);

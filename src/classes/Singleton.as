@@ -2082,17 +2082,17 @@ package classes
 			return borderArray.getItemIndex(value);
 		}
 		
-		public function GetOriginalBitmapData(id:String):BitmapData {
+		public function GetOriginalBitmapData(id:String):String {
 			
-			var bmd:BitmapData;
+			var bmd:String;
 			
 			if (userphotos) {
 				
 				for (var x:int=0; x < userphotos.length; x++) {
 					var ph:Object = userphotos.getItemAt(x) as Object;
 					if (ph.id == id) {
-						if (ph.source) {
-							bmd = ph.source.bitmapData.clone();
+						if (ph.url) {
+							bmd = ph.url;
 						}
 						break;
 					}

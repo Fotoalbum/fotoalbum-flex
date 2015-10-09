@@ -289,6 +289,10 @@
 					if (backgroundData.thumb_url.toString() != "") {
 						loadfromurl = true;
 					}
+				} else if (backgroundData.url) {
+					if (backgroundData.url != "") {
+						loadfromurl = true;
+					}
 				}
 				
 				if (loadfromurl) {
@@ -298,6 +302,8 @@
 					} else {
 						if (backgroundData.lowres_url.toString() != "") {
 							src = singleton.assets_url + backgroundData.lowres_url;
+						} else if (backgroundData.url.toString() != "") {
+							src = singleton.assets_url + backgroundData.url;
 						}
 					}
 					
@@ -318,36 +324,18 @@
 					
 					if (backgroundData.id) {
 						
-						img = new Image();
-						if (singleton.imageCache[backgroundData.id]) {
-							img.source = new Bitmap(singleton.imageCache[backgroundData.id]);
-						} else {
-							var bmp:Bitmap = new Bitmap(singleton.GetOriginalBitmapData(backgroundData.id), "auto", true);
-							img.source = bmp;
+						var request:URLRequest = new URLRequest(encodeURI(singleton.GetOriginalBitmapData(backgroundData.id)));
+						var context:LoaderContext = new LoaderContext();
+						context.checkPolicyFile = true;
+						if (Capabilities.isDebugger == false) {
+							context.securityDomain = SecurityDomain.currentDomain;
+							context.applicationDomain = ApplicationDomain.currentDomain;
 						}
 						
-						img.cacheAsBitmap = true;
-						img.mouseEnabled = false;
-						img.scaleMode = BitmapScaleMode.STRETCH;
-						img.cacheAsBitmap = true;
-						
-						img.filters = null;
-						switch (imageFilter) {
-							case "sepia":
-								img.filters = [singleton.sepiafilter];
-								break;
-							case "bw":
-								img.filters = [singleton.bwfilter];
-								break;
-						}
-						
-						img.x = newdata.backgroundData.x;
-						img.y = newdata.backgroundData.y;
-						img.width = newdata.backgroundData.width;
-						img.height = newdata.backgroundData.height;
-						img.validateNow();
-						
-						imageContainer.addElement(img);
+						var loader:Loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBackgroundComplete);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, ErrorImageLoad);
+						loader.load(request, context);
 						
 					}
 				}
