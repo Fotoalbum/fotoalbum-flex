@@ -2088,22 +2088,6 @@ public function ThumbsFromHtml(result:String):void {
 
 			singleton.userphotosfromhdu.addItem(photo);
 			
-			/*
-			var ba:ByteArray;		
-			
-			var arr:Array = src.source.split(",");
-			
-			var base64:Base64Decoder = new Base64Decoder();
-			base64.decode(arr[1]);
-			
-			ba = base64.toByteArray();
-			
-			var loader:Loader = new Loader();
-			loader.name = photo.id;
-			loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loaderCompleteHandler);
-			loader.loadBytes(ba);
-			*/
-			
 		}
 		
 	} catch (err:Error) {
@@ -2132,7 +2116,7 @@ private function UpdatePhotos(result:String):void {
 		
 		for each (var src:Object in json) {
 			
-			//singleton.DebugPrint("flex: " + src.id + " filename: " + src.filename);
+			//singleton.DebugPrint("flex: " + src.id + " filename: " + src.url);
 			
 			var photo:photoclass = new photoclass();
 			photo.id = src.id;
@@ -2153,20 +2137,6 @@ private function UpdatePhotos(result:String):void {
 			}
 			
 			singleton.userphotos.addItem(photo);
-			
-			var ba:ByteArray;		
-			
-			var arr:Array = src.source.split(",");
-			
-			var base64:Base64Decoder = new Base64Decoder();
-			base64.decode(arr[1]);
-			
-			ba = base64.toByteArray();
-			
-			var loader:Loader = new Loader();
-			loader.name = photo.id;
-			loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loaderAddCompleteHandler);
-			loader.loadBytes(ba);
 			
 		}
 		
