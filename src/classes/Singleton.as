@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.2.5";
+		public const version:String = "3.2.6";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -2340,6 +2340,7 @@ package classes
 				spread.backgroundData.height = s.backgroundData.height.toString() || "";
 				spread.backgroundData.hires = s.backgroundData.hires.toString() || "";
 				spread.backgroundData.hires_url = s.backgroundData.hires_url.toString() || "";
+				spread.backgroundData.url = s.backgroundData.url.toString() || "";
 				spread.backgroundData.id = s.backgroundData.id.toString() || "";
 				spread.backgroundData.imageFilter = s.backgroundData.imageFilter.toString() || "";
 				spread.backgroundData.imageRotation = s.backgroundData.imageRotation.toString() || "0";
@@ -2428,6 +2429,7 @@ package classes
 					p.backgroundData.status = page.backgroundData.status.toString();
 					p.backgroundData.thumb = page.backgroundData.thumb.toString() || "";
 					p.backgroundData.thumb_url = page.backgroundData.thumb_url.toString() || "";
+					p.backgroundData.url = page.backgroundData.url.toString() || "";
 					p.backgroundData.userID = page.backgroundData.userID.toString() || _userID || "";
 					p.backgroundData.width = page.backgroundData.width.toString();
 					p.backgroundData.x = page.backgroundData.x.toString();
@@ -2462,6 +2464,7 @@ package classes
 					photo.guid = eObj.guid || "";
 					photo.hires = eObj.hires || "";
 					photo.hires_url = eObj.hires_url || "";
+					photo.url = eObj.url || "";
 					photo.id = eObj.id;
 					photo.imageAlpha = eObj.imageAlpha;
 					photo.imageFilter = eObj.imageFilter;
@@ -2711,6 +2714,7 @@ package classes
 			p.status = s.status || "";
 			p.thumb = s.thumb || "";
 			p.thumb_url = s.thumb_url || "";
+			p.url = s.url || "";
 			p.timeCreated = s.timeCreated || "";
 			p.userID = s.userID || _userID || "";
 			p.width = s.width || "";
@@ -2746,6 +2750,7 @@ package classes
 			data.status = source.status || "";
 			data.thumb = source.thumb || "";
 			data.thumb_url = source.thumb_url || "";
+			data.url = source.url || "";
 			data.userID = source.userID || _userID || "";
 			data.fliphorizontal = 0;
 			if (source.hasOwnProperty("imageRotation")) {
