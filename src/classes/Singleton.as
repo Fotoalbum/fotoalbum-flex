@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.2.6";
+		public const version:String = "3.2.9";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -85,7 +85,7 @@ package classes
 		[Bindable] public var bgBaseColor:uint = 0xF2F2F2;
 		[Bindable] public var popupHeader:uint = 0x0f74b6;
 		[Bindable] public var labelColor:uint = 0x000000;
-		[Bindable] public var platform_web:String = "Fotoalbum.nl";
+		[Bindable] public var platform_web:String = "fotoalbum.nl";
 		[Bindable] public var platform_name:String = "fotoalbum";
 		
 		//Bonusboek

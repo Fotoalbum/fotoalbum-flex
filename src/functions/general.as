@@ -340,9 +340,9 @@ private function onCreationComplete():void
 	
 	//Debug
 	/*
-	singleton._userID = "34"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "10"; //10 // themebuilder = 106843
-	singleton._userProductID = "10908"; //3045
+	singleton._userID = "2442"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "334"; //10 // themebuilder = 106843
+	singleton._userProductID = "16027"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {
@@ -4295,6 +4295,36 @@ private function onGetUserProductResult(e:ResultEvent):void
 								elementXML.@coverTitle = element.@coverTitle;
 								elementXML.@coverSpineTitle = element.@coverSpineTitle;
 								
+								if (element.@importtext) {
+									
+									//This is a cewe conversion, import the text into a new textflow object
+									var importtext:String = element[0];
+									importtext = importtext.replace(new RegExp("<style.+?>.+?<\/style>"), "");
+									var tfclass:textflowclass = new textflowclass();
+									tfclass.id = element.@tfID;
+									tfclass.tf = new TextFlow();
+									tfclass.tf = TextConverter.importToFlow(importtext, TextConverter.TEXT_FIELD_HTML_FORMAT);
+									tfclass.tf.invalidateAllFormats();
+									
+									tfclass.sprite = new textsprite();
+									tfclass.sprite.tfID = tfclass.id;
+									
+									var cc:ContainerController = new ContainerController(tfclass.sprite, element.@objectWidth, element.@objectHeight);
+									cc.container.addEventListener(KeyboardEvent.KEY_UP, ContainerChangeEvent);
+									cc.container.addEventListener(FocusEvent.MOUSE_FOCUS_CHANGE, UpdateNavigationTextflow);
+									cc.container.addEventListener(Event.PASTE, onPaste);
+									tfclass.sprite.cc = cc;
+									
+									tfclass.tf.flowComposer.addController(tfclass.sprite.cc);
+									tfclass.tf.interactionManager = new EditManager(new UndoManager());	
+									
+									tfclass.tf.addEventListener(SelectionEvent.SELECTION_CHANGE, SelectionChange);
+									tfclass.tf.flowComposer.updateAllControllers();
+									
+									singleton.textflowcollection.addItem(tfclass);
+									
+								}
+									
 								if (element.@fixedposition == true) {
 									elementXML.@fixedposition = "1";
 								} else {
@@ -4376,7 +4406,9 @@ private function onGetUserProductResult(e:ResultEvent):void
 									elementXML.@lowres_url = "";
 									elementXML.@thumb = "";
 									elementXML.@thumb_url = "";
+									elementXML.@url = "";
 									elementXML.@fullPath = "";
+									elementXML.@status = "empty";
 								}
 								
 								if (element.@status == "done") {
@@ -10008,6 +10040,12 @@ private function UploadCoverPreview(snap:snapshot):void {
 		var name:String = GetFormatedPreviewNum(previewNum);
 		variables.fileName = "preview_" + name + ".jpg";
 		variables.platform = singleton._appPlatform;
+		if (previewNum == 0) {
+			variables.empty_dir = 1;
+		}
+		if (previewNum == lstPreviewSpreads.numElements -1) {
+			variables.change_date = 1;
+		}
 		variables.userproductID = singleton._userProductID;
 		
 		request.data = variables;
