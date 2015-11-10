@@ -357,7 +357,9 @@ public function fontLoadedHandler(event:ModuleEvent):void {
 
 private function errorLoaderHandler(event:ModuleEvent):void {
 	
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n embeddedfonts|errorLoaderHandler|" + event.errorText);
+	//Just load arial instead
+	trace(event);
+	//singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n embeddedfonts|errorLoaderHandler|" + event.errorText);
 }
 
 private function FinishLoadAndGotoEditor():void {

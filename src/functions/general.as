@@ -4297,13 +4297,81 @@ private function onGetUserProductResult(e:ResultEvent):void
 								
 								if (element.@importtext) {
 									
+									if (!fontstoload) {
+										fontstoload = new Array();
+									}
+									
+									var font:Object = new Object();
+									font.regular_swfname = "arial.swf";
+									font.regular_name = "_arial";
+									fontstoload.push(font);
+									LoadFontType();
+									
 									//This is a cewe conversion, import the text into a new textflow object
 									var importtext:String = element[0];
 									importtext = importtext.replace(new RegExp("<style.+?>.+?<\/style>"), "");
+									importtext = importtext.replace(new RegExp("<!DOCTYPE.+?>.+?>"), "");
+									importtext = importtext.replace(new RegExp("<head>.+?<\/head>"), "");
+									importtext = importtext.replace(new RegExp("<\/html>"), "");
+									var fontinfo:XML = XML(importtext);
+									var style:Array = StringUtil.trim(fontinfo.@style).split(";");
+									var fontfamily:String = "_arial";
+									var fontsize:int = 14;
+									var textcolor:String = "#000";
+									var leading:int = 16;
+									for (var x:int=0; x < style.length; x++) {
+										/*
+										if (style[x].toString().indexOf("font-family") > -1) {
+											var fam:String = StringUtil.trim(style[x].toString());
+											fam = fam.replace("font-family:", "");
+											fam = fam.replace("'", "");
+											fam = fam.replace("'", "");
+											loadedfont_swf = fam.toLowerCase() + ".swf";
+											if (!fontstoload) {
+												fontstoload = new Array();
+											}
+											
+											fam = "_" + fam.toLowerCase();
+											
+											loadedfont_type = "regular";
+											loadedfont_name = fam;
+										}
+										*/
+										if (style[x].toString().indexOf("font-size") > -1) {
+											var size:String = StringUtil.trim(style[x].toString());
+											size = size.replace("font-size:", "");
+											size = size.replace("pt", "");
+											fontsize = parseInt(size);
+											leading = fontsize + 2;
+										}
+										if (style[x].toString().indexOf("color") > -1) {
+											var _color:String = StringUtil.trim(style[x].toString());
+											_color = _color.replace("color:", "");
+											_color = _color.replace("'", "");
+											_color = _color.replace("'", "");
+											textcolor = _color;
+										}
+									}
+									
+									var config:Configuration = new Configuration();
+									
+									var textLayoutFormat:TextLayoutFormat = new TextLayoutFormat();
+									textLayoutFormat.color = textcolor;
+									textLayoutFormat.fontFamily = fontfamily;
+									textLayoutFormat.fontSize = fontsize;
+									textLayoutFormat.lineHeight = leading;
+									textLayoutFormat.kerning = Kerning.ON;
+									textLayoutFormat.fontStyle = FontPosture.NORMAL;
+									textLayoutFormat.renderingMode = RenderingMode.CFF;
+									textLayoutFormat.fontLookup = FontLookup.EMBEDDED_CFF;
+									textLayoutFormat.textAlign = TextAlign.LEFT;
+									
+									config.textFlowInitialFormat = textLayoutFormat;
+									
 									var tfclass:textflowclass = new textflowclass();
 									tfclass.id = element.@tfID;
 									tfclass.tf = new TextFlow();
-									tfclass.tf = TextConverter.importToFlow(importtext, TextConverter.TEXT_FIELD_HTML_FORMAT);
+									tfclass.tf = TextConverter.importToFlow(importtext, TextConverter.TEXT_FIELD_HTML_FORMAT, config);
 									tfclass.tf.invalidateAllFormats();
 									
 									tfclass.sprite = new textsprite();
