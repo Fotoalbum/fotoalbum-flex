@@ -185,7 +185,7 @@
 			}
 			
 			private function onError(e:Event):void {
-				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n timeLineClipartPreviewRenderer|onError|" + e.toString());
+				singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.toString());
 			}
 			
 			protected function _rollOverHandler(event:MouseEvent):void

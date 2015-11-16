@@ -339,10 +339,10 @@ private function onCreationComplete():void
 	}
 	
 	//Debug
-	/*
-	singleton._userID = "2442"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "334"; //10 // themebuilder = 106843
-	singleton._userProductID = "16027"; //3045
+	/*		
+	singleton._userID = "111112520"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "36"; //10 // themebuilder = 106843
+	singleton._userProductID = "15465"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {
@@ -792,7 +792,7 @@ public function CreateNewStoryBoard():void
 	
 	singleton.HideWaitBox();
 	
-	singleton.ShowWaitBox("Je fotoalbum wordt gemaakt, dit kan heel even duren...");
+	singleton.ShowWaitBox(singleton.fa_156);
 		
 	setTimeout(ContinueCreateStoryBoard, 500);
 	
@@ -835,7 +835,11 @@ public function ContinueCreateStoryBoard():void {
 		if (singleton._autofill == false) {
 			numPages = singleton._minPages;
 		}
-			
+		
+		if (numPages > singleton._maxPages) {
+			numPages = singleton._maxPages;
+		}
+		
 		 //2 voor cover
 		var currentindex:int = 0;
 		singleton._numPages = numPages;
@@ -2267,7 +2271,7 @@ public function onFinishedAddPhotos(event:Event = null):void {
 		
 	} catch (err:Error) {
 	
-		singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n general|onFinishedAddPhotos|" + err.getStackTrace());
+		singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + err.getStackTrace());
 	
 	}
 		
@@ -2896,7 +2900,7 @@ private function onGetProductResult(e:ResultEvent):void
 			
 			singleton.HideMessage();
 			
-			singleton.ShowMessage("Omslag gewijzigd", "Je " + singleton.platform_name + " is aangepast. De afmeting van de omslag is ook aangepast. Controleer deze voor je verder gaat.", false);
+			singleton.ShowMessage(singleton.fa_129, singleton.fa_111 + " " + singleton.platform_name + " " + singleton.fa_130, false);
 			
 		} else {
 		
@@ -4295,7 +4299,7 @@ private function onGetUserProductResult(e:ResultEvent):void
 								elementXML.@coverTitle = element.@coverTitle;
 								elementXML.@coverSpineTitle = element.@coverSpineTitle;
 								
-								if (element.@importtext) {
+								if (element.hasOwnProperty("importtext")) {
 									
 									if (!fontstoload) {
 										fontstoload = new Array();
@@ -4305,7 +4309,6 @@ private function onGetUserProductResult(e:ResultEvent):void
 									font.regular_swfname = "arial.swf";
 									font.regular_name = "_arial";
 									fontstoload.push(font);
-									LoadFontType();
 									
 									//This is a cewe conversion, import the text into a new textflow object
 									var importtext:String = element[0];
@@ -5442,7 +5445,7 @@ private function SetCoverLayout(spread:spreadclass, type:pageclass, photos:XMLLi
 
 private function onGetProductFail(e:FaultEvent):void 
 {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n general|onGetProductFail|" + e.fault.faultString, false);
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.fault.faultString, false);
 	singleton.ReportError(e.fault.faultString);
 }
 
@@ -5454,13 +5457,13 @@ private function onGetLayoutByProductIdFail(e:FaultEvent):void
 
 private function onGetUserProductFail(e:FaultEvent):void 
 {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n general|onGetUserProductFail|" + e.fault.faultString, false);
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.fault.faultString, false);
 	singleton.ReportError(e.fault.faultString);
 }
 
 private function onConfigFault(e:FaultEvent):void 
 {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n general|onConfigFault|" + e.fault.faultString);
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.fault.faultString);
 	singleton.ReportError(e.fault.faultString);
 }
 
@@ -7493,7 +7496,7 @@ private function onGetSaveResult(result:ResultEvent):void
 		
 	} else {
 		
-		singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n " + obj.msg, false, true, false, false);
+		singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + obj.msg, false, true, false, false);
 	}
 
 }
@@ -7516,7 +7519,7 @@ private function onGetSaveThemeResult(result:ResultEvent):void
 		
 	} else {
 		
-		singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n " + obj.msg, false, true, false, false);
+		singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + obj.msg, false, true, false, false);
 	}
 	
 }
@@ -7690,7 +7693,7 @@ public function UploadCoverSnapShot():void {
 }
 
 public function errorHandler(error:Event):void {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n general|errorHandler|" + error.toString());
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + error.toString());
 }
 
 public function loadCompleteHandler(event:Event):void {
@@ -7722,7 +7725,7 @@ public function DoWeHaveEmptyPhotos():Boolean {
 private function onGetSaveFail(e:FaultEvent):void 
 {
 	
-	singleton.ShowMessage("Opslaan mislukt", "userID:" + singleton._userID + " productID:" + singleton._userProductID + " | " + e.fault.faultString, false);
+	singleton.ShowMessage(singleton.fa_131, "userID:" + singleton._userID + " productID:" + singleton._userProductID + " | " + e.fault.faultString, false);
 }
 
 [Bindable] public var spreadarray:ArrayCollection;
@@ -7732,7 +7735,7 @@ private function EditPages():void
 
 	btnEditPages.enabled = false;
 	
-	singleton.ShowWaitBox("Paginabeheer wordt geladen, dit kan even duren...");
+	singleton.ShowWaitBox(singleton.fa_132);
 	
 	this.invalidateDisplayList();
 	
@@ -7846,7 +7849,7 @@ private function ClosePageManagement(event:Event):void {
 	
 	//Check if changes were made?
 	if (pageManagement._changesMade) {		
-		singleton.ShowMessage("Wijzigingen opslaan", "Wil je de wijzigingen opslaan in je " + singleton.platform_name + "?", false, true, false, true, "JA", "NEE", UpdatePageManagement, ClosePageManagementDefinitive);
+		singleton.ShowMessage(singleton.fa_133, singleton.fa_134 + " " + singleton.platform_name + "?", false, true, false, true, singleton.fa_103, singleton.fa_104, UpdatePageManagement, ClosePageManagementDefinitive);
 	} else {
 		PopUpManager.removePopUp(pageManagement);
 	}
@@ -7950,7 +7953,7 @@ private function UpdatePageManagement(event:Event = null):void {
 		
 		if (selectCover) {
 			
-			singleton.ShowMessage("Cover gewijzigd", "De cover heeft nu een andere afmeting. Controleer of alle foto's nog goed staan voor je gaat bestellen.", false);
+			singleton.ShowMessage(singleton.fa_129, singleton.fa_135, false);
 		
 			sp = lstSpreads.getElementAt(0) as spreadItemRenderer;
 			offset = sp.width;
@@ -7995,7 +7998,7 @@ private function SelectSpreadFromPageManagement(event:Event):void {
 	
 	if (pageManagement._changesMade) {
 		
-		singleton.ShowMessage("Wijzigingen opslaan", "Wil je de wijzigingen opslaan in je " + singleton.platform_name + "?", false, true, false, true, "JA", "NEE", UpdatePageManagement, ClosePageManagementDefinitive);
+		singleton.ShowMessage(singleton.fa_133, singleton.fa_134 + " " + singleton.platform_name + "?", false, true, false, true, singleton.fa_103, singleton.fa_104, UpdatePageManagement, ClosePageManagementDefinitive);
 		
 	} else {
 		
@@ -10125,7 +10128,7 @@ private function UploadCoverPreview(snap:snapshot):void {
 }
 
 public function errorPreviewHandler(error:Event):void {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n general|errorPreviewHandler|" + error.toString());
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + error.toString());
 }
 
 public function GetFormatedPreviewNum(num:int):String {
@@ -12243,7 +12246,7 @@ public function AddSpreadToAlbum():void {
 		
 	} else {
 		
-		singleton.ShowMessage("Maximum pagina's", "Maximum aantal pagina's bereikt voor dit " + singleton.platform_name + ".");
+		singleton.ShowMessage(singleton.fa_136, singleton.fa_137 + " " + singleton.platform_name + ".");
 	}
 	
 	if (addpagespopup) {
@@ -12549,8 +12552,8 @@ public function AddNewPages(event:Event):void {
 					//Start the cover view
 					if (currentWidth != spineWidth) {
 						
-						singleton.ShowMessage("Cover gewijzigd", "De cover heeft nu een andere afmeting. Controleer of alle foto's nog goed staan voor je gaat bestellen.", false);
-					
+						singleton.ShowMessage(singleton.fa_129, singleton.fa_135, false);
+						
 						var spreadItem0:spreadItemRenderer = lstSpreads.getElementAt(0) as spreadItemRenderer;
 						spreadItem0.CreateSpread(0, true);
 						
@@ -12573,7 +12576,7 @@ public function DeleteSpreadFromAlbum():void {
 
 	if (singleton._numPages == singleton._minPages) {
 	
-		singleton.ShowMessage("Minimum pagina's", "Het minimaal aantal pagina's voor dit " + singleton.platform_name + " is " + singleton._minPages);
+		singleton.ShowMessage(singleton.fa_138, singleton.fa_139 + " " + singleton.platform_name + " " + singleton.fa_140 + " " + singleton._minPages);
 	
 	} else {
 		
@@ -12582,7 +12585,7 @@ public function DeleteSpreadFromAlbum():void {
 			//Check if this is not the cover or a single page?
 			if (singleton.selected_timeline_spread.@singlepage == "true" || singleton.selected_timeline_spread.pages..page[0].@pageType == "coverback") {
 			
-				singleton.ShowMessage("Spread verwijderen niet mogelijk", "Deze spread kan niet worden verwijderd.");
+				singleton.ShowMessage(singleton.fa_141, singleton.fa_142);
 			
 			} else {
 			
@@ -12643,7 +12646,7 @@ public function DeleteSpreadFromAlbum():void {
 			//Check if this is not the cover or a single page?
 			if (singleton.selected_spread_item.spreadData.singlepage == true || singleton.selected_spread_item.spreadData.pages[0].pageType == "coverback") {
 			
-				singleton.ShowMessage("Spread verwijderen niet mogelijk", "Deze spread kan niet worden verwijderd.");
+				singleton.ShowMessage(singleton.fa_141, singleton.fa_142);
 			
 			} else {
 				
@@ -12714,7 +12717,7 @@ public function DeleteSpreadFromAlbum():void {
 								
 								selectSpread = false;
 								
-								singleton.ShowMessage("Cover gewijzigd", "De cover heeft nu een andere afmeting. Controleer of alle foto's nog goed staan voor je gaat bestellen.", false);
+								singleton.ShowMessage(singleton.fa_129, singleton.fa_135, false);
 								
 								var spreadItem0:spreadItemRenderer = lstSpreads.getElementAt(0) as spreadItemRenderer;
 								spreadItem0.CreateSpread(0, true);
@@ -12746,14 +12749,14 @@ public function DuplicateSpreadInAlbum():void {
 	
 	if (singleton._numPages == singleton._maxPages) {
 	
-		singleton.ShowMessage("Maximum pagina's", "Het maximum aantal pagina's voor dit " + singleton.platform_name + " is " + singleton._maxPages);
+		singleton.ShowMessage(singleton.fa_136, singleton.fa_137 + " " + singleton.platform_name + ".");
 	
 	} else {
 		
 		//Check if this is not the cover or a single page?
 		if (singleton.selected_spread_item.spreadData.singlepage == true || singleton.selected_spread_item.spreadData.pages[0].pageType == "coverback") {
 			
-			singleton.ShowMessage("Kan niet worden gedupliceerd", "Deze spread kan niet worden gedupliceerd.\nProbeer een andere spread.");
+			singleton.ShowMessage(singleton.fa_143, singleton.fa_144);
 			
 		} else {
 			
@@ -12864,7 +12867,7 @@ public function DuplicateSpreadInAlbum():void {
 							
 							spreadItem = null;
 							
-							singleton.ShowMessage("Cover gewijzigd", "De cover heeft nu een andere afmeting. Controleer of alle foto's nog goed staan voor je gaat bestellen.", false);
+							singleton.ShowMessage(singleton.fa_129, singleton.fa_135, false);
 							
 							var spreadItem0:spreadItemRenderer = lstSpreads.getElementAt(0) as spreadItemRenderer;
 							spreadItem0.CreateSpread(0, true);

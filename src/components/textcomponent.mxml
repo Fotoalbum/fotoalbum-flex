@@ -536,7 +536,7 @@
 			 height="{24  / singleton.selected_spread_editor.scaleX}" 
 			 left="{10 / singleton.selected_spread_editor.scaleX}" 
 			 top="{10 / singleton.selected_spread_editor.scaleX}"
-			 toolTip="Tekst staat mogelijk (gedeeltelijk) buiten het afdrukbare gebied. Deze tekst wordt dan niet afgedrukt."
+			 toolTip="{singleton.fa_060}"
 			 smooth="true" mouseEnabled="false"
 			 source="@Embed('assets/icons/warning-icon.png')" />
 	

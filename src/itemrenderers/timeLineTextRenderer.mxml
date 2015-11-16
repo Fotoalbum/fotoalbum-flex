@@ -275,12 +275,12 @@
 			 buttonMode="true" mouseEnabled="true" useHandCursor="true" click="btnDelete_clickHandler(event)"
 			 excludeFrom="dragging" verticalAlign="middle" horizontalAlign="center" 
 			 maintainAspectRatio="true" scaleContent="true" 
-			 toolTip="Tekst element verwijderen..."/>
+			 toolTip="{singleton.fa_061}"/>
 	
 	<s:SWFLoader id="btnEdit" width="20" height="20" right="-5" top="-5" source="@Embed('assets/iconset/dots.swf')" visible="false"
 				 buttonMode="true" mouseEnabled="true" useHandCursor="true" click="btnEdit_clickHandler(event)"
 				 excludeFrom="dragging" verticalAlign="middle" horizontalAlign="center" 
 				 maintainAspectRatio="true" scaleContent="true"
-				 toolTip="Tekst bewerken..."/>
+				 toolTip="{singleton.fa_062}"/>
 	
 </s:ItemRenderer>

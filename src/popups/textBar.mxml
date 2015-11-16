@@ -87,7 +87,7 @@
 				
 				if (!singleton.selected_element) {
 					
-					singleton.ShowMessage("Geen tekst geselecteerd","Probeer opnieuw.");
+					singleton.ShowMessage(singleton.fa_149, singleton.fa_150);
 					
 				} else {
 					
@@ -124,7 +124,7 @@
 			
 				if (!singleton.selected_element) {
 					
-					singleton.ShowMessage("Geen tekst geselecteerd","Probeer opnieuw.");
+					singleton.ShowMessage(singleton.fa_149, singleton.fa_150);
 					
 				} else {
 					
@@ -209,7 +209,7 @@
 				
 				if (!singleton.selected_element) {
 					
-					singleton.ShowMessage("Geen tekst geselecteerd","Probeer opnieuw.");
+					singleton.ShowMessage(singleton.fa_149, singleton.fa_150);
 					
 				} else {
 					
@@ -240,7 +240,7 @@
 				
 				if (!singleton.selected_element) {
 					
-					singleton.ShowMessage("Geen tekst geselecteerd","Probeer opnieuw.");
+					singleton.ShowMessage(singleton.fa_149, singleton.fa_150);
 					
 				} else {
 					
@@ -313,7 +313,7 @@
 					}
 			
 				} catch (err:Error) {
-					singleton.ShowMessage("Er is iets mis gegaan", "Probeer opnieuw");
+					singleton.ShowMessage(singleton.fa_151, singleton.fa_150);
 				}
 				
 			}
@@ -332,7 +332,7 @@
 			
 			private function errorLoaderHandler(event:ModuleEvent):void {
 				
-				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n textBar|errorLoaderHandler|" + event.errorText);
+				singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + event.errorText);
 			}
 			
 			public function fontLoadedHandler(event:ModuleEvent):void {
@@ -395,7 +395,7 @@
 				
 				if (!selected_fontfamily) {
 					
-					singleton.ShowMessage("Geen tekst geselecteerd.", "Probeer opnieuw.");
+					singleton.ShowMessage(singleton.fa_149, singleton.fa_150);
 					
 				} else {
 					
@@ -946,13 +946,13 @@
 		<classes:menuButton id="btnDelete" width="22" height="22" 
 							_text="&#xf014;" _font="_AppFontAwesome" _fontsize="18"
 							buttonMode="true" click="{DeleteText()}"
-							mouseChildren="false" toolTip="Verwijderen"
+							mouseChildren="false" toolTip="{singleton.fa_003}"
 							useHandCursor="true"/>
 		
 		<s:DropDownList id="font" width="110" change="font_changeHandler(event)"
 						dataProvider="{singleton.cms_font_families}" fontFamily="_eCalligraffitti"
 						itemRenderer="itemrenderers.fontsItemRenderer" labelField="name"
-						prompt="Kies een lettertype..." selectedIndex="-1"
+						prompt="{singleton.fa_089}" selectedIndex="-1"
 						skinClass="skins.dropDownSkin" useVirtualLayout="false"/>
 		
 		<s:HGroup gap="4" height="100%" verticalAlign="middle">

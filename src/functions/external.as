@@ -479,7 +479,7 @@ public function RemoveEmptyPlaceholders(event:Event = null):void {
 		event.stopImmediatePropagation();
 	}
 	
-	singleton.ShowMessage("Lege fotokaders verwijderen", "Weet je zeker dat je alle lege fotokaders wilt verwijderen?", false, true, false, true, "JA", "NEE", RemoveEmptyPhotos, CancelStartOver);
+	singleton.ShowMessage(singleton.fa_101, singleton.fa_102, false, true, false, true, singleton.fa_103, singleton.fa_104, RemoveEmptyPhotos, CancelStartOver);
 	
 }
 
@@ -556,9 +556,9 @@ public function StartOver(event:Event = null):void {
 	}
 	
 	if (!singleton._userProductID) {
-		singleton.ShowMessage("Opnieuw beginnen", "Weet je zeker dat je helemaal opnieuw wilt beginnen?", false, true, false, true, "JA", "NEE", StartOverConfirm, CancelStartOver);
+		singleton.ShowMessage(singleton.fa_105, singleton.fa_106, false, true, false, true, singleton.fa_103, singleton.fa_104, StartOverConfirm, CancelStartOver);
 	} else {
-		singleton.ShowMessage("Laatste versie ophalen", "Weet je zeker dat je de laatst opgeslagen versie wil ophalen?", false, true, false, true, "JA", "NEE", StartOverConfirm, CancelStartOver);
+		singleton.ShowMessage(singleton.fa_107, singleton.fa_108, false, true, false, true, singleton.fa_103, singleton.fa_104, StartOverConfirm, CancelStartOver);
 	}
 }
 
@@ -649,14 +649,14 @@ public function SetPrinterProduct(productinfo:String):void {
 			
 			GetProduct();
 			
-			singleton.ShowMessage("Nieuwe instellingen", "Je nieuwe instellingen worden opgehaald.", true, false, false);
+			singleton.ShowMessage(singleton.fa_109, singleton.fa_110, true, false, false);
 			
 		} else {
 			
 			singleton.newProductRequest = true;
 			
 			//Ask if user is sure, if yes then update!
-			singleton.ShowMessage("Nieuwe instellingen", "Je " + singleton.platform_name + " wordt aangepast naar de nieuwe instellingen.", false, true, false);
+			singleton.ShowMessage(singleton.fa_109, singleton.fa_111 + " " + singleton.platform_name + " " + singleton.fa_112, false, true, false);
 	
 			GetProduct();
 			
@@ -664,7 +664,7 @@ public function SetPrinterProduct(productinfo:String):void {
 	
 	} else {
 		
-		singleton.ShowMessage("Wachten op upload", "Wacht even tot alle foto's geupload zijn. Daarna kun je de instellingen van je " + singleton.platform_name + " aanpassen.", false);
+		singleton.ShowMessage(singleton.fa_113, singleton.fa_114 + " " + singleton.platform_name + " " + singleton.fa_115, false);
 	
 	}
 	
@@ -727,7 +727,7 @@ public function OrderFromHtml():void
 	singleton.DebugPrint("OrderFromHTML called");
 	
 	if (singleton._userLoggedIn) {
-		singleton.ShowMessage("Naar winkelwagen", "We zijn je " + singleton.platform_name + " aan het opslaan. Daarna word je automatisch doorgestuurd naar het winkelmandje.", false, true, true);
+		singleton.ShowMessage(singleton.fa_116, singleton.fa_117 + " " + singleton.platform_name + " " + singleton.fa_118, false, true, true);
 		Save();
 	} else {
 		sendLoginToHtml();
@@ -2032,7 +2032,7 @@ private function completeHandler(event:Event):void {
 	
 	} else {
 	
-		singleton.ShowMessage("Verbindingsprobleem", "Probeer opnieuw ajb");
+		singleton.ShowMessage(singleton.fa_119, singleton.fa_120);
 	}
 }
 
@@ -2443,7 +2443,7 @@ public function OriginalPhotoFromHtml(result:String):void {
 		
 	} catch (err:Error) {
 		
-		singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n external|OriginalPhotoFromHtml|" + err.message.toString());
+		singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + err.message.toString());
 		
 	}	
 }
@@ -2551,21 +2551,21 @@ public function uploadStatus(uploading:Boolean):void {
 		if (singleton.save_called == true) {
 			singleton.save_called = false;
 			if (order_called) {
-				singleton.ShowMessage("Voorbeeld maken", "Er wordt een voorbeeld van je " + singleton.platform_name + " aangemaakt voor weergave in je online bibliotheek. Daarna word je automatisch doorgestuurd naar het winkelmandje.", false, true, false);
+				singleton.ShowMessage(singleton.fa_121, singleton.fa_122 + " " + singleton.platform_name + " " + singleton.fa_123, false, true, false);
 			}
 			Save();
 		} else {
 			if (order_called) {
-				singleton.ShowMessage("Voorbeeld maken", "Er wordt een voorbeeld van je  " + singleton.platform_name + "  aangemaakt voor weergave in je online bibliotheek. Daarna word je automatisch doorgestuurd naar het winkelmandje.", false, true, false);
+				singleton.ShowMessage(singleton.fa_121, singleton.fa_122 + " " + singleton.platform_name + " " + singleton.fa_123, false, true, false);
 				Save();
 			}
 		}
 	} else {
 		
-		uploadprogress.label = "Uploaden...";
+		uploadprogress.label = singleton.fa_124;
 		
 		if (order_called) {
-			singleton.ShowMessage("Bestellen", "Je hebt op bestellen geklikt. Je foto's worden nu geupload. Als dit klaar is wordt je automatisch doorgestuurd naar je winkelwagen.", false, true, false);
+			singleton.ShowMessage(singleton.fa_125, singleton.fa_126, false, true, false);
 		}
 	}
 }
@@ -2573,7 +2573,7 @@ public function uploadStatus(uploading:Boolean):void {
 public function uploadProgress(current:int, total:int):void {
 	
 	uploadprogress.setProgress(current, total);
-	uploadprogress.label = "Uploaden " + current + " van " + total;
+	uploadprogress.label = singleton.fa_127 + " " + current + " " + singleton.fa_128 + " " + total;
 	
 }
 

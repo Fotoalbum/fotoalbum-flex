@@ -49,7 +49,7 @@ private function onGetBackgroundCategoriesResult(e:ResultEvent):void
 
 private function onGetBackgroundCategoriesFail(e:FaultEvent):void 
 {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n cms|onGetBackgroundCategoriesFail" + e.fault.faultString);
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.fault.faultString);
 	
 	singleton.ReportError(e.fault.faultString);
 }
@@ -75,7 +75,7 @@ private function onGetBackgroundByIDResult(e:ResultEvent):void
 
 private function onGetBackgroundByIDFail(e:FaultEvent):void 
 {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n cms|onGetBackgroundByIDFail" + e.fault.faultString);
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.fault.faultString);
 	singleton.ReportError(e.fault.faultString);
 }
 
@@ -121,7 +121,7 @@ private function onGetClipartCategoriesResult(e:ResultEvent):void
 
 private function onGetClipartCategoriesFail(e:FaultEvent):void 
 {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n cms|onGetClipartCategoriesFail" + e.fault.faultString);
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.fault.faultString);
 	singleton.ReportError(e.fault.faultString);
 }
 
@@ -147,7 +147,7 @@ private function onGetClipartByIDResult(e:ResultEvent):void
 
 private function onGetClipartByIDFail(e:FaultEvent):void 
 {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n cms|onGetClipartByIDFail" + e.fault.faultString);
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.fault.faultString);
 	singleton.ReportError(e.fault.faultString);
 }
 
@@ -165,7 +165,7 @@ public function GetPassepartoutCategories():void
 }
 
 private function onTypesFault(e:FaultEvent):void {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n cms|onTypesFault" + e.fault.message.toString());
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.fault.message.toString());
 	singleton.ReportError(e.fault.faultString);
 }
 
@@ -191,7 +191,7 @@ private function onTypesResult(e:ResultEvent):void {
 							   
 private function onGetPassepartoutCategoriesFail(e:FaultEvent):void 
 {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n cms|onGetPassepartoutCategoriesFail" + e.fault.faultString);
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.fault.faultString);
 	singleton.ReportError(e.fault.faultString);
 }
 

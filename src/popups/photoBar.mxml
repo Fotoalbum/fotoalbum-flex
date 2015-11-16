@@ -1240,7 +1240,7 @@
 		<classes:menuButton id="btnDelete" width="22" height="22" 
 							_text="&#xf014;" _font="_AppFontAwesome" _fontsize="18"
 				     		buttonMode="true" click="{DeletePhoto()}"
-					 		mouseChildren="false" toolTip="Verwijderen"
+					 		mouseChildren="false" toolTip="{singleton.fa_003}"
 					 		useHandCursor="true"/>
 		
 		<mx:VRule includeIn="clipart, photo, photoextra" height="22" width="1" />
@@ -1251,42 +1251,42 @@
 							includeIn="multiselect"
 							_text="&#xe606;" _font="_AppFontEnjoy" _fontsize="18"
 							buttonMode="true" click="btnAlignLeft_clickHandler(event)"
-							mouseChildren="false" toolTip="Links uitlijnen"
+							mouseChildren="false" toolTip="{singleton.fa_070}"
 							useHandCursor="true"/>
 		
 		<classes:menuButton id="btnAlignHorizontalCenter" width="22" height="22"
 							includeIn="multiselect"
 							_text="&#xe608;" _font="_AppFontEnjoy" _fontsize="18"
 							buttonMode="true" click="btnAlignHorizontalCenter_clickHandler(event)"
-							mouseChildren="false" toolTip="Horizontaal centreren"
+							mouseChildren="false" toolTip="{singleton.fa_071}"
 							useHandCursor="true"/>
 		
 		<classes:menuButton id="btnAlignRight" width="22" height="22"
 							includeIn="multiselect"
 							_text="&#xe60b;" _font="_AppFontEnjoy" _fontsize="18"
 							buttonMode="true" click="btnAlignRight_clickHandler(event)"
-							mouseChildren="false" toolTip="Rechts uitlijnen"
+							mouseChildren="false" toolTip="{singleton.fa_072}"
 							useHandCursor="true"/>
 		
 		<classes:menuButton id="btnAlignTop" width="22" height="22"
 							includeIn="multiselect"
 							_text="&#xe601;" _font="_AppFontEnjoy" _fontsize="18"
 							buttonMode="true" click="btnAlignTop_clickHandler(event)"
-							mouseChildren="false" toolTip="Bovenkant uitlijnen"
+							mouseChildren="false" toolTip="{singleton.fa_073}"
 							useHandCursor="true"/>
 		
 		<classes:menuButton id="btnAlignVerticalCenter" width="22" height="22"
 							includeIn="multiselect"
 							_text="&#xe607;" _font="_AppFontEnjoy" _fontsize="18"
 							buttonMode="true" click="btnAlignVerticalCenter_clickHandler(event)"
-							mouseChildren="false" toolTip="Verticaal centreren"
+							mouseChildren="false" toolTip="{singleton.fa_074}"
 							useHandCursor="true"/>
 		
 		<classes:menuButton id="btnAlignBottom" width="22" height="22"
 							includeIn="multiselect"
 							_text="&#xe609;" _font="_AppFontEnjoy" _fontsize="18"
 							buttonMode="true" click="btnAlignBottom_clickHandler(event)"
-							mouseChildren="false" toolTip="Onderkant uitlijnen"
+							mouseChildren="false" toolTip="{singleton.fa_075}"
 							useHandCursor="true"/>
 		
 		<mx:VRule height="30" width="1" includeIn="multiselect" />
@@ -1295,56 +1295,56 @@
 							includeIn="multiselect"
 							_text="&#xe611;" _font="_AppFontEnjoy" _fontsize="18"
 							buttonMode="true" click="btnMakeSameWidth_clickHandler(event)"
-							mouseChildren="false" toolTip="Zelfde breedte maken"
+							mouseChildren="false" toolTip="{singleton.fa_076}"
 							useHandCursor="true"/>
 		
 		<classes:menuButton id="btnMakeSameHeight" width="22" height="22"
 							includeIn="multiselect"
 							_text="&#xe612;" _font="_AppFontEnjoy" _fontsize="18"
 							buttonMode="true" click="btnMakeSameHeight_clickHandler(event)"
-							mouseChildren="false" toolTip="Zelfde hoogte maken"
+							mouseChildren="false" toolTip="{singleton.fa_077}"
 							useHandCursor="true"/>
 		
 		<classes:menuButton id="btnFlipHorizontal" width="22" height="22" includeIn="clipart,photo,photoextra" 
 							_text="&#xe60d;" _font="_AppFontEnjoy" _fontsize="18"
 							buttonMode="true" click="{btnFlipHorizontal_clickHandler(event)}"
-					 		mouseChildren="false" toolTip="Horizontaal spiegelen"
+					 		mouseChildren="false" toolTip="{singleton.fa_078}"
 					 		useHandCursor="true" />
 		
 		<classes:menuButton id="imageRotation" width="22" height="22" includeIn="photo,photoextra" 
 							_text="&#xe60c;" _font="_AppFontEnjoy" _fontsize="18"
 					 		buttonMode="true" click="{RotateImage(null)}"
-					 		mouseChildren="false" toolTip="Foto binnen kader roteren"
+					 		mouseChildren="false" toolTip="{singleton.fa_079}"
 					 		useHandCursor="true"/>
 		
 		<s:HSlider id="zoom" includeIn="photo,photoextra" change="zoomSlider_changeHandler(event)"
 				   maximum="500" minimum="0" mouseDown="zoomSlider_mouseDownHandler(event)"
 				   mouseUp="zoomSlider_mouseUpHandler(event)" skinClass="skins.ZoomSliderMinPlus"
-				   stepSize="1" toolTip="Foto zoomen" width="80" uid="40" value="0" />
+				   stepSize="1" toolTip="{singleton.fa_080}" width="80" uid="40" value="0" />
 		
 		<mx:VRule includeIn="clipart, photo, photoextra" height="22" width="1" />
 		
 		<classes:menuButtonSwf id="btnShadows" includeIn="clipart,photo,photoextra" 
 							_source="@Embed('assets/handlers/schaduw.swf')" width="22" height="22" 
-					 		buttonMode="true" click="btnShadows_clickHandler(event)" toolTip="Schaduw opties" />
+					 		buttonMode="true" click="btnShadows_clickHandler(event)" toolTip="{singleton.fa_081}" />
 		
 		<classes:menuButtonSwf id="btnBorders" includeIn="clipart,photo,photoextra" _source="@Embed('assets/handlers/rand.swf')" width="22" height="22" 
-					 buttonMode="true" click="btnBorders_clickHandler(event)" toolTip="Rand opties" />
+					 buttonMode="true" click="btnBorders_clickHandler(event)" toolTip="{singleton.fa_082}" />
 		
 		<classes:menuButtonSwf id="btnEffects" includeIn="photo,photoextra" _source="@Embed('assets/handlers/filters.swf')" width="22" height="22"
-					 buttonMode="true" click="btnEffects_clickHandler(event)" toolTip="Filter opties" />
+					 buttonMode="true" click="btnEffects_clickHandler(event)" toolTip="{singleton.fa_083}" />
 		
 		<mx:VRule includeIn="clipart, photo, photoextra" height="22" width="1" />
 		
 		<classes:menuButtonSwf id="btnMoveToFront" includeIn="basic,clipart,photo,photoextra"
 							   width="22" height="22" _source="@Embed('assets/icons/to_front.swf')"
 							   buttonMode="true" click="{btnMoveToFront_clickHandler(event)}"
-							   mouseChildren="false" toolTip="Naar voorgrond" useHandCursor="true"/>
+							   mouseChildren="false" toolTip="{singleton.fa_084}" useHandCursor="true"/>
 		
 		<classes:menuButtonSwf id="btnSendToBack" includeIn="basic,clipart,photo,photoextra"
 							   width="22" height="22" _source="@Embed('assets/icons/to_back.swf')"
 							   buttonMode="true" click="{btnSendToBack_clickHandler(event)}"
-							   mouseChildren="false" toolTip="Naar achtergrond" useHandCursor="true"/>
+							   mouseChildren="false" toolTip="{singleton.fa_085}" useHandCursor="true"/>
 		
 		
 	</s:HGroup>
@@ -1401,14 +1401,14 @@
 			</s:stroke>
 		</s:Line>
 		
-		<s:HGroup width="100%" verticalAlign="middle" toolTip="Transparantie">
+		<s:HGroup width="100%" verticalAlign="middle" toolTip="{singleton.fa_086}">
 			
 			<s:SWFLoader source="@Embed('assets/handlers/transparant.swf')" width="24" height="24" />
 			
 			<s:HSlider id="alphaSlider" width="100%" change="alphaSlider_changeHandler(event)"
 					   maximum="100" minimum="0" skinClass="skins.ZoomSliderGray"
 					   stepSize="1" value="100" uid="70"
-					   toolTip="Achtergrond transparantie instellen" />
+					   toolTip="{singleton.fa_087}" />
 			
 		</s:HGroup>
 		

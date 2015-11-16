@@ -202,7 +202,7 @@ private function StripExtension(name:String, extension:String):String {
 }
 
 private function onFontFamilyFault(e:FaultEvent):void {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n embeddedfonts|onFontFamilyFault|" + e.fault.faultString);
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.fault.faultString);
 	singleton.ReportError(e.fault.faultString);
 }
 
@@ -411,7 +411,7 @@ private function FinishLoadAndGotoEditor():void {
 		}
 		
 		if (!foundall) {
-			singleton.ShowMessage("Foto's niet allemaal geupload", "Er zijn een aantal foto's niet correct geupload. Dit kan komen doordat je in de vorige sessie de browser hebt afgesloten zonder op te slaan, of door een andere oorzaak. Deze foto's zijn nu verwijderd uit dit boek.", false);
+			singleton.ShowMessage(singleton.fa_099, singleton.fa_100, false, false);
 		}
 	}
 	

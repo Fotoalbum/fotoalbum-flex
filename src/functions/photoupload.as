@@ -467,7 +467,7 @@ public function UploadCoverSnapShot(bd:BitmapData):void {
 }
 
 public function errorHandler(error:Event):void {
-	singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n photoupload|errorHandler|" + error.toString());
+	singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + error.toString());
 }
 
 public function loadCompleteHandler(event:Event):void {
@@ -479,7 +479,7 @@ public function loadCompleteHandler(event:Event):void {
 	} else {
 		//singleton.ShowMessage("afterSaveInApp(" + singleton._userProductID.toString() + ")");
 		if (orderNow && singleton._isUploading) {
-			singleton.ShowMessage("Bestellen na uploaden", "Je hebt op bestellen geklikt, maar de door jou gekozen foto's worden op dit moment nog geupload. Als dit klaar is word je automatisch doorgestuurd naar de winkelwagen.", false, true);
+			singleton.ShowMessage(singleton.fa_125, singleton.fa_126, false, true);
 		}
 		afterSaveInApp(singleton._userProductID);
 	}

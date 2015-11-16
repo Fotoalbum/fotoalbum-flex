@@ -161,7 +161,7 @@
 					
 				} else {
 					
-					singleton.ShowMessage("Naam invoeren", "Voer een naam in voor dit thema...", true);
+					singleton.ShowMessage(singleton.fa_152, singleton.fa_153, true);
 				}
 				
 			}
@@ -246,7 +246,7 @@
 			
 			protected function btnDelete_clickHandler(event:MouseEvent):void
 			{
-				singleton.ShowMessage("Thema verwijderen", "Weet je zeker dat je dit thema wilt verwijderen?", false, true, false, true, "JA", "NEE", RemoveTheme, CancelDelete);
+				singleton.ShowMessage(singleton.fa_154, singleton.fa_155, false, true, false, true, singleton.fa_103, singleton.fa_104, RemoveTheme, CancelDelete);
 				
 			}
 			

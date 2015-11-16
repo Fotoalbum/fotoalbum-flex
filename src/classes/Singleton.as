@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.3.0";
+		public const version:String = "3.3.2";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -3235,8 +3235,164 @@ package classes
 			PopUpManager.removePopUp(editTextWindow);
 			
 		}
+	
+		//Localize
+		[Bindable] public var fa_001:String = "Pagina's";
+		[Bindable] public var fa_002:String = "Toevoegen";
+		[Bindable] public var fa_003:String = "Verwijderen";
+		[Bindable] public var fa_004:String = "Dupliceren";
+		[Bindable] public var fa_005:String = "Beheren";
+		[Bindable] public var fa_006:String = "Preview";
+		[Bindable] public var fa_007:String = "Mijn foto's";
+		[Bindable] public var fa_008:String = "+ foto's";
+		[Bindable] public var fa_009:String = "Foto op de achtergrond";
+		[Bindable] public var fa_010:String = "Deze pagina";
+		[Bindable] public var fa_011:String = "Achtergrond toepassen op:";
+		[Bindable] public var fa_012:String = "Alle pagina's";
+		[Bindable] public var fa_013:String = "Layouts";
+		[Bindable] public var fa_014:String = "Foto's";
+		[Bindable] public var fa_015:String = "Achtergrond";
+		[Bindable] public var fa_016:String = "Stickers";
+		[Bindable] public var fa_017:String = "Kaders";
+		[Bindable] public var fa_018:String = "Bewerken";
+		[Bindable] public var fa_019:String = "Thema";
+		[Bindable] public var fa_020:String = "tekst";
+		[Bindable] public var fa_021:String = "+ achtergrond";
+		[Bindable] public var fa_022:String = "Achtergronden";
+		[Bindable] public var fa_023:String = "Gebruikte achtergronden";
+		[Bindable] public var fa_024:String = "Gebruikte kleuren";
+		[Bindable] public var fa_025:String = "Achtergrond linker pagina";
+		[Bindable] public var fa_026:String = "Achtergrond rechter pagina";
+		[Bindable] public var fa_027:String = "Achtergrond over spread";
+		[Bindable] public var fa_028:String = "Kleurpipet";
+		[Bindable] public var fa_029:String = "Kleurenkiezer";
+		[Bindable] public var fa_030:String = "+ stickers";
+		[Bindable] public var fa_031:String = "Vormen";
+		[Bindable] public var fa_032:String = "Gebruikte stickers";
+		[Bindable] public var fa_033:String = "+ kaders";
+		[Bindable] public var fa_034:String = "Passepartouts";
+		[Bindable] public var fa_035:String = "Gebruikte passepartouts";
+		[Bindable] public var fa_036:String = "Filters";
+		[Bindable] public var fa_037:String = "Normaal";
+		[Bindable] public var fa_038:String = "Zwart/Wit";
+		[Bindable] public var fa_039:String = "Sepia";
+		[Bindable] public var fa_040:String = "Foto transparantie";	
+		[Bindable] public var fa_041:String = "Schaduwen";
+		[Bindable] public var fa_042:String = "Geen schaduw";
+		[Bindable] public var fa_043:String = "Schaduw links";
+		[Bindable] public var fa_044:String = "Schaduw rechts";
+		[Bindable] public var fa_045:String = "Schaduw onder";
+		[Bindable] public var fa_046:String = "Randen";
+		[Bindable] public var fa_047:String = "Rand dikte";
+		[Bindable] public var fa_048:String = "Rand en schaduw toepassen op...";
+		[Bindable] public var fa_049:String = "deze pagina";
+		[Bindable] public var fa_050:String = "het hele boek";
+		[Bindable] public var fa_051:String = "Achtergrond ALLE linker pagina's";
+		[Bindable] public var fa_052:String = "Achtergrond ALLE rechter pagina's";
+		[Bindable] public var fa_053:String = "Achtergrond over ALLE spreads";
+		[Bindable] public var fa_054:String = "Selecteer een foto...";
+		[Bindable] public var fa_055:String = "Achtergrond aanpassen";
+		[Bindable] public var fa_056:String = "Achtergrond verwijderen";
+		[Bindable] public var fa_057:String = "Layout veranderen";
+		[Bindable] public var fa_058:String = "Omwisselen met andere foto";
+		[Bindable] public var fa_059:String = "Verplaats de foto binnen het fotokader";
+		[Bindable] public var fa_060:String = "Tekst staat mogelijk (gedeeltelijk) buiten het afdrukbare gebied. Deze tekst wordt dan niet afgedrukt.";
+		[Bindable] public var fa_061:String = "Tekst element verwijderen...";
+		[Bindable] public var fa_062:String = "Tekst bewerken...";
+		[Bindable] public var fa_063:String = "Map openen";
+		[Bindable] public var fa_064:String = "Effecten";
+		[Bindable] public var fa_065:String = "Horizontaal spiegelen";
+		[Bindable] public var fa_066:String = "Achtergrond binnen kader roteren";
+		[Bindable] public var fa_067:String = "Achtergrond zoomen";
+		[Bindable] public var fa_068:String = "Transparantie";
+		[Bindable] public var fa_069:String = "Achtergrond transparantie instellen";
+		[Bindable] public var fa_070:String = "Links uitlijnen"; 
+		[Bindable] public var fa_071:String = "Horizontaal centreren";
+		[Bindable] public var fa_072:String = "Rechts uitlijnen";
+		[Bindable] public var fa_073:String = "Bovenkant uitlijnen";
+		[Bindable] public var fa_074:String = "Verticaal centreren";
+		[Bindable] public var fa_075:String = "Onderkant uitlijnen";
+		[Bindable] public var fa_076:String = "Zelfde breedte maken";
+		[Bindable] public var fa_077:String = "Zelfde hoogte maken";
+		[Bindable] public var fa_078:String = "Horizontaal spiegelen";
+		[Bindable] public var fa_079:String = "Foto binnen kader roteren";
+		[Bindable] public var fa_080:String = "Foto zoomen";
+		[Bindable] public var fa_081:String = "Schaduw opties";
+		[Bindable] public var fa_082:String = "Rand opties";
+		[Bindable] public var fa_083:String = "Filter opties";
+		[Bindable] public var fa_084:String = "Naar voorgrond";
+		[Bindable] public var fa_085:String = "Naar achtergrond";
+		[Bindable] public var fa_086:String = "Transparantie";
+		[Bindable] public var fa_087:String = "Achtergrond transparantie instellen";
+		[Bindable] public var fa_088:String = "Achtergrond rug";
+		[Bindable] public var fa_089:String = "Kies een lettertype...";
+		[Bindable] public var fa_090:String = "Informatie over de upload";
+		[Bindable] public var fa_091:String = "Automatisch vullen";
+		[Bindable] public var fa_092:String = "Kies een product...";
+		[Bindable] public var fa_093:String = "Er is een fout opgetreden";
+		[Bindable] public var fa_094:String = "Neem kontakt op met de helpdesk en geef onderstaand bericht door\n";
+		[Bindable] public var fa_095:String = "Kies een ander product.";
+		[Bindable] public var fa_096:String = "Deze is nu al gekozen";
+		[Bindable] public var fa_097:String = "Sla het huidige thema eerst op";
+		[Bindable] public var fa_098:String = "Er zijn wijzigingen";
+		[Bindable] public var fa_099:String = "Foto's niet allemaal geupload";
+		[Bindable] public var fa_100:String = "Er zijn een aantal foto's niet correct geupload. Dit kan komen doordat je in de vorige sessie de browser hebt afgesloten zonder op te slaan, of door een andere oorzaak. Deze foto's zijn nu verwijderd uit dit boek.";
+		[Bindable] public var fa_101:String = "Lege fotokaders verwijderen";
+		[Bindable] public var fa_102:String = "Weet je zeker dat je alle lege fotokaders wilt verwijderen?";
+		[Bindable] public var fa_103:String = "JA";
+		[Bindable] public var fa_104:String = "NEE";
+		[Bindable] public var fa_105:String = "Opnieuw beginnen";
+		[Bindable] public var fa_106:String = "Weet je zeker dat je helemaal opnieuw wilt beginnen?";
+		[Bindable] public var fa_107:String = "Laatste versie ophalen";
+		[Bindable] public var fa_108:String = "Weet je zeker dat je de laatst opgeslagen versie wil ophalen?";
+		[Bindable] public var fa_109:String = "Nieuwe instellingen";
+		[Bindable] public var fa_110:String = "Je nieuwe instellingen worden opgehaald";
+		[Bindable] public var fa_111:String = "Je"; // + zin hieronder
+		[Bindable] public var fa_112:String = "wordt aangepast naar de nieuwe instellingen";
+		[Bindable] public var fa_113:String = "Wachten op upload";
+		[Bindable] public var fa_114:String = "Wacht even tot alle foto's geupload zijn. Daarna kun je de instellingen van je "; //+ zin hieronder
+		[Bindable] public var fa_115:String = "aanpassen";
+		[Bindable] public var fa_116:String = "Naar winkelwagen";
+		[Bindable] public var fa_117:String = "We zijn je"; // + zin hieronder
+		[Bindable] public var fa_118:String = "aan het opslaan. Daarna word je automatisch doorgestuurd naar het winkelmandje.";
+		[Bindable] public var fa_119:String = "Verbindingsprobleem";
+		[Bindable] public var fa_120:String = "Probeer opnieuw ajb";
+		[Bindable] public var fa_121:String = "Voorbeeld maken";
+		[Bindable] public var fa_122:String = "Er wordt een voorbeeld van je"; //+ zin hieronder
+		[Bindable] public var fa_123:String = "aangemaakt voor weergave in je online bibliotheek. Daarna word je automatisch doorgestuurd naar het winkelmandje.";
+		[Bindable] public var fa_124:String = "Uploaden...";
+		[Bindable] public var fa_125:String = "Bestellen";
+		[Bindable] public var fa_126:String = "Je hebt op bestellen geklikt. Je foto's worden nu geupload. Als dit klaar is wordt je automatisch doorgestuurd naar je winkelwagen.";
+		[Bindable] public var fa_127:String = "Uploaden";
+		[Bindable] public var fa_128:String = "van"; //aantal
+		[Bindable] public var fa_129:String = "Omslag gewijzigd";
+		[Bindable] public var fa_130:String = "is aangepast. De afmeting van de omslag is ook aangepast. Controleer deze voor je verder gaat."; // Staat Je album voor
+		[Bindable] public var fa_131:String = "Opslaan mislukt";
+		[Bindable] public var fa_132:String = "Paginabeheer wordt geladen, dit kan even duren...";
+		[Bindable] public var fa_133:String = "Wijzigingen opslaan";
+		[Bindable] public var fa_134:String = "Wil je de wijzigingen opslaan in je"; //hier staat album achter
+		[Bindable] public var fa_135:String = "De omslag heeft nu een andere afmeting. Controleer of alle foto's nog goed staan voor je gaat bestellen."; 
+		[Bindable] public var fa_136:String = "Maximum pagina's";
+		[Bindable] public var fa_137:String = "Maximum aantal pagina's bereikt voor dit"; //+ albumnaam
+		[Bindable] public var fa_138:String = "Minimum pagina's";
+		[Bindable] public var fa_139:String = "Het minimaal aantal pagina's voor dit"; //+ zin hieronder
+		[Bindable] public var fa_140:String = "is";
+		[Bindable] public var fa_141:String = "Spread verwijderen niet mogelijk";
+		[Bindable] public var fa_142:String = "Deze spread kan niet worden verwijderd";
+		[Bindable] public var fa_143:String = "Kan niet worden gedupliceerd";
+		[Bindable] public var fa_144:String = "Deze spread kan niet worden gedupliceerd.\nProbeer een andere spread.";
+		[Bindable] public var fa_145:String = "Het maximum aantal pagina's voor dit"; // + album + is
+		[Bindable] public var fa_146:String = "Probeer minder pagina's te verwijderen.";
+		[Bindable] public var fa_147:String = "Spread verwijderen";
+		[Bindable] public var fa_148:String = "Niet alle spreads kunnen worden verwijderd.";
+		[Bindable] public var fa_149:String = "Geen tekst geselecteerd";
+		[Bindable] public var fa_150:String = "Probeer opnieuw";
+		[Bindable] public var fa_151:String = "Er is iets fout gegaan";
+		[Bindable] public var fa_152:String = "Naam invoeren";
+		[Bindable] public var fa_153:String = "Voer een naam in voor dit thema...";
+		[Bindable] public var fa_154:String = "Thema verwijderen";
+		[Bindable] public var fa_155:String = "Weet je zeker dat je dit thema wilt verwijderen?";
+		[Bindable] public var fa_156:String = "Je fotoalbum wordt gemaakt, dit kan heel even duren...";
 		
 	}
-	
-	
 }

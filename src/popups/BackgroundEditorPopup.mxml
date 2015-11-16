@@ -478,7 +478,7 @@
 			
 			private function ErrorImageLoad(event:IOErrorEvent):void 
 			{
-				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n BackgroundEditorPopup|ErrorImageLoad|" + event.text);
+				singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + event.text);
 			}
 			
 			private function onBackgroundComplete(event:Event):void 
@@ -961,7 +961,7 @@
 					 text="Effecten" color="#000000" fontSize="12"
 					 click="btnEffects_clickHandler(event)"/>
 			
-			<s:Image toolTip="Effecten"
+			<s:Image toolTip="{singleton.fa_064}"
 					 source="@Embed('assets/icons/down_arrow.png')" 
 					 rotation="180" 
 					 click="btnEffects_clickHandler(event)"/>
@@ -977,13 +977,13 @@
 			<classes:menuButton id="btnFlipHorizontal" width="22" height="22"
 								_text="&#xe60d;" _font="_AppFontEnjoy" _fontsize="18"
 								buttonMode="true" click="{btnFlipHorizontal_clickHandler(event)}"
-								mouseChildren="false" toolTip="Horizontaal spiegelen"
+								mouseChildren="false" toolTip="{singleton.fa_065}"
 								useHandCursor="true" />
 		
 			<classes:menuButton id="btnImageRotation" width="22" height="22"
 								_text="&#xe60c;" _font="_AppFontEnjoy" _fontsize="18"
 								buttonMode="true" click="{btnImageRotation_clickHandler(event)}"
-								mouseChildren="false" toolTip="Achtergrond binnen kader roteren"
+								mouseChildren="false" toolTip="{singleton.fa_066}"
 								useHandCursor="true"/>
 			
 		</s:BorderContainer>
@@ -1000,7 +1000,7 @@
 					   maximum="500" minimum="0" mouseDown="zoomSlider_mouseDownHandler(event)"
 					   mouseUp="zoomSlider_mouseUpHandler(event)" skinClass="skins.ZoomSlider"
 					   stepSize="1" value="0"
-					   toolTip="Achtergrond zoomen" />
+					   toolTip="{singleton.fa_067}" />
 			
 			<s:Label color="0x000000" paddingLeft="5" text="+"/>
 		
@@ -1062,14 +1062,14 @@
 			</s:stroke>
 		</s:Line>
 		
-		<s:HGroup width="100%" verticalAlign="middle" toolTip="Transparantie">
+		<s:HGroup width="100%" verticalAlign="middle" toolTip="{singleton.fa_068}">
 			
 			<s:SWFLoader source="@Embed('assets/handlers/transparant.swf')" width="24" height="24" />
 			
 			<s:HSlider id="alphaSlider" width="100%" change="alphaSlider_changeHandler(event)"
 					   maximum="100" minimum="0" skinClass="skins.ZoomSliderGray"
 					   stepSize="1" value="100" uid="70"
-					   toolTip="Achtergrond transparantie instellen" />
+					   toolTip="{singleton.fa_069}" />
 			
 		</s:HGroup>
 		

@@ -1580,7 +1580,7 @@ package classes
 		
 		private function ErrorImageLoad(event:IOErrorEvent):void 
 		{
-			singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n pageobject|ErrorImageLoad|" + event.text);
+			singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + event.text);
 		}
 		
 		private function onBackgroundComplete(event:Event):void 

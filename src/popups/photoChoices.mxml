@@ -16,7 +16,9 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import classes.Singleton;
 			[Bindable] public var data:Object;
+			[Bindable] public var singleton:Singleton = Singleton.getInstance();
 		]]>
 	</fx:Script>
 	
@@ -25,13 +27,13 @@
 	<s:TileGroup id="buttonGroup" width="100%" columnWidth="90" horizontalGap="2" requestedColumnCount="2"
 				 requestedRowCount="2" verticalGap="2">
 		<s:Button id="btnAsBackgroundLeft" height="30" icon="@Embed('assets/icons/bg_left.png')"
-				  skinClass="skins.iconButtonSkin" toolTip="Achtergrond linker pagina"/>
+				  skinClass="skins.iconButtonSkin" toolTip="{singleton.fa_025}"/>
 		<s:Button id="btnAsBackgroundRight" height="30" icon="@Embed('assets/icons/bg_right.png')"
-				  skinClass="skins.iconButtonSkin" toolTip="Achtergrond rechter pagina"/>
+				  skinClass="skins.iconButtonSkin" toolTip="{singleton.fa_026}"/>
 		<s:Button id="btnAsBackgroundSpread" height="30" icon="@Embed('assets/icons/bg_spread.png')"
-				  skinClass="skins.iconButtonSkin" toolTip="Achtergrond over alle pagina's"/>
+				  skinClass="skins.iconButtonSkin" toolTip="{singleton.fa_027}"/>
 		<s:Button id="btnAsBackgroundCenter" height="30" icon="@Embed('assets/icons/bg_spine.png')"
-				  skinClass="skins.iconButtonSkin" toolTip="Achtergrond rug"/>
+				  skinClass="skins.iconButtonSkin" toolTip="{singleton.fa_088}"/>
 	</s:TileGroup>
 	
 	<s:HGroup width="100%" verticalAlign="middle">

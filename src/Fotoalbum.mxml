@@ -129,7 +129,7 @@
 										 mouseUp="{uploadprogress_mouseUpHandler(event)}"
 										 color="0x1483CC" fontSize="23" text="&#xf05a;"
 										 fontFamily="_AppFontAwesome"
-										 textAlign="center" toolTip="Informatie over de upload"
+										 textAlign="center" toolTip="{singleton.fa_090}"
 										 verticalAlign="bottom"/>
 							</s:HGroup>
 							
@@ -140,7 +140,7 @@
 							<s:HGroup id="pageTools" width="100%" height="100%" verticalAlign="middle" horizontalAlign="left"
 									  paddingLeft="10" paddingRight="10">
 								
-								<s:Label text="Pagina's:" fontFamily="_AppFontBold" />
+								<s:Label text="{singleton.fa_001}" fontFamily="_AppFontBold" />
 								
 								<s:HGroup height="100%" gap="0" paddingLeft="10" paddingRight="10" paddingTop="0" paddingBottom="0"
 										  verticalAlign="middle">
@@ -150,7 +150,7 @@
 															   buttonFont="_AppFontEnjoy"
 															   mouseDown="{AddSpreadToAlbum()}"
 															   buttonTypeLabel="&#xe616;"
-															   buttonLabel="Toevoegen"/>
+															   buttonLabel="{singleton.fa_002}"/>
 									<mx:VRule height="40" />
 									<classes:pageControlButton id="btnDeleteSpread"  
 															   width="110" height="40"
@@ -158,7 +158,7 @@
 															   buttonTypeLabel="&#xe615;"
 															   mouseDown="{DeleteSpreadFromAlbum()}"
 															   enabled="{singleton.selected_spread_item != null}"
-															   buttonLabel="Verwijderen"/>
+															   buttonLabel="{singleton.fa_003}"/>
 									<mx:VRule height="40" />
 									<!--
 									<classes:pageControlButton id="btnDuplicateSpread"  
@@ -167,7 +167,7 @@
 															   buttonTypeLabel="&#xf0c5;"
 															   mouseDown="{DuplicateSpreadInAlbum()}"
 															   enabled="{singleton.selected_spread_item != null}"
-															   buttonLabel="Dupliceren"/>
+															   buttonLabel="{singleton.fa_004}"/>
 									<mx:VRule height="40" />
 									-->
 									<classes:pageControlButton id="btnEditPages"  
@@ -175,14 +175,14 @@
 															   buttonFont="_AppFontEnjoy"
 															   buttonTypeLabel="&#xe617;"
 															   mouseDown="{EditPages()}"
-															   buttonLabel="Beheren"/>
+															   buttonLabel="{singleton.fa_005}"/>
 									<mx:VRule height="40" />
 									<classes:pageControlButton id="btnPreview"  
 															   width="100" height="40"
 															   buttonFont="_AppFontAwesome"
 															   buttonTypeLabel="&#xf0b2;"
 															   mouseDown="{CreatePreview()}"
-															   buttonLabel="Preview"/>
+															   buttonLabel="{singleton.fa_006}"/>
 									<mx:VRule height="40" />
 								</s:HGroup>
 								
@@ -362,7 +362,7 @@
 					<s:SWFLoader id="btnAutoFillTimeline" source="@Embed('assets/iconset/autofill.swf')"
 								 height="35" scaleContent="true" maintainAspectRatio="true" 
 								 right="25" top="65" horizontalAlign="right"
-								 toolTip="Automatisch vullen" />
+								 toolTip="{singleton.fa_091}" />
 					
 					<s:HGroup id="timelineMenu" left="322" height="30" bottom="0" right="0" 
 							  horizontalAlign="right" verticalAlign="middle"

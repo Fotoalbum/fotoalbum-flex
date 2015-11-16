@@ -222,7 +222,7 @@
 		<classes:menuButton width="35" height="35"
 							_source="@Embed('assets/icons/arrow_right.swf')"
 							buttonMode="true" enabled="true"
-							mouseChildren="false" toolTip="Map openen"
+							mouseChildren="false" toolTip="{singleton.fa_063}"
 							useHandCursor="true"
 							click="_clickHandler(event)"/>
 		

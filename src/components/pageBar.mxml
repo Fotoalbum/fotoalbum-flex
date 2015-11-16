@@ -52,7 +52,7 @@
 				 width="{20 / singleton.selected_spread_editor.currentZoom}" 
 				 height="{20 / singleton.selected_spread_editor.currentZoom}" 
 				 mouseEnabledWhereTransparent="true"
-				 toolTip="Achtergrond aanpassen"
+				 toolTip="{singleton.fa_055}"
 				 mouseUp="{FlexGlobals.topLevelApplication.ShowBackgroundEditor()}"
 				 mouseChildren="true" useHandCursor="true">
 			
@@ -69,7 +69,7 @@
 				 width="{20 / singleton.selected_spread_editor.currentZoom}" 
 				 height="{20 / singleton.selected_spread_editor.currentZoom}" 
 				 mouseEnabledWhereTransparent="true"
-				 toolTip="Achtergrond verwijderen"
+				 toolTip="{singleton.fa_056}"
 				 mouseUp="btnDeleteBackground_mouseUpHandler(event)"
 				 mouseChildren="true" useHandCursor="true">
 			
@@ -86,7 +86,7 @@
 				 height="{20 / singleton.selected_spread_editor.currentZoom}" 
 				 includeIn="wizardAndBackgroundLeft,wizardAndBackgroundRight,wizardLeft,wizardRight"
 				 mouseEnabledWhereTransparent="true"
-				 toolTip="Layout veranderen"
+				 toolTip="{singleton.fa_057}"
 				 mouseUp="btnPageLayout_mouseUpHandler(event)"
 				 mouseChildren="true" useHandCursor="true">
 			

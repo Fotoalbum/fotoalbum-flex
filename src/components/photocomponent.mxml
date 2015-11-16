@@ -484,7 +484,7 @@
 					//loading.visible = false;
 					
 				} catch (err:Error) {
-					singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n photocomponent|updateLowresFromExternal|" + err.toString());
+					singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + err.toString());
 				}
 				
 			}

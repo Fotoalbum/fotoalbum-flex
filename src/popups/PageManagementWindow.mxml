@@ -150,7 +150,7 @@
 					
 				} else {
 					
-					singleton.ShowMessage("Maximum pagina's", "Maximum aantal pagina's bereikt voor dit " + singleton.platform_name);
+					singleton.ShowMessage(singleton.fa_136, singleton.fa_137 + " " + singleton.platform_name);
 				}
 				
 				if (addpagespopup) {
@@ -315,7 +315,7 @@
 					
 					if (_numPages - numPagesToDelete < singleton._minPages) {
 					
-						singleton.ShowMessage("Minimum pagina's", "Het minimaal aantal pagina's voor dit " + singleton.platform_name + " is " + singleton._minPages + ". Probeer minder pagina's te verwijderen.");
+						singleton.ShowMessage(singleton.fa_138, singleton.fa_139 + " " + singleton.platform_name + " " + singleton.fa_140 + " " + singleton._minPages + ". " + singleton.fa_146);
 					
 					} else {
 						
@@ -328,7 +328,7 @@
 							
 							if (spreadArr.getItemAt(lstSpreadArrange.selectedIndices[i]).spreadData.singlepage == true || spreadArr.getItemAt(lstSpreadArrange.selectedIndices[i]).spreadData.pages[0].pageType == "coverback") {
 								
-								singleton.ShowMessage("Spread verwijderen", "Niet alle spreads kunnen worden verwijderd.");
+								singleton.ShowMessage(singleton.fa_147, singleton.fa_148);
 								
 							} else {
 								
@@ -348,13 +348,13 @@
 					
 					if (_numPages == singleton._minPages) {
 						
-						singleton.ShowMessage("Minimaal aantal pagina's", "Het minimaal aantal pagina's voor dit " + singleton.platform_name + " is " + singleton._minPages);
+						singleton.ShowMessage(singleton.fa_138, singleton.fa_139 + " " + singleton.platform_name + " " + singleton.fa_140 + " " + singleton._minPages);
 						
 					} else {
 						
 						if (selected_spread_item.singlepage == true || selected_spread_item.pages[0].pageType == "coverback") {
 							
-							singleton.ShowMessage("Kan niet verwijderen", "Deze spread kan niet worden verwijderd.");
+							singleton.ShowMessage(singleton.fa_141, singleton.fa_142);
 							
 						} else {
 					
@@ -420,13 +420,13 @@
 				
 				if (_numPages == singleton._maxPages) {
 					
-					singleton.ShowMessage("Maximum pagina's", "Het maximum aantal pagina's voor dit " + singleton.platform_name + " is " + singleton._maxPages);
+					singleton.ShowMessage(singleton.fa_136, singleton.fa_145 + " " + singleton.platform_name + " " + singleton.fa_140 + " " + singleton._maxPages);
 					
 				} else {
 					
 					//Check if this is not the cover or a single page?
 					if (selected_spread_item.singlepage == true || selected_spread_item.pages[0].pageType == "coverback") {	
-						singleton.ShowMessage("Kan niet dupliceren", "Deze spread kan niet worden gedupliceerd.\nProbeer een andere spread.");
+						singleton.ShowMessage(singleton.fa_143, singleton.fa_144);
 					} else {
 						
 						var spreadindex:int = lstSpreadArrange.selectedIndex;

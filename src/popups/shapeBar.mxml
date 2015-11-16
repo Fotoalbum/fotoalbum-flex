@@ -957,7 +957,7 @@
 		<classes:menuButton id="btnDelete" width="22" height="22" 
 							_text="&#xf014;" _font="_AppFontAwesome" _fontsize="18"
 							buttonMode="true" click="{DeleteShape()}"
-							mouseChildren="false" toolTip="Verwijderen"
+							mouseChildren="false" toolTip="{singleton.fa_003}"
 							useHandCursor="true"/>
 		
 		<mx:VRule width="1" height="80%" />
@@ -981,24 +981,24 @@
 		<mx:ColorPicker id="linecolor" includeIn="line" change="{linecolor_changeHandler(event)}" />
 		
 		<classes:menuButtonSwf id="btnShadows" _source="@Embed('assets/handlers/schaduw.swf')" width="22" height="22" 
-							buttonMode="true" click="btnShadows_clickHandler(event)" toolTip="Schaduw opties" />
+							buttonMode="true" click="btnShadows_clickHandler(event)" toolTip="{singleton.fa_081}" />
 		
 		<classes:menuButtonSwf id="btnBorders" includeIn="circle,rectangle" width="22" height="22"
 							_source="@Embed('assets/handlers/rand.swf')" buttonMode="true"
-							click="btnBorders_clickHandler(event)" toolTip="Rand opties"/>
+							click="btnBorders_clickHandler(event)" toolTip="{singleton.fa_082}"/>
 		
 		<mx:VRule height="22" width="1" />	
 		
 		<classes:menuButtonSwf id="btnMoveToFront" width="25" height="25"
 							_source="@Embed('assets/icons/to_front.swf')"
 							buttonMode="true" click="{btnMoveToFront_clickHandler(event)}"
-							mouseChildren="false" toolTip="Naar voorgrond"
+							mouseChildren="false" toolTip="{singleton.fa_084}"
 							useHandCursor="true"/>
 		
 		<classes:menuButtonSwf id="btnSendToBack" width="25" height="25"
 							_source="@Embed('assets/icons/to_back.swf')"
 							buttonMode="true" click="{btnSendToBack_clickHandler(event)}"
-							mouseChildren="false" toolTip="Naar achtergrond"
+							mouseChildren="false" toolTip="{singleton.fa_085}"
 							useHandCursor="true"/>
 		
 	</s:HGroup>

@@ -117,7 +117,7 @@
 			 rollOver="btnSwap_rollOverHandler(event)"
 			 rollOut="btnSwap_rollOutHandler(event)"
 			 mouseDown="{parentDocument.swapImageButton_mouseDownHandler(event)}"
-			 toolTip="Omwisselen met andere foto">
+			 toolTip="{singleton.fa_058}">
 		
 		<s:SWFLoader horizontalCenter="0"
 					 verticalCenter="0"
@@ -135,7 +135,7 @@
 			 rollOver="btnMove_rollOverHandler(event)"
 			 rollOut="btnMove_rollOutHandler(event)"
 			 mouseDown="{parentDocument.centerbutton_mouseDownHandler(event)}"
-			 toolTip="Verplaats de foto binnen het fotokader">
+			 toolTip="{singleton.fa_059}">
 		
 		<s:SWFLoader horizontalCenter="0"
 					 verticalCenter="0" 

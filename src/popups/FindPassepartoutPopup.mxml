@@ -141,7 +141,7 @@
 			
 			private function onGetPassepartoutByIDFail(e:FaultEvent):void 
 			{
-				singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n FindPassepartoutPopup|onGetPassepartoutByIDFail|" + e.fault.faultString);
+				singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + e.fault.faultString);
 				singleton.ReportError(e.fault.faultString);
 			}
 
@@ -179,7 +179,7 @@
 					
 				} catch (err:Error) {
 					
-					singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n "+ err.message);
+					singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + err.message);
 				}
 			}
 			
@@ -207,7 +207,7 @@
 					
 				} catch (err:Error) {
 					
-					singleton.ShowMessage("Er is een fout opgetreden", "Neem kontakt op met de helpdesk en geef onderstaand bericht door:\n " + err.message);
+					singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + err.message);
 				}
 			}
 			
