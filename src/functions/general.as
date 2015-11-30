@@ -339,10 +339,10 @@ private function onCreationComplete():void
 	}
 	
 	//Debug
-	/*		
-	singleton._userID = "111112520"; //96174 // studio@fotoalbum.nl - themebuilder
+	/*
+	singleton._userID = "99641"; //96174 // studio@fotoalbum.nl - themebuilder
 	singleton._productID = "36"; //10 // themebuilder = 106843
-	singleton._userProductID = "15465"; //3045
+	singleton._userProductID = "17154"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {

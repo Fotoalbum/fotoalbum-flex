@@ -428,74 +428,80 @@
 									if (!singleton.previewMode) {
 									
 										var text_class:Object = spreadData.elements[t];
-										var text:textcomponent = new textcomponent();
-										text.data = text_class;
-										text.id = text_class.id;
-										text.x = text_class.objectX;
-										text.y = text_class.objectY;
-										text.width = text_class.objectWidth;
-										text.height = text_class.objectHeight;
-										text.rotation = text_class.rotation;
 										
 										var tfclass:Object = singleton.GetTextFlowClassByID(text_class.tfID);
-										text.sprite = tfclass.sprite;
-										text.container.addElement(text.sprite);
-										tfclass.tf.invalidateAllFormats();
 										
-										var dataModel:SimpleDataModel = new SimpleDataModel;
-										dataModel.id = "model" + text_class.id;
-										dataModel.x = text_class.objectX;
-										dataModel.y = text_class.objectY;
-										dataModel.width = text_class.objectWidth
-										dataModel.height = text_class.objectHeight;
-										dataModel.rotation = text_class.rotation;
-										text.model = dataModel;
-										
-										if (!text_class.fixedcontent) {
-											text.addEventListener(MouseEvent.MOUSE_DOWN, SelectElement);
-											text.addEventListener(MouseEvent.MOUSE_UP, ShowMenu);
-											text.addEventListener(FocusEvent.FOCUS_OUT, FlexGlobals.topLevelApplication.SetTextUndo);
-										}
-										
-										var hd:Array;
-										
-										if (!text_class.fixedposition) {
-										
-											hd = HandleDefinitions.TEXT_DEFINITION;
+										if (tfclass) {
+
+											var text:textcomponent = new textcomponent();
+											text.data = text_class;
+											text.id = text_class.id;
+											text.x = text_class.objectX;
+											text.y = text_class.objectY;
+											text.width = text_class.objectWidth;
+											text.height = text_class.objectHeight;
+											text.rotation = text_class.rotation;
 											
-											singleton.oh.registerComponent(dataModel, text, hd);
-											singleton.oh.enableMultiSelect = true;
-											singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_MOVED, ObjectChanged);
-											singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_RESIZED, ObjectChanged);
-											singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_ROTATED, ObjectChanged);
-											
-											singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_MOVING, ObjectChanging);
-											singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_RESIZING, ObjectChanging);
-											singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_ROTATING, ObjectChanging);
-										
-											text.SetParentObjectHandles(singleton.oh);
-										
-											text.SetEventListeners();
-										}
-										
-										ontopelementcontainer.addElement(text);
-										
-										if (!text_class.fixedcontent) {
-											tfclass.sprite.cc.container.addEventListener(FocusEvent.FOCUS_OUT, FlexGlobals.topLevelApplication.SetTextUndo);
-											tfclass.sprite.cc.container.addEventListener(Event.PASTE, FlexGlobals.topLevelApplication.onPaste);
-										}
+											text.sprite = tfclass.sprite;
+											text.container.addElement(text.sprite);
 									
-										tfclass.sprite.cc.setCompositionSize(text_class.objectWidth, text_class.objectHeight);
-										tfclass.tf.flowComposer.updateAllControllers();
-										tfclass.tf.invalidateAllFormats();
+											tfclass.tf.invalidateAllFormats();
+											
+											var dataModel:SimpleDataModel = new SimpleDataModel;
+											dataModel.id = "model" + text_class.id;
+											dataModel.x = text_class.objectX;
+											dataModel.y = text_class.objectY;
+											dataModel.width = text_class.objectWidth
+											dataModel.height = text_class.objectHeight;
+											dataModel.rotation = text_class.rotation;
+											text.model = dataModel;
+											
+											if (!text_class.fixedcontent) {
+												text.addEventListener(MouseEvent.MOUSE_DOWN, SelectElement);
+												text.addEventListener(MouseEvent.MOUSE_UP, ShowMenu);
+												text.addEventListener(FocusEvent.FOCUS_OUT, FlexGlobals.topLevelApplication.SetTextUndo);
+											}
+											
+											var hd:Array;
+											
+											if (!text_class.fixedposition) {
+											
+												hd = HandleDefinitions.TEXT_DEFINITION;
+												
+												singleton.oh.registerComponent(dataModel, text, hd);
+												singleton.oh.enableMultiSelect = true;
+												singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_MOVED, ObjectChanged);
+												singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_RESIZED, ObjectChanged);
+												singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_ROTATED, ObjectChanged);
+												
+												singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_MOVING, ObjectChanging);
+												singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_RESIZING, ObjectChanging);
+												singleton.oh.addEventListener(ObjectChangedEvent.OBJECT_ROTATING, ObjectChanging);
+											
+												text.SetParentObjectHandles(singleton.oh);
+											
+												text.SetEventListeners();
+											}
+											
+											ontopelementcontainer.addElement(text);
+											
+											if (!text_class.fixedcontent) {
+												tfclass.sprite.cc.container.addEventListener(FocusEvent.FOCUS_OUT, FlexGlobals.topLevelApplication.SetTextUndo);
+												tfclass.sprite.cc.container.addEventListener(Event.PASTE, FlexGlobals.topLevelApplication.onPaste);
+											}
 										
-										text.CheckTextPresent(singleton.previewMode);
-										
-										text.DrawBorder();
-										
-										text.SetShadow();
-										
-										text.selectionContainer.graphics.clear();
+											tfclass.sprite.cc.setCompositionSize(text_class.objectWidth, text_class.objectHeight);
+											tfclass.tf.flowComposer.updateAllControllers();
+											tfclass.tf.invalidateAllFormats();
+											
+											text.CheckTextPresent(singleton.previewMode);
+											
+											text.DrawBorder();
+											
+											text.SetShadow();
+											
+											text.selectionContainer.graphics.clear();
+										}
 										
 									} else { //Preview mode text
 										

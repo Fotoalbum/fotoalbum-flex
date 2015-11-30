@@ -406,37 +406,48 @@
 							if (obj.classtype.toString() == "[class usertextclass]") {
 								
 								var text_class:Object = obj as Object;
-								var text:textcomponent = new textcomponent();
-								text.data = text_class;
-								text.id = text_class.id;
-								text.x = text_class.objectX;
-								text.y = text_class.objectY;
-								text.width = text_class.objectWidth;
-								text.height = text_class.objectHeight;
-								text.rotation = text_class.rotation;
 								
 								var tfclass:Object = singleton.GetTextFlowClassByID(text_class.tfID);
-								var content:String = TextConverter.export(tfclass.tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.STRING_TYPE).toString();
-								var tf:TextFlow = new TextFlow();
-							
-								tf = TextConverter.importToFlow(content, TextConverter.TEXT_LAYOUT_FORMAT);
-								tf.invalidateAllFormats();
-								text.sprite = new textsprite;
-								text.container.addElement(text.sprite);
 								
-								var cc:ContainerController = new ContainerController(text.sprite, text.width, text.height);
-								text.sprite.cc = cc;
-								tf.flowComposer.addController(text.sprite.cc);
-								tf.flowComposer.updateAllControllers();
+								if (tfclass) {
+									var text:textcomponent = new textcomponent();
+									text.data = text_class;
+									text.id = text_class.id;
+									text.x = text_class.objectX;
+									text.y = text_class.objectY;
+									text.width = text_class.objectWidth;
+									text.height = text_class.objectHeight;
+									text.rotation = text_class.rotation;
+									
+									
+									var content:String = "";
+									if (tfclass) {
+										content = TextConverter.export(tfclass.tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.STRING_TYPE).toString();
+									} else {
+										var tftemp:TextFlow = new TextFlow();
+										content =  TextConverter.export(tftemp, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.STRING_TYPE).toString();
+									}
+									var tf:TextFlow = new TextFlow();
 								
-								ontopelementcontainer.addElement(text);
-								FlexGlobals.topLevelApplication.addEventListener(textFlowEvent.UPDATETEXTFLOW, UpdateTextFlowNav);
-								
-								text.CheckTextPresent();
-								
-								text.DrawBorder();
-								
-								text.SetShadow();
+									tf = TextConverter.importToFlow(content, TextConverter.TEXT_LAYOUT_FORMAT);
+									tf.invalidateAllFormats();
+									text.sprite = new textsprite;
+									text.container.addElement(text.sprite);
+									
+									var cc:ContainerController = new ContainerController(text.sprite, text.width, text.height);
+									text.sprite.cc = cc;
+									tf.flowComposer.addController(text.sprite.cc);
+									tf.flowComposer.updateAllControllers();
+									
+									ontopelementcontainer.addElement(text);
+									FlexGlobals.topLevelApplication.addEventListener(textFlowEvent.UPDATETEXTFLOW, UpdateTextFlowNav);
+									
+									text.CheckTextPresent();
+									
+									text.DrawBorder();
+									
+									text.SetShadow();
+								}
 								
 							}
 						}
