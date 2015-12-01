@@ -1409,16 +1409,15 @@
 						<s:HGroup width="100%" enabled="{singleton.selected_userphoto != null}"
 								  gap="5" paddingLeft="10" paddingBottom="5" verticalAlign="middle">
 							
-							<s:Button uid="left"
-									  skinClass="skins.buttonSkinSwf"
-									  toolTip="{singleton.fa_025}"
-									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('left')}"/>
+							<s:Button click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('left')}"
+									  skinClass="skins.applyBackgroundSkin"
+									  toolTip="{singleton.fa_025}" uid="left"/>
 							<s:Button uid="right"
-									  skinClass="skins.buttonSkinSwf"
+									  skinClass="skins.applyBackgroundSkin"
 									  toolTip="{singleton.fa_026}"
 									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('right')}"/>
 							<s:Button uid="spread"
-									  skinClass="skins.buttonSkinSwf"
+									  skinClass="skins.applyBackgroundSkin"
 									  toolTip="{singleton.fa_027}"
 									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('spread')}"/>
 							
@@ -1433,15 +1432,15 @@
 								  gap="5" paddingLeft="10" paddingTop="5" verticalAlign="middle">
 							
 							<s:Button uid="leftAll"
-									  skinClass="skins.buttonSkinSwf"
+									  skinClass="skins.applyBackgroundSkin"
 									  toolTip="{singleton.fa_051}"
 									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('leftAll')}"/>
 							<s:Button uid="rightAll"
-									  skinClass="skins.buttonSkinSwf"
+									  skinClass="skins.applyBackgroundSkin"
 									  toolTip="{singleton.fa_052}"
 									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('rightAll')}"/>
 							<s:Button uid="spreadAll"
-									  skinClass="skins.buttonSkinSwf"
+									  skinClass="skins.applyBackgroundSkin"
 									  toolTip="{singleton.fa_053}"
 									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('spreadAll')}"/>
 							
@@ -1616,15 +1615,15 @@
 								  gap="5" paddingLeft="10" paddingBottom="5" verticalAlign="middle">
 							
 							<s:Button uid="left"
-									  skinClass="skins.buttonSkinSwf"
+									  skinClass="skins.applyBackgroundSkin"
 									  toolTip="{singleton.fa_025}"
 									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('left')}"/>
 							<s:Button uid="right"
-									  skinClass="skins.buttonSkinSwf"
+									  skinClass="skins.applyBackgroundSkin"
 									  toolTip="{singleton.fa_026}"
 									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('right')}"/>
 							<s:Button uid="spread"
-									  skinClass="skins.buttonSkinSwf"
+									  skinClass="skins.applyBackgroundSkin"
 									  toolTip="{singleton.fa_027}"
 									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('spread')}"/>
 							
@@ -1638,15 +1637,15 @@
 								  gap="5" paddingLeft="10" paddingTop="5" verticalAlign="middle">
 							
 							<s:Button uid="leftAll"
-									  skinClass="skins.buttonSkinSwf"
+									  skinClass="skins.applyBackgroundSkin"
 									  toolTip="{singleton.fa_051}"
 									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('leftAll')}"/>
 							<s:Button uid="rightAll"
-									  skinClass="skins.buttonSkinSwf"
+									  skinClass="skins.applyBackgroundSkin"
 									  toolTip="{singleton.fa_052}"
 									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('rightAll')}"/>
 							<s:Button uid="spreadAll"
-									  skinClass="skins.buttonSkinSwf"
+									  skinClass="skins.applyBackgroundSkin"
 									  toolTip="{singleton.fa_053}"
 									  click="{FlexGlobals.topLevelApplication.SetPhotoAsBackground('spreadAll')}"/>
 							

@@ -340,9 +340,9 @@ private function onCreationComplete():void
 	
 	//Debug
 	/*
-	singleton._userID = "99641"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "36"; //10 // themebuilder = 106843
-	singleton._userProductID = "17154"; //3045
+	singleton._userID = "96174"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "10"; //10 // themebuilder = 106843
+	singleton._userProductID = "15038"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {
@@ -8812,25 +8812,50 @@ public function SetPhotoAsBackground(position:String):void {
 		
 		if (singleton.applyBackgroundToAllPages == true) {
 			
-			//Alert the user!
-			var msgHeader:String;
-			var msg:String;
-			
-			switch (position) {
-				case "leftAll":
-					msgHeader = "Toepassen op alle LINKER pagina's?";
-					msg = "Weet u zeker dat u deze achtergrond op ALLE LINKER pagina's wilt plaatsen? Deze actie kan niet ongedaan worden.";
-					break;
-				case "rightAll":
-					msgHeader = "Toepassen op alle RECHTER pagina's?";
-					msg = "Weet u zeker dat u deze achtergrond op ALLE RECHTER pagina's wilt plaatsen? Deze actie kan niet ongedaan worden.";
-					break;
-				case "spreadAll":
-					msgHeader = "Toepassen op alle SPREADS?";
-					msg = "Weet u zeker dat u deze achtergrond op ALLE SPREADS wilt plaatsen? Deze actie kan niet ongedaan worden.";
-					break;
+			if (singleton.backgroundposition == "leftAll") {
+				//Remove a spread background if it excists
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.DELETEBACKGROUNDSPREAD, singleton.selected_spread.spreadID));
+				singleton.selected_page_object = singleton.selected_spread_editor.spreadcomp.getElementAt(0) as pageobject;
 			}
-			singleton.AlertWithQuestion(msgHeader, msg, btnOkHandler, "NEE", "JA", false);
+			if (singleton.backgroundposition == "rightAll") {
+				//Remove a spread background if it excists
+				FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.DELETEBACKGROUNDSPREAD, singleton.selected_spread.spreadID));
+				singleton.selected_page_object = singleton.selected_spread_editor.spreadcomp.getElementAt(singleton.selected_spread_editor.spreadcomp.numElements - 1) as pageobject;
+			}
+			
+			if (singleton.backgroundposition == "spreadAll") {
+				//Set the background over the spread
+				if (singleton.selected_userphoto) {
+					FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDSPREAD, singleton.selected_spread.spreadID, singleton.selected_userphoto, -1, 1));
+				} else {
+					FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDSPREAD, singleton.selected_spread.spreadID, singleton.selected_background, -1, 1));
+				}
+			} else {
+				if (singleton.selected_userphoto) {
+					FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDFROMPHOTO_PAGE, singleton.selected_page_object.pageID, singleton.selected_userphoto, -1, 1));
+				} else {
+					FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDFROMPHOTO_PAGE, singleton.selected_page_object.pageID, singleton.selected_background, -1, 1));
+				}
+			}
+			
+			singleton._changesMade = true; 
+			singleton.UpdateWindowStatus();
+			
+			singleton.CloseAlertWithQuestion();
+			
+			singleton.selected_undoredomanager = new undoredoClass();
+			singleton.canRedo = false;
+			singleton.canUndo = false;
+			
+			if (ExternalInterface.available) {
+				var wrapperFunction:String = "canUndo";
+				ExternalInterface.call(wrapperFunction, singleton.canUndo);
+			}
+			
+			if (ExternalInterface.available) {
+				wrapperFunction = "canRedo";
+				ExternalInterface.call(wrapperFunction, singleton.canRedo);
+			}
 			
 		} else {
 		
@@ -8886,107 +8911,28 @@ public function SetBackgroundToAll(position:String):void {
 		
 		singleton.applyBackgroundToAllPages = true;
 	
-		//Alert the user!
-		var msgHeader:String;
-		var msg:String;
-		
-		switch (position) {
-			case "leftAll":
-				msgHeader = "Toepassen op alle LINKER pagina's?";
-				msg = "Weet u zeker dat u deze achtergrond op ALLE LINKER pagina's wilt plaatsen? Deze actie kan niet ongedaan worden.";
-				break;
-			case "rightAll":
-				msgHeader = "Toepassen op alle RECHTER pagina's?";
-				msg = "Weet u zeker dat u deze achtergrond op ALLE RECHTER pagina's wilt plaatsen? Deze actie kan niet ongedaan worden.";
-				break;
-			case "spreadAll":
-				msgHeader = "Toepassen op alle SPREADS?";
-				msg = "Weet u zeker dat u deze achtergrond op ALLE SPREADS wilt plaatsen? Deze actie kan niet ongedaan worden.";
-				break;
+		if (singleton.backgroundposition == "leftAll") {
+			//Remove a spread background if it excists
+			FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.DELETEBACKGROUNDSPREAD, singleton.selected_spread.spreadID));
+			singleton.selected_page_object = singleton.selected_spread_editor.spreadcomp.getElementAt(0) as pageobject;
+		}
+		if (singleton.backgroundposition == "rightAll") {
+			//Remove a spread background if it excists
+			FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.DELETEBACKGROUNDSPREAD, singleton.selected_spread.spreadID));
+			singleton.selected_page_object = singleton.selected_spread_editor.spreadcomp.getElementAt(singleton.selected_spread_editor.spreadcomp.numElements - 1) as pageobject;
 		}
 		
-		singleton.AlertWithQuestion(msgHeader, msg, btnOkBackgroundHandler, "NEE", "JA", false);
+		if (singleton.backgroundposition == "spreadAll") {
+			//Set the background over the spread
+			FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDSPREAD, singleton.selected_spread.spreadID, singleton.selected_background, -1, 1));
+		} else {
+			FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDFROMPHOTO_PAGE, singleton.selected_page_object.pageID, singleton.selected_background, -1, 1));
+		}
 		
 		singleton._changesMade = true; 
 		singleton.UpdateWindowStatus();
 		
 	} 
-	
-}
-
-private function btnOkBackgroundHandler(event:Event):void {
-	
-	if (singleton.backgroundposition == "leftAll") {
-		//Remove a spread background if it excists
-		FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.DELETEBACKGROUNDSPREAD, singleton.selected_spread.spreadID));
-		singleton.selected_page_object = singleton.selected_spread_editor.spreadcomp.getElementAt(0) as pageobject;
-	}
-	if (singleton.backgroundposition == "rightAll") {
-		//Remove a spread background if it excists
-		FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.DELETEBACKGROUNDSPREAD, singleton.selected_spread.spreadID));
-		singleton.selected_page_object = singleton.selected_spread_editor.spreadcomp.getElementAt(singleton.selected_spread_editor.spreadcomp.numElements - 1) as pageobject;
-	}
-	
-	if (singleton.backgroundposition == "spreadAll") {
-		//Set the background over the spread
-		FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDSPREAD, singleton.selected_spread.spreadID, singleton.selected_background, -1, 1));
-	} else {
-		FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDFROMPHOTO_PAGE, singleton.selected_page_object.pageID, singleton.selected_background, -1, 1));
-	}
-	
-	singleton._changesMade = true; 
-	singleton.UpdateWindowStatus();
-	
-	singleton.CloseAlertWithQuestion();
-	
-}
-
-private function btnOkHandler(event:Event):void {
-
-	if (singleton.backgroundposition == "leftAll") {
-		//Remove a spread background if it excists
-		FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.DELETEBACKGROUNDSPREAD, singleton.selected_spread.spreadID));
-		singleton.selected_page_object = singleton.selected_spread_editor.spreadcomp.getElementAt(0) as pageobject;
-	}
-	if (singleton.backgroundposition == "rightAll") {
-		//Remove a spread background if it excists
-		FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.DELETEBACKGROUNDSPREAD, singleton.selected_spread.spreadID));
-		singleton.selected_page_object = singleton.selected_spread_editor.spreadcomp.getElementAt(singleton.selected_spread_editor.spreadcomp.numElements - 1) as pageobject;
-	}
-	
-	if (singleton.backgroundposition == "spreadAll") {
-		//Set the background over the spread
-		if (singleton.selected_userphoto) {
-			FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDSPREAD, singleton.selected_spread.spreadID, singleton.selected_userphoto, -1, 1));
-		} else {
-			FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDSPREAD, singleton.selected_spread.spreadID, singleton.selected_background, -1, 1));
-		}
-	} else {
-		if (singleton.selected_userphoto) {
-			FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDFROMPHOTO_PAGE, singleton.selected_page_object.pageID, singleton.selected_userphoto, -1, 1));
-		} else {
-			FlexGlobals.topLevelApplication.dispatchEvent(new updateBackgroundEvent(updateBackgroundEvent.SETBACKGROUNDFROMPHOTO_PAGE, singleton.selected_page_object.pageID, singleton.selected_background, -1, 1));
-		}
-	}
-	
-	singleton._changesMade = true; 
-	singleton.UpdateWindowStatus();
-	
-	singleton.CloseAlertWithQuestion();
-	
-	singleton.selected_undoredomanager = new undoredoClass();
-	singleton.canRedo = false;
-	singleton.canUndo = false;
-	
-	if (ExternalInterface.available) {
-		var wrapperFunction:String = "canUndo";
-		ExternalInterface.call(wrapperFunction, singleton.canUndo);
-	}
-	
-	if (ExternalInterface.available) {
-		wrapperFunction = "canRedo";
-		ExternalInterface.call(wrapperFunction, singleton.canRedo);
-	}
 	
 }
 
