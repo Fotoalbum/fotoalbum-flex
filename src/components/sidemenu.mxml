@@ -1290,6 +1290,23 @@
 				ast.addResponder(new mx.rpc.Responder(onGetPassepartoutByIDResult, onGetCMSFail));
 			}
 			
+			protected function btnPhotoView_clickHandler(event:MouseEvent):void
+			{
+				switch (event.currentTarget.id) {
+					case "btnPhotoView":
+						btnPhotoView.selected = true;
+						btnPhotoList.selected = false;
+						vsPhotos.selectedIndex = 0;
+						break;
+					case "btnPhotoList":
+						btnPhotoView.selected = false;
+						btnPhotoList.selected = true;
+						vsPhotos.selectedIndex = 1;
+						break;
+				}
+				
+			}
+			
 		]]>
 	</fx:Script>
 	<s:states>
@@ -1380,18 +1397,68 @@
 				</s:BorderContainer>
 				-->
 				
-				<s:List id="lstUserPhotos" width="260" height="100%"
-						contentBackgroundAlpha="0"
-						dataProvider="{singleton.userphotos}" horizontalScrollPolicy="off"
-						itemRenderer="itemrenderers.userPhotoRenderer" useVirtualLayout="false"
-						borderVisible="false">
-					<s:layout>
-						<s:TileLayout horizontalGap="5" verticalGap="5" 
-									  orientation="rows"
-									  paddingBottom="5" paddingLeft="5"
-									  paddingRight="5" paddingTop="5"/>
-					</s:layout>
-				</s:List>
+				<s:HGroup width="100%" height="30" paddingLeft="0" paddingRight="0" gap="1">
+					
+					<s:ToggleButton id="btnPhotoView" skinClass="skins.btnToggleMenuHorizontal" width="50%" height="30" label="Foto's" selected="true" click="btnPhotoView_clickHandler(event)" />
+					<s:ToggleButton id="btnPhotoList" skinClass="skins.btnToggleMenuHorizontal" width="50%" height="30" label="Lijst" click="btnPhotoView_clickHandler(event)" />
+					
+				</s:HGroup>
+				
+				<mx:ViewStack id="vsPhotos" width="260" height="100%">
+					
+					<s:NavigatorContent label="photolist">
+						
+						<s:List id="lstUserPhotos" width="260" height="100%"
+								contentBackgroundAlpha="0"
+								dataProvider="{singleton.userphotos}" horizontalScrollPolicy="off"
+								itemRenderer="itemrenderers.userPhotoRenderer" useVirtualLayout="false"
+								borderVisible="false">
+							<s:layout>
+								<s:TileLayout horizontalGap="5" verticalGap="5" 
+											  orientation="rows"
+											  paddingBottom="5" paddingLeft="5"
+											  paddingRight="5" paddingTop="5"/>
+							</s:layout>
+						</s:List>
+					
+					</s:NavigatorContent>
+					
+					<s:NavigatorContent label="photolayers">
+						
+						<s:layout>
+							<s:VerticalLayout gap="0" />
+						</s:layout>
+						
+						<!--
+						<s:HGroup width="100%" height="30" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5">
+							
+							<s:Label text="Volgorde:" />
+							
+							<s:DropDownList id="ddPhotoSort" width="100%" selectedIndex="0" skinClass="skins.dropDownSkin">
+								<s:ArrayCollection>
+									<fx:String>Datum (aflopend)</fx:String>
+									<fx:String>Datum (oplopend)</fx:String>
+									<fx:String>Naam (aflopend)</fx:String>
+									<fx:String>Naam (oplopend)</fx:String>
+								</s:ArrayCollection>
+							</s:DropDownList>
+							
+						</s:HGroup>
+						-->
+						
+						<s:List id="lstUserPhotosList" width="100%" height="100%"
+								contentBackgroundAlpha="0"
+								dataProvider="{singleton.userphotos}" horizontalScrollPolicy="off"
+								itemRenderer="itemrenderers.userPhotoListRenderer" useVirtualLayout="false"
+								borderVisible="false" verticalScrollPolicy="auto">
+							<s:layout>
+								<s:VerticalLayout gap="0" />
+							</s:layout>
+						</s:List>
+						
+					</s:NavigatorContent>
+					
+				</mx:ViewStack>
 				
 				<s:BorderContainer width="100%" backgroundColor="#EAEAEA" borderVisible="false"
 								   render="_renderHandler(event)">

@@ -66,20 +66,20 @@
     
 	<s:Rect left="0" right="0" top="0" bottom="0">
 		<s:fill>
-			<s:SolidColor color="{singleton.baseColor}"
-						  color.over="{singleton.overColor}"
-						  color.down="{singleton.overColor}"
-						  color.upAndSelected="{singleton.overColor}"
-						  color.overAndSelected="{singleton.overColor}"
-						  color.downAndSelected="{singleton.overColor}"
-						  color.disabledAndSelected="{singleton.overColor}" />
+			<s:SolidColor color="#bbbbbb"
+						  color.over="#64AADD"
+						  color.down="#64AADD"
+						  color.upAndSelected="#64AADD"
+						  color.overAndSelected="#64AADD"
+						  color.downAndSelected="#64AADD"
+						  color.disabledAndSelected="#64AADD" />
 		</s:fill>
 	</s:Rect>
 	
 	<s:Label id="labelDisplay"
 			 textAlign="center"
 			 color="0xFFFFFF"
-			 fontSize="16"
+			 fontSize="14"
 			 horizontalCenter="0"
 			 verticalCenter="0"
 			 verticalAlign="bottom"
@@ -87,7 +87,7 @@
 	</s:Label>
     
 	<s:Rect width="12" height="12" horizontalCenter="0" rotation="45"
-			bottom="-9">
+			bottom="-11">
 		<s:fill>
 			<s:SolidColor color="#f2f2f2" 
 						  alpha="0"
