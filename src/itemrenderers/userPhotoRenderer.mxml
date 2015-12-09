@@ -7,7 +7,6 @@
 				rollOut="{btnMenu_rollOut()}"
 				mouseUp="_mouseUpHandler(event)"
 				width="75" height="75"
-				creationComplete="_creationCompleteHandler()"
 				xmlns:components="components.*">
 	
 	<!-- dataChange="_dataChangeHandler(event)" -->
@@ -54,7 +53,6 @@
 			[Bindable] public var usedinapp:Boolean = false;
 			[Bindable] private var scale:Number = 1;
 			
-			/*
 			override public function set data(value:Object):void {
 				
 				super.data = value; // set the Item Renderer's data object
@@ -62,7 +60,6 @@
 				_creationCompleteHandler();
 				
 			}
-			*/
 			
 			protected function _creationCompleteHandler(event:Event = null):void 
 			{

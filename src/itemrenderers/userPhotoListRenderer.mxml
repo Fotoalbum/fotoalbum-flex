@@ -7,7 +7,6 @@
 				rollOut="{btnMenu_rollOut()}"
 				mouseUp="_mouseUpHandler(event)"
 				width="100%" height="50"
-				creationComplete="_creationCompleteHandler()"
 				xmlns:components="components.*">
 	
 	<!-- dataChange="_dataChangeHandler(event)" -->
@@ -54,7 +53,6 @@
 			[Bindable] public var usedinapp:Boolean = false;
 			[Bindable] private var scale:Number = 1;
 			
-			/*
 			override public function set data(value:Object):void {
 				
 				super.data = value; // set the Item Renderer's data object
@@ -62,7 +60,6 @@
 				_creationCompleteHandler();
 				
 			}
-			*/
 			
 			protected function _creationCompleteHandler(event:Event = null):void 
 			{
@@ -579,7 +576,10 @@
 		
 		<components:photoUsedCounter _data="{data}" width="20" height="20" verticalCenter="0" />
 		
-		<s:Label text="{data.name}" width="100%" fontSize="11" />
+		<s:VGroup width="100%">
+			<s:Label text="{data.name}" width="100%" fontSize="11" />
+			<s:Label text="({data.dateCreated})" width="100%" fontSize="10" />
+		</s:VGroup>
 		
 		<s:Image id="btnDelete" click="btnDelete_clickHandler(event)" source="@Embed('/assets/icons/delete_photo.png')" 
 				 width="22" height="22"

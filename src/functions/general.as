@@ -340,9 +340,9 @@ private function onCreationComplete():void
 	
 	//Debug
 	/*
-	singleton._userID = "111128501"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "660"; //10 // themebuilder = 106843
-	singleton._userProductID = "16625"; //3045
+	singleton._userID = "111122459"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "373"; //10 // themebuilder = 106843
+	singleton._userProductID = "17599"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {
@@ -3134,6 +3134,21 @@ private function onGetUserProductResult(e:ResultEvent):void
 					userphoto.folderID = photos[ph].@folderID;
 					userphoto.folderName = photos[ph].@folderName;
 					userphoto.exif = XML(photos[ph].exif.toXMLString());
+					
+					if (userphoto.exif.@date_created) {
+						if (userphoto.exif.@date_created.toString() !== "") {
+							var datetimesplit:Array = userphoto.exif.@date_created.toString().split(" ");
+							var dateparse:Array = datetimesplit[0].split(":");
+							var timeparse:Array = datetimesplit[1].split(":");
+							userphoto.dateCreated = dateparse[0] + "-" + dateparse[1] + "-" + dateparse[2] + " " + timeparse[0] + ":" + timeparse[1] + ":" + timeparse[2];
+						} else {
+							var dt:Date = new Date();
+							userphoto.dateCreated = dt.fullYear + "-" + (dt.month + 1) + "-" + dt.date + " " + dt.hours + ":" + dt.minutes + ":" + dt.seconds;
+						}	
+					} else {
+						dt = new Date();
+						userphoto.dateCreated = dt.fullYear + "-" + (dt.month + 1) + "-" + dt.date + " " + dt.hours + ":" + dt.minutes + ":" + dt.seconds;
+					}
 					
 					if (userphoto.lowres.toString() == "" || userphoto.lowres.toString() == "null") {
 						//Problem with upload!! Alert later!
@@ -11350,138 +11365,6 @@ public function CreatePhotoAlbum():void {
 			
 			for each (var objectXML:XML in singleton.albumtimeline.getItemAt(u)..element) {
 				
-				/*
-				if (objectXML.@type == "rectangle") {
-					
-					var rectangle:userrectangle = new userrectangle();
-					rectangle.id = objectXML.@id;
-					rectangle.pageID = objectXML.@pageID;
-					rectangle.index = objectXML.@index;
-					rectangle.objectX = parseFloat(objectXML.@objectX.toString()) - singlePageCorrection;
-					rectangle.objectY = objectXML.@objectY;
-					rectangle.objectWidth = objectXML.@objectWidth;
-					rectangle.objectHeight = objectXML.@objectHeight;
-					rectangle.rotation = objectXML.@rotation;
-					rectangle.fillcolor = objectXML.@fillcolor;
-					rectangle.fillalpha = objectXML.@fillalpha;
-					rectangle.shadow = objectXML.@shadow;
-					rectangle.bordercolor = objectXML.@bordercolor;
-					rectangle.borderweight = objectXML.@borderweight;
-					
-					spread.elements.addItem(rectangle);
-					
-				}
-				
-				if (objectXML.@type == "circle") {
-					
-					var circle:usercircle = new usercircle();
-					circle.id = objectXML.@id;
-					circle.pageID = objectXML.@pageID;
-					circle.index = objectXML.@index;
-					circle.objectX = parseFloat(objectXML.@objectX.toString()) - singlePageCorrection;
-					circle.objectY = objectXML.@objectY;
-					circle.objectWidth = objectXML.@objectWidth;
-					circle.objectHeight = objectXML.@objectHeight;
-					circle.rotation = objectXML.@rotation;
-					circle.fillcolor = objectXML.@fillcolor;
-					circle.fillalpha = objectXML.@fillalpha;
-					circle.shadow = objectXML.@shadow;
-					circle.bordercolor = objectXML.@bordercolor;
-					circle.borderweight = objectXML.@borderweight;
-					
-					spread.elements.addItem(circle);
-					
-				}
-				
-				if (objectXML.@type == "line") {
-					
-					var line:userline = new userline();
-					line.id = objectXML.@id;
-					line.pageID = objectXML.@pageID;
-					line.index = objectXML.@index;
-					line.objectX = parseFloat(objectXML.@objectX.toString()) - singlePageCorrection;
-					line.objectY = objectXML.@objectY;
-					line.objectWidth = objectXML.@objectWidth;
-					line.objectHeight = objectXML.@objectHeight;
-					line.rotation = objectXML.@rotation;
-					line.fillcolor = objectXML.@fillcolor;
-					line.fillalpha = objectXML.@fillalpha;
-					line.shadow = objectXML.@shadow;
-					line.lineweight = objectXML.@lineweight;
-					
-					spread.elements.addItem(line);
-				}
-				
-				if (objectXML.@type == "text") {
-					
-					var text:usertextclass = new usertextclass();
-					text.id = objectXML.@id;
-					text.pageID = objectXML.@pageID;
-					text.index = objectXML.@index;
-					text.objectX = parseFloat(objectXML.@objectX.toString()) - singlePageCorrection;
-					text.objectY = objectXML.@objectY;
-					text.objectWidth = objectXML.@objectWidth;
-					text.objectHeight = objectXML.@objectHeight;
-					text.rotation = objectXML.@rotation;
-					text.shadow = objectXML.@shadow;
-					text.tfID = objectXML.@tfID;
-					text.borderalpha = objectXML.@borderalpha;
-					text.bordercolor = objectXML.@bordercolor;
-					text.borderweight = objectXML.@borderweight;
-					
-					//Add later so allways on top
-					textobjects.push(text);
-					
-				}
-				
-				if (objectXML.@type == "clipart") {
-					
-					var clipart:userclipartclass = new userclipartclass();
-					clipart.id = objectXML.@id;
-					clipart.pageID = objectXML.@pageID;
-					clipart.original_image_id = objectXML.@original_image_id;
-					clipart.objectX = parseFloat(objectXML.@objectX.toString()) - singlePageCorrection;
-					clipart.objectY = objectXML.@objectY;
-					clipart.objectWidth = objectXML.@objectWidth;
-					clipart.objectHeight = objectXML.@objectHeight;
-					clipart.rotation = objectXML.@rotation;
-					clipart.origin = objectXML.@origin;
-					
-					//Get the other info from the original image
-					clipart.refOffsetX = objectXML.@refOffsetX;
-					clipart.refOffsetY = objectXML.@refOffsetY;
-					clipart.refWidth = objectXML.@refWidth;
-					clipart.refHeight = objectXML.@refHeight;
-					clipart.refScale = objectXML.@refScale;
-					clipart.imageWidth = objectXML.@imageWidth;
-					clipart.imageHeight = objectXML.@imageHeight;
-					clipart.offsetX = objectXML.@offsetX;
-					clipart.offsetY = objectXML.@offsetY;
-					clipart.imageRotation = objectXML.@imageRotation;
-					clipart.originalWidth = objectXML.@originalWidth;
-					clipart.originalHeight = objectXML.@originalHeight;
-					clipart.fullPath = objectXML.@status;
-					clipart.path = objectXML.@path;
-					clipart.userID = singleton._userID;
-					clipart.bytesize = objectXML.@bytesize;
-					clipart.hires = objectXML.@hires;
-					clipart.hires_url = objectXML.@hires_url;
-					clipart.lowres = objectXML.@lowres;
-					clipart.lowres_url = objectXML.@lowres_url;
-					clipart.thumb = objectXML.@thumb;
-					clipart.thumb_url = objectXML.@thumb_url;
-					clipart.shadow = objectXML.@shadow;
-					clipart.imageAlpha = objectXML.@imageAlpha;
-					clipart.index = objectXML.@index;
-					clipart.borderalpha = objectXML.@borderalpha;
-					clipart.bordercolor = objectXML.@bordercolor;
-					clipart.borderweight = objectXML.@borderweight;
-					clipart.fliphorizontal = objectXML.@fliphorizontal;
-					
-					spread.elements.addItem(clipart);
-					
-				}
-				*/
 				if (objectXML.@type == "photo") {
 					
 					var photo:userphotoclass = new userphotoclass();
@@ -11561,6 +11444,10 @@ public function CreatePhotoAlbum():void {
 					photo.bordercolor = objectXML.@bordercolor;
 					photo.borderweight = objectXML.@borderweight;
 					photo.fliphorizontal = objectXML.@fliphorizontal;
+					
+					if (photo.exif.@date_created) {
+						trace(photo.exif);
+					}
 					
 					spread.elements.addItem(photo);
 					

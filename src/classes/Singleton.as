@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.3.7";
+		public const version:String = "3.3.8";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		

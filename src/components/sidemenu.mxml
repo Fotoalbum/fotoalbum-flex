@@ -1307,6 +1307,78 @@
 				
 			}
 			
+			protected function ddPhotoSortPhotos_changeHandler(event:IndexChangeEvent):void
+			{
+				
+				if (event.currentTarget.id == "ddPhotoSortList") {
+					ddPhotoSort.invalidateDisplayList();
+					ddPhotoSort.selectedIndex = ddPhotoSortList.selectedIndex;
+				} else {
+					ddPhotoSortList.invalidateDisplayList();
+					ddPhotoSortList.selectedIndex = ddPhotoSort.selectedIndex;
+				}
+				
+				switch (event.currentTarget.selectedIndex) {
+					
+					case 0:
+						break;
+					case 1: //Datum aflopend
+						if (singleton.userphotos) {
+							if (singleton.userphotos.length > 0) {
+								var dateSort:Sort = new Sort();
+								var fields:Array = [ new SortField("dateCreated", true) ];
+								dateSort.fields = fields;
+								singleton.userphotos.sort = dateSort;
+								singleton.userphotos.refresh();
+							}
+						}
+						break;
+					case 2: //Datum oplopend
+						if (singleton.userphotos) {
+							if (singleton.userphotos.length > 0) {
+								dateSort = new Sort();
+								fields = [ new SortField("dateCreated", false) ];
+								dateSort.fields = fields;
+								singleton.userphotos.sort = dateSort;
+								singleton.userphotos.refresh();
+							}
+						}
+						break;
+					case 3: //Naam aflopend
+						if (singleton.userphotos) {
+							if (singleton.userphotos.length > 0) {
+								singleton.userphotos.refresh();
+								var dataSortField:SortField = new SortField();
+								dataSortField.name = "name";
+								dataSortField.descending = true;
+								dateSort = new Sort();
+								dateSort.fields = [dataSortField];
+								singleton.userphotos.sort = dateSort;
+								singleton.userphotos.refresh();
+							}
+						}
+						break;
+					case 4: //Naam oplopend
+						if (singleton.userphotos) {
+							if (singleton.userphotos.length > 0) {
+								singleton.userphotos.refresh();
+								dataSortField = new SortField();
+								dataSortField.name = "name";
+								dataSortField.descending = false;
+								dateSort = new Sort();
+								dateSort.fields = [dataSortField];
+								singleton.userphotos.sort = dateSort;
+								singleton.userphotos.refresh();
+							}
+						}
+						break;
+				}
+				
+				(lstUserPhotosList.dataProvider as ArrayCollection).refresh();
+				(lstUserPhotos.dataProvider as ArrayCollection).refresh();
+				
+			}
+			
 		]]>
 	</fx:Script>
 	<s:states>
@@ -1408,6 +1480,26 @@
 					
 					<s:NavigatorContent label="photolist">
 						
+						<s:layout>
+							<s:VerticalLayout gap="0" />
+						</s:layout>
+						
+						<s:HGroup width="100%" height="30" paddingLeft="5" paddingRight="5" verticalAlign="middle">
+							
+							<s:Label text="Volgorde:" />
+							
+							<s:DropDownList id="ddPhotoSort" width="100%" selectedIndex="0" skinClass="skins.dropDownSkin" change="{ddPhotoSortPhotos_changeHandler(event)}">
+								<s:ArrayCollection>
+									<fx:String>Kies een volgorde...</fx:String>
+									<fx:String>Datum (aflopend)</fx:String>
+									<fx:String>Datum (oplopend)</fx:String>
+									<fx:String>Naam (aflopend)</fx:String>
+									<fx:String>Naam (oplopend)</fx:String>
+								</s:ArrayCollection>
+							</s:DropDownList>
+							
+						</s:HGroup>
+						
 						<s:List id="lstUserPhotos" width="260" height="100%"
 								contentBackgroundAlpha="0"
 								dataProvider="{singleton.userphotos}" horizontalScrollPolicy="off"
@@ -1429,13 +1521,13 @@
 							<s:VerticalLayout gap="0" />
 						</s:layout>
 						
-						<!--
-						<s:HGroup width="100%" height="30" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5">
+						<s:HGroup width="100%" height="30" paddingLeft="5" paddingRight="5" verticalAlign="middle">
 							
 							<s:Label text="Volgorde:" />
 							
-							<s:DropDownList id="ddPhotoSort" width="100%" selectedIndex="0" skinClass="skins.dropDownSkin">
+							<s:DropDownList id="ddPhotoSortList" width="100%" selectedIndex="0" skinClass="skins.dropDownSkin" change="{ddPhotoSortPhotos_changeHandler(event)}">
 								<s:ArrayCollection>
+									<fx:String>Kies een volgorde...</fx:String>
 									<fx:String>Datum (aflopend)</fx:String>
 									<fx:String>Datum (oplopend)</fx:String>
 									<fx:String>Naam (aflopend)</fx:String>
@@ -1444,7 +1536,6 @@
 							</s:DropDownList>
 							
 						</s:HGroup>
-						-->
 						
 						<s:List id="lstUserPhotosList" width="100%" height="100%"
 								contentBackgroundAlpha="0"

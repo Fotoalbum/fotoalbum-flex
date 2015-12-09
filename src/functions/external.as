@@ -2085,6 +2085,21 @@ public function ThumbsFromHtml(result:String):void {
 			photo.originalHeight = src.height;
 			
 			photo.exif = XML(src.exif.toString());
+			
+			if (photo.exif.@date_created) {
+				if (photo.exif.@date_created.toString() !== "") {
+					var datetimesplit:Array = photo.exif.@date_created.toString().split(" ");
+					var dateparse:Array = datetimesplit[0].split(":");
+					var timeparse:Array = datetimesplit[1].split(":");
+					photo.dateCreated = dateparse[0] + "-" + dateparse[1] + "-" + dateparse[2] + " " + timeparse[0] + ":" + timeparse[1] + ":" + timeparse[2];
+				} else {
+					var dt:Date = new Date();
+					photo.dateCreated = dt.fullYear + "-" + (dt.month + 1) + "-" + dt.date + " " + dt.hours + ":" + dt.minutes + ":" + dt.seconds;
+				}	
+			} else {
+				dt = new Date();
+				photo.dateCreated = dt.fullYear + "-" + (dt.month + 1) + "-" + dt.date + " " + dt.hours + ":" + dt.minutes + ":" + dt.seconds;
+			}
 
 			singleton.userphotosfromhdu.addItem(photo);
 			
