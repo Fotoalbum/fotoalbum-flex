@@ -18,6 +18,8 @@
 			import events.selectPhotoEvent;
 			import events.updateElementsEvent;
 			
+			import flash.utils.setTimeout;
+			
 			import itemrenderers.spreadItemRenderer;
 			
 			import mx.events.ColorPickerEvent;
@@ -1057,116 +1059,6 @@
 				bcNoshadow.setStyle("backgroundColor", 0x7D7D7D);
 			}
 			
-			private var sortTimerDate:Timer = new Timer(1000, 0);
-			private var sortTimerName:Timer = new Timer(1000, 0);
-			public function SortPhotos(event:Event = null):void {
-				
-				sortTimerDate.stop();
-				sortTimerName.stop();
-				
-				/*
-				if (ddSorting.selectedIndex == 0) {
-					ChangeSortOrderByDate();
-				} else {
-					ChangeSortOrderByName();
-				}
-				*/
-			}
-			
-			public function ChangeSortOrderByDate():void {
-				
-				/*
-				if (!sortTimerDate.running) {
-					if (singleton.userphotos && singleton.userphotos.length > 0) {
-						sortTimerDate.addEventListener(TimerEvent.TIMER, onSortTimerDate);
-						sortTimerDate.start();
-					} else {
-						sortTimerDate.stop();
-						sortTimerDate.reset();	
-					}
-				} else {
-				
-					sortTimerDate.stop();
-					sortTimerDate.reset();
-					sortTimerDate.start();
-				}
-				*/
-				
-			}
-			
-			public function onSortTimerDate(event:Event):void {
-				
-				/*
-				sortTimerDate.stop();
-				sortTimerDate.reset();
-				
-				sortTimerDate.removeEventListener(TimerEvent.TIMER, onSortTimerDate);
-				
-				//Order by date initially
-				if (singleton.userphotos) {
-					if (singleton.userphotos.length > 0) {
-						var dateSort:Sort = new Sort();
-						var fields:Array = [ new SortField("dateCreated", false), new SortField("timeCreated", false) ];
-						dateSort.fields = fields;
-						singleton.userphotos.sort = dateSort;
-						singleton.userphotos.refresh();
-					}
-				}
-				
-				FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTUSERPHOTO, "", false));
-				
-				FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
-				*/
-			}
-			
-			public function ChangeSortOrderByName():void {
-				
-				/*
-				if (!sortTimerName.running) {
-					if (singleton.userphotos && singleton.userphotos.length > 0) {
-						sortTimerName.addEventListener(TimerEvent.TIMER, onSortTimerName);
-						sortTimerName.start();
-					} else {
-						sortTimerName.stop();
-						sortTimerName.reset();	
-					}
-				} else {
-					sortTimerName.stop();
-					sortTimerName.reset();
-					sortTimerName.start();
-				}
-				*/
-			}
-			
-			public function onSortTimerName(event:Event):void {
-				
-				
-				/*
-				sortTimerName.stop();
-				sortTimerName.reset();
-				
-				sortTimerName.removeEventListener(TimerEvent.TIMER, onSortTimerName);
-				
-				//Order by name
-				if (singleton.userphotos) {
-					if (singleton.userphotos.length > 0) {
-						singleton.userphotos.refresh();
-						var dataSortField:SortField = new SortField();
-						dataSortField.name = "name";
-						dataSortField.descending = false;
-						var dateSort:Sort = new Sort();
-						dateSort.fields = [dataSortField];
-						singleton.userphotos.sort = dateSort;
-						singleton.userphotos.refresh();
-					}
-				}	
-				
-				FlexGlobals.topLevelApplication.dispatchEvent(new selectPhotoEvent(selectPhotoEvent.SELECTUSERPHOTO, "", false));
-				
-				FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
-				*/
-			}
-			
 			[Bindable] public var userphotoshidden:Boolean = false;
 			protected function cbHideUsed_changeHandler(event:Event):void
 			{
@@ -1377,8 +1269,15 @@
 				(lstUserPhotosList.dataProvider as ArrayCollection).refresh();
 				(lstUserPhotos.dataProvider as ArrayCollection).refresh();
 				
+				callLater(doCount);
+				
 			}
 			
+			private function doCount():void {
+				
+				FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
+					
+			}
 		]]>
 	</fx:Script>
 	<s:states>

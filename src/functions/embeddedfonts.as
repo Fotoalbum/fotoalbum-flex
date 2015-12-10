@@ -1,6 +1,7 @@
 import classes.StyleModuleMarshaller;
 import classes.photoclass;
 
+import events.countUsedPhotosEvent;
 import events.updateTimelineEvent;
 
 import flash.events.Event;
@@ -439,4 +440,7 @@ private function FinishLoadAndGotoEditor():void {
 	singleton.UpdateWindowStatus();
 	
 	startup.visible = false;
+	
+	FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
+	
 }

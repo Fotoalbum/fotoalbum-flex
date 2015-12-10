@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.3.8";
+		public const version:String = "3.4.0";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -1754,37 +1754,44 @@ package classes
 		{
 			var result:int = 0;
 			
-			if (spreadcollection) {
-				
-				for (var x:int=0; x < spreadcollection.length; x++) {
-				
-					var elements:ArrayCollection = spreadcollection.getItemAt(x).elements;
-					for (var e:int=0; e < elements.length; e++) {
-						var obj:Object = elements.getItemAt(e) as Object;
-						if (obj.classtype.toString() == "[class userphotoclass]") {
-							if (elements.getItemAt(e).original_image_id == photoID) {
-								result++;
-							}
-						}
-					}
+			if (photoID != "") {
+			
+				if (spreadcollection) {
 					
-					//Check the spread background
-					if (spreadcollection.getItemAt(x).backgroundData) {
-						if (spreadcollection.getItemAt(x).backgroundData.id == photoID) {
-							result++;
+					for (var x:int=0; x < spreadcollection.length; x++) {
+					
+						var elements:ArrayCollection = spreadcollection.getItemAt(x).elements;
+						for (var e:int=0; e < elements.length; e++) {
+							var obj:Object = elements.getItemAt(e) as Object;
+							if (obj.classtype.toString() == "[class userphotoclass]") {
+								if (elements.getItemAt(e).original_image_id == photoID) {
+									result++;
+								} else if (elements.getItemAt(e).hires != "") {
+									if  (elements.getItemAt(e).hires == photoID) {
+										result++;
+									}
+								}
+							} 
 						}
-					}
 						
-					//Check the pages backgrounds
-					var pages:ArrayCollection = spreadcollection.getItemAt(x).pages;
-					for (var p:int=0; p < pages.length; p++) {
-						if (pages[p].backgroundData) {
-							if (pages[p].backgroundData.id == photoID) {
+						//Check the spread background
+						if (spreadcollection.getItemAt(x).backgroundData) {
+							if (spreadcollection.getItemAt(x).backgroundData.id == photoID) {
 								result++;
 							}
 						}
+							
+						//Check the pages backgrounds
+						var pages:ArrayCollection = spreadcollection.getItemAt(x).pages;
+						for (var p:int=0; p < pages.length; p++) {
+							if (pages[p].backgroundData) {
+								if (pages[p].backgroundData.id == photoID) {
+									result++;
+								}
+							}
+						}
+						
 					}
-					
 				}
 			}
 			
@@ -2961,11 +2968,7 @@ package classes
 			
 				FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.ADD, selected_spread.spreadID, newElement));
 				
-				if (newElement.classtype == "[class userphotoclass]") {
-					FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT, newElement.original_image_id));
-				}
-				
-				setTimeout(CallAddUndo, 500, newElement, selectedspreadindex, undoActions.ACTION_ADD_ELEMENT, GetRealObjectIndex(newElement));
+				setTimeout(CallAddUndo, 100, newElement, selectedspreadindex, undoActions.ACTION_ADD_ELEMENT, GetRealObjectIndex(newElement));
 				
 			}
 		}

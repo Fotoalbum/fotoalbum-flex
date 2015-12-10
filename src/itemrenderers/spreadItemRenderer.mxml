@@ -726,7 +726,7 @@
 				
 				//Remove previous backgrounds count
 				if (spreadData.backgroundData) {
-					FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT, spreadData.backgroundData.id));
+					//FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT, spreadData.backgroundData.id));
 				}
 				
 				UpdateSpreadBackground();
@@ -1573,7 +1573,7 @@
 						if (event.temp_Image) {
 							photo.tempImage = event.temp_Image;
 							photo.CreateImage(true, false);
-							FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
+							//FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
 							
 							singleton.UpdatePhotosHideUsed();
 						}
@@ -1623,7 +1623,7 @@
 						{
 							singleton.selected_spread.elements.removeItemAt(e);
 							if (obj.constructor.toString() == "[class photocomponent]") {
-								FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT, singleton.selected_element.data.original_image_id));
+								//FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT, singleton.selected_element.data.original_image_id));
 							}
 							break;
 						}
@@ -1675,7 +1675,7 @@
 								
 								obj.RemoveImage(true);
 								
-								FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT, orig_image_id));
+								//FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT, orig_image_id));
 							
 								singleton.UpdatePhotosHideUsed();
 							}

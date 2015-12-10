@@ -64,7 +64,7 @@
 				if (_data) 
 				{
 					
-					var num:int = singleton.GetNumPhotosUsed(_data.id);
+					var num:int = singleton.GetNumPhotosUsed(_data.guid);
 					
 					if (num > 0)
 					{

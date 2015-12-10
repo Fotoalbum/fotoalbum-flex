@@ -2,10 +2,13 @@ package classes
 {
 	import classes.undoredo.undoitemclass;
 	
+	import events.countUsedPhotosEvent;
+	
 	import flash.external.ExternalInterface;
 	import flash.utils.setTimeout;
 	
 	import mx.collections.ArrayCollection;
+	import mx.core.FlexGlobals;
 	import mx.utils.ObjectUtil;
 	
 	public class undoredoClass
@@ -21,8 +24,7 @@ package classes
 		
 		public function AddUndo(oldData:Object, obj:Object, currentspreadindex:int, undoaction:String, index:int, tfClass:textflowclass = null, tfColl:ArrayCollection = null):void {
 			
-			setTimeout(SetAddUndo, 500, oldData, obj, currentspreadindex, undoaction, index, tfClass, tfColl);
-			
+			setTimeout(SetAddUndo, 100, oldData, obj, currentspreadindex, undoaction, index, tfClass, tfColl);
 		}
 		
 		private function SetAddUndo():void {
@@ -82,6 +84,8 @@ package classes
 			
 			singleton.deletingbackground = false;
 			singleton.oldbackgrounddata = null;
+			
+			FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
 			
 		}
 		

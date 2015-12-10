@@ -2086,10 +2086,10 @@ public function ThumbsFromHtml(result:String):void {
 			
 			photo.exif = XML(src.exif.toString());
 			
-			if (photo.exif.@date_created) {
-				if (photo.exif.@date_created.toString() !== "") {
-					var datetimesplit:Array = photo.exif.@date_created.toString().split(" ");
-					var dateparse:Array = datetimesplit[0].split(":");
+			if (src.datetime) {
+				if (src.datetime.toString() !== "0000/00/00 00:00:00") {
+					var datetimesplit:Array = src.datetime.toString().split(" ");
+					var dateparse:Array = datetimesplit[0].split("/");
 					var timeparse:Array = datetimesplit[1].split(":");
 					photo.dateCreated = dateparse[0] + "-" + dateparse[1] + "-" + dateparse[2] + " " + timeparse[0] + ":" + timeparse[1] + ":" + timeparse[2];
 				} else {

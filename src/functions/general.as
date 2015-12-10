@@ -1967,8 +1967,6 @@ public function ContinueCreateStoryBoard():void {
 		singleton.albumtimeline = new XMLListCollection(singleton.albumtimelineXML..spread);
 		singleton.albumpreviewtimeline = new XMLListCollection(singleton.albumtimelineXML..spread);
 		
-		menuside.SortPhotos();
-		
 		//Close the popup and go to the storyboard
 		CreateStoryBoard();
 		
@@ -2257,8 +2255,6 @@ public function onFinishedAddPhotos(event:Event = null):void {
 				singleton.userphotos.addItem(GetPhotoObject(photo.id));
 			}
 		}
-		
-		menuside.SortPhotos();
 		
 		singleton.userphotosfromhdu = new ArrayCollection();
 		
@@ -3120,6 +3116,7 @@ private function onGetUserProductResult(e:ResultEvent):void
 					userphoto.thumb_url = photos[ph].@thumb_url;
 					userphoto.hires = photos[ph].@hires;
 					userphoto.hires_url = photos[ph].@hires_url;
+					userphoto.guid = photos[ph].@hires;
 					userphoto.origin = photos[ph].@origin;
 					userphoto.origin_type = photos[ph].@origin_type;
 					userphoto.originalWidth = photos[ph].@originalWidth;
