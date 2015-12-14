@@ -460,7 +460,7 @@
 			
 			private function btnMenu_rollOver():void {
 				
-				//btnDelete.visible = true;
+				btnDelete.visible = true;
 			}
 			
 			private function btnMenu_rollOut():void {
@@ -470,7 +470,7 @@
 			
 			protected function btnDelete_clickHandler(event:MouseEvent):void
 			{
-				//singleton.AlertWithQuestion("Foto verwijderen", "Weet je zeker dat je deze foto wilt verwijderen?", RemoveUserPhoto, "NEE", "JA", false);
+				singleton.AlertWithQuestion("Foto verwijderen", "Weet je zeker dat je deze foto wilt verwijderen?", RemoveUserPhoto, "NEE", "JA", false);
 				
 			}
 			

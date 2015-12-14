@@ -266,6 +266,8 @@ public var _AppFontEnjoyMX:Class;
 private function onCreationComplete():void 
 {
 	
+	singleton.DebugPrint("creationcomplete");
+	
 	GlobalSettings.resolveFontLookupFunction = null;
 	
 	startup.visible = true;
@@ -2425,6 +2427,11 @@ private function onConfigResult(e:ResultEvent):void
 	//Set the maximum simultaneous uploads
 	singleton._uploadingNum = 0;
 	singleton._uploadCount = 4;
+	
+	if (ExternalInterface.available) {
+		var wrapperFunction:String = "GetLocalizedPhrasesForSoftware";
+		ExternalInterface.call(wrapperFunction, singleton._appLanguage);
+	}
 	
 	//Register userfonts
 	RegisterUserFonts();

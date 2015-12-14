@@ -135,6 +135,8 @@ public function initAppExtCalls():void
 	
 	ExternalInterface.addCallback("createPreviewInFlex", createPreviewInFlex);	
 	
+	ExternalInterface.addCallback("localizeSoftware", localizeSoftware);	
+	
 	
 	//ExternalInterface.addCallback("CheckEverythingUploaded", CheckIfWeDontHaveEmptyPages);
 	
@@ -2905,4 +2907,21 @@ public function setGridColor(color:String):void {
 		singleton.selected_spread_editor.DrawGrid();
 	}
 }
+
+public function localizeSoftware(phrases:String):String {
+
+	var obj:Object = JSON.parse(
+		phrases,
+		function(key:String, val:Object): * {
+			if (val is String)
+			{
+				//singleton.DebugPrint(key + " | " + val);
+				singleton[key] = val.toString();
+			}
+		}
+	);
+	
+	return "localization done";
+}
+
 
