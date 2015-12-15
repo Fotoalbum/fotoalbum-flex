@@ -1370,8 +1370,8 @@
 				
 				<s:HGroup width="100%" height="30" paddingLeft="0" paddingRight="0" gap="1">
 					
-					<s:ToggleButton id="btnPhotoView" skinClass="skins.btnToggleMenuHorizontal" width="50%" height="30" label="Foto's" selected="true" click="btnPhotoView_clickHandler(event)" />
-					<s:ToggleButton id="btnPhotoList" skinClass="skins.btnToggleMenuHorizontal" width="50%" height="30" label="Lijst" click="btnPhotoView_clickHandler(event)" />
+					<s:ToggleButton id="btnPhotoView" skinClass="skins.btnToggleMenuHorizontal" width="50%" height="30" label="{singleton.fa_157}" selected="true" click="btnPhotoView_clickHandler(event)" />
+					<s:ToggleButton id="btnPhotoList" skinClass="skins.btnToggleMenuHorizontal" width="50%" height="30" label="{singleton.fa_158}" click="btnPhotoView_clickHandler(event)" />
 					
 				</s:HGroup>
 				
@@ -1385,15 +1385,15 @@
 						
 						<s:HGroup width="100%" height="30" paddingLeft="5" paddingRight="5" verticalAlign="middle">
 							
-							<s:Label text="Volgorde:" />
+							<s:Label text="{singleton.fa_159}" />
 							
 							<s:DropDownList id="ddPhotoSort" width="100%" selectedIndex="0" skinClass="skins.dropDownSkin" change="{ddPhotoSortPhotos_changeHandler(event)}">
 								<s:ArrayCollection>
-									<fx:String>Kies een volgorde...</fx:String>
-									<fx:String>Datum (aflopend)</fx:String>
-									<fx:String>Datum (oplopend)</fx:String>
-									<fx:String>Naam (aflopend)</fx:String>
-									<fx:String>Naam (oplopend)</fx:String>
+									<fx:String>{singleton.fa_160}</fx:String>
+									<fx:String>{singleton.fa_161}</fx:String>
+									<fx:String>{singleton.fa_162}</fx:String>
+									<fx:String>{singleton.fa_163}</fx:String>
+									<fx:String>{singleton.fa_164}</fx:String>
 								</s:ArrayCollection>
 							</s:DropDownList>
 							
@@ -1422,15 +1422,15 @@
 						
 						<s:HGroup width="100%" height="30" paddingLeft="5" paddingRight="5" verticalAlign="middle">
 							
-							<s:Label text="Volgorde:" />
+							<s:Label text="{singleton.fa_159}" />
 							
 							<s:DropDownList id="ddPhotoSortList" width="100%" selectedIndex="0" skinClass="skins.dropDownSkin" change="{ddPhotoSortPhotos_changeHandler(event)}">
 								<s:ArrayCollection>
-									<fx:String>Kies een volgorde...</fx:String>
-									<fx:String>Datum (aflopend)</fx:String>
-									<fx:String>Datum (oplopend)</fx:String>
-									<fx:String>Naam (aflopend)</fx:String>
-									<fx:String>Naam (oplopend)</fx:String>
+									<fx:String>{singleton.fa_160}</fx:String>
+									<fx:String>{singleton.fa_161}</fx:String>
+									<fx:String>{singleton.fa_162}</fx:String>
+									<fx:String>{singleton.fa_163}</fx:String>
+									<fx:String>{singleton.fa_164}</fx:String>
 								</s:ArrayCollection>
 							</s:DropDownList>
 							
@@ -2476,33 +2476,33 @@
 		</s:layout>
 		
 		<s:ToggleButton id="btnPhotos" width="73" height="73" 
-						toolTip="{singleton.fa_014}"
+						toolTip="fa_014"
 						click="{onSideMenuSelection(event)}"
 						label="&#xf030;" uid="_AppFontAwesome" fontSize="28"
 						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
-		<s:ToggleButton id="btnLayouts" includeIn="album,theme" width="73" height="73" toolTip="{singleton.fa_013}"
+		<s:ToggleButton id="btnLayouts" includeIn="album,theme" width="73" height="73" toolTip="fa_013"
 						click="{onSideMenuSelection(event)}"
 						label="&#xe605;" uid="_AppFontEnjoy" fontSize="28"
 						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
 		<s:ToggleButton id="btnBackgrounds" width="73" height="73"
-						toolTip="{singleton.fa_015}" 
+						toolTip="fa_015" 
 						click="{onSideMenuSelection(event)}" 
 						label="&#xf03e;" uid="_AppFontAwesome" fontSize="28"
 						skinClass="skins.btnToggleMenu"/>
-		<s:ToggleButton id="btnSticker" includeIn="album,theme" width="73" height="73" toolTip="{singleton.fa_016}"
+		<s:ToggleButton id="btnSticker" includeIn="album,theme" width="73" height="73" toolTip="fa_016"
 						click="{onSideMenuSelection(event)}"
 						label="&#xe602;" uid="_AppFontEnjoy" fontSize="34"
 						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
-		<s:ToggleButton id="btnPP" includeIn="album,theme" width="73" height="73" toolTip="{singleton.fa_017}"
+		<s:ToggleButton id="btnPP" includeIn="album,theme" width="73" height="73" toolTip="fa_017"
 						click="{onSideMenuSelection(event)}"
 						label="&#xe60a;" uid="_AppFontEnjoy" fontSize="34"
 						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
 		<s:ToggleButton id="btnOptions" includeIn="album,theme" width="73" height="73"
-						toolTip="{singleton.fa_018}" click="{onSideMenuSelection(event)}"
+						toolTip="fa_018" click="{onSideMenuSelection(event)}"
 						label="&#xe600;" uid="_AppFontEnjoy" fontSize="28"
 						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
 		<s:ToggleButton id="btnThemes" includeIn="theme" width="73" height="73"
-						toolTip="{singleton.fa_019}" click="{onSideMenuSelection(event)}"
+						toolTip="fa_019" click="{onSideMenuSelection(event)}"
 						label="&#xf013;" uid="_AppFontAwesome" fontSize="28"
 						includeInLayout="true" skinClass="skins.btnToggleMenu"/>
 		

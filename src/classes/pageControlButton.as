@@ -1,5 +1,7 @@
 package classes
 {
+	import events.updateLocalizeEvent;
+	
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	
@@ -31,6 +33,8 @@ package classes
 			this.addEventListener(Event.ADDED_TO_STAGE, addedToStage);
 			this.addEventListener(MouseEvent.ROLL_OVER, onRollOver);
 			this.addEventListener(MouseEvent.ROLL_OUT, onRollOut);
+			
+			FlexGlobals.topLevelApplication.addEventListener(updateLocalizeEvent.UPDATE_LOCALIZE, updateLocalize);
 			
 		}
 		
@@ -121,6 +125,12 @@ package classes
 			label.setStyle("fontSize", 11);
 			this.addElement(label);
 			
+		}
+		
+		private function updateLocalize(event:Event):void {
+			
+			label.text = singleton[buttonLabel];
+			label.validateNow();
 		}
 		
 	}

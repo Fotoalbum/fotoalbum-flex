@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.4.3";
+		public const version:String = "3.4.4";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -3396,6 +3396,15 @@ package classes
 		[Bindable] public var fa_154:String = "Thema verwijderen";
 		[Bindable] public var fa_155:String = "Weet je zeker dat je dit thema wilt verwijderen?";
 		[Bindable] public var fa_156:String = "Je fotoalbum wordt gemaakt, dit kan heel even duren...";
+		[Bindable] public var fa_157:String = "Foto's";
+		[Bindable] public var fa_158:String = "Lijst";
+		[Bindable] public var fa_159:String = "Volgorde:";
+		[Bindable] public var fa_160:String = "Kies een volgorde...";
+		[Bindable] public var fa_161:String = "Datum (nieuw -> oud)";
+		[Bindable] public var fa_162:String = "Datum (oud -> nieuw) ";
+		[Bindable] public var fa_163:String = "Naam (Z -> A)";
+		[Bindable] public var fa_164:String = "Naam (A -> Z)";
+		
 		
 	}
 }

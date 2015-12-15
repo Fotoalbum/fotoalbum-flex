@@ -150,7 +150,7 @@
 															   buttonFont="_AppFontEnjoy"
 															   mouseDown="{AddSpreadToAlbum()}"
 															   buttonTypeLabel="&#xe616;"
-															   buttonLabel="{singleton.fa_002}"/>
+															   buttonLabel="fa_002"/>
 									<mx:VRule height="40" />
 									<classes:pageControlButton id="btnDeleteSpread"  
 															   width="110" height="40"
@@ -158,7 +158,7 @@
 															   buttonTypeLabel="&#xe615;"
 															   mouseDown="{DeleteSpreadFromAlbum()}"
 															   enabled="{singleton.selected_spread_item != null}"
-															   buttonLabel="{singleton.fa_003}"/>
+															   buttonLabel="fa_003"/>
 									<mx:VRule height="40" />
 									<!--
 									<classes:pageControlButton id="btnDuplicateSpread"  
@@ -167,7 +167,7 @@
 															   buttonTypeLabel="&#xf0c5;"
 															   mouseDown="{DuplicateSpreadInAlbum()}"
 															   enabled="{singleton.selected_spread_item != null}"
-															   buttonLabel="{singleton.fa_004}"/>
+															   buttonLabel="fa_004"/>
 									<mx:VRule height="40" />
 									-->
 									<classes:pageControlButton id="btnEditPages"  
@@ -175,14 +175,14 @@
 															   buttonFont="_AppFontEnjoy"
 															   buttonTypeLabel="&#xe617;"
 															   mouseDown="{EditPages()}"
-															   buttonLabel="{singleton.fa_005}"/>
+															   buttonLabel="fa_005"/>
 									<mx:VRule height="40" />
 									<classes:pageControlButton id="btnPreview"  
 															   width="100" height="40"
 															   buttonFont="_AppFontAwesome"
 															   buttonTypeLabel="&#xf0b2;"
 															   mouseDown="{CreatePreview()}"
-															   buttonLabel="{singleton.fa_006}"/>
+															   buttonLabel="fa_006"/>
 									<mx:VRule height="40" />
 								</s:HGroup>
 								

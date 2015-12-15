@@ -24,7 +24,7 @@ package classes
 		
 		public function AddUndo(oldData:Object, obj:Object, currentspreadindex:int, undoaction:String, index:int, tfClass:textflowclass = null, tfColl:ArrayCollection = null):void {
 			
-			setTimeout(SetAddUndo, 100, oldData, obj, currentspreadindex, undoaction, index, tfClass, tfColl);
+			setTimeout(SetAddUndo, 500, oldData, obj, currentspreadindex, undoaction, index, tfClass, tfColl);
 		}
 		
 		private function SetAddUndo():void {

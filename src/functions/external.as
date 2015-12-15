@@ -6,6 +6,8 @@ import classes.textsprite;
 
 import components.photocomponent;
 
+import events.updateLocalizeEvent;
+
 import flash.display.Bitmap;
 import flash.display.Loader;
 import flash.display.LoaderInfo;
@@ -2920,6 +2922,9 @@ public function localizeSoftware(phrases:String):String {
 			}
 		}
 	);
+	
+	//Update the buttons everywhere
+	FlexGlobals.topLevelApplication.dispatchEvent(new updateLocalizeEvent(updateLocalizeEvent.UPDATE_LOCALIZE));
 	
 	return "localization done";
 }
