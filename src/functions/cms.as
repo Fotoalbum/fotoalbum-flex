@@ -35,7 +35,17 @@ private function onGetBackgroundCategoriesResult(e:ResultEvent):void
 		{
 			var item:Object = new Object();
 			item.id = obj.Category.id;
-			item.name = obj.Category.name;
+			switch (singleton._appLanguage) {
+				case "nl_NL":
+				case "nl_BE":
+				case "nld":
+					item.name = obj.Category.nl_NL;
+					break;
+				case "fr_BE":
+					item.name = obj.Category.fr_FR;		
+					break;
+			}
+			
 			singleton.background_categories.addItem(item);
 		}
 	}
@@ -108,7 +118,16 @@ private function onGetClipartCategoriesResult(e:ResultEvent):void
 		{
 			var item:Object = new Object();
 			item.id = obj.Category.id;
-			item.name = obj.Category.name;
+			switch (singleton._appLanguage) {
+				case "nl_NL":
+				case "nl_BE":
+				case "nld":
+					item.name = obj.Category.nl_NL;
+					break;
+				case "fr_BE":
+					item.name = obj.Category.fr_FR;		
+					break;
+			}
 			singleton.clipart_categories.addItem(item);
 		}
 	}
@@ -178,6 +197,16 @@ private function onTypesResult(e:ResultEvent):void {
 		e.result[x].Type.selected = false;
 		
 		if (e.result[x].Type.foreign_model.toString() == "Mask") {
+			switch (singleton._appLanguage) {
+				case "nl_NL":
+				case "nl_BE":
+				case "nld":
+					e.result[x].Type.name = e.result[x].Type.nl_NL;
+					break;
+				case "fr_BE":
+					e.result[x].Type.name = e.result[x].Type.fr_FR;		
+					break;
+			}
 			singleton.passepartout_categories.addItem(e.result[x].Type);
 		}
 	}
