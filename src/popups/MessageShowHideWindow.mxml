@@ -42,7 +42,7 @@
 	</fx:Script>
 	
 	<s:HGroup width="100%" paddingLeft="20" paddingRight="20" paddingTop="20" paddingBottom="20">
-		<s:Label id="header" color="#4E4E4E" fontSize="18" text="Wijzigingen opslaan" fontFamily="_AppFontBold"/>
+		<s:Label id="header" color="#4E4E4E" fontSize="18" text="{singleton.fa_188}" fontFamily="_AppFontBold"/>
 	</s:HGroup>
 	
 	<mx:HRule width="100%" />
@@ -52,7 +52,7 @@
 			<s:TextArea id="message" width="100%" borderVisible="false"
 						color="#4E4E4E" contentBackgroundAlpha="0.0" editable="false" fontSize="16"
 						lineHeight="22" selectable="false"
-						text="Wil je de wijzigingen opslaan in je fotoalbum?" textAlign="left"
+						text="{singleton.fa_189}" textAlign="left"
 						verticalAlign="top"/>
 			
 			<s:TextArea id="uploadLbl" visible="true" width="100%" borderVisible="false" color="#4E4E4E"

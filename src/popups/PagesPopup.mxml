@@ -43,7 +43,7 @@
 	<fx:Style source="styles/oem_stylesheet.css" />
 	
 	<s:HGroup width="100%" paddingLeft="20" paddingRight="20" paddingTop="20" paddingBottom="20">
-		<s:Label color="0x4E4E4E" fontSize="20" text="Pagina's toevoegen"/>
+		<s:Label color="0x4E4E4E" fontSize="20" text="{singleton.fa_165}"/>
 	</s:HGroup>
 	
 	<mx:HRule width="100%" />
@@ -51,10 +51,10 @@
 	<s:HGroup width="100%" paddingLeft="20" paddingRight="20" paddingTop="20" paddingBottom="20">
 		<s:VGroup gap="10" width="100%">
 			
-			<s:Label fontSize="18" text="Hoeveel pagina's wil je toevoegen?"/>
+			<s:Label fontSize="18" text="{singleton.fa_166}"/>
 			
 			<s:HGroup width="100%" verticalAlign="middle">
-				<s:Label width="100%" fontSize="16" text="Aantal pagina's:"/>
+				<s:Label width="100%" fontSize="16" text="{singleton.fa_167}"/>
 				<s:NumericStepper id="numPages" fontSize="16" maximum="{maximum}" minimum="{minimum}"
 								  stepSize="{singleton._stepSize}" value="{currentvalue}"/>
 			</s:HGroup>
@@ -65,29 +65,29 @@
 		
 		<s:VGroup width="200" height="100%" paddingLeft="10" paddingRight="10" gap="5">
 			
-			<s:Label width="100%" color="#58595B" fontSize="16" text="Informatie:"/>
+			<s:Label width="100%" color="#58595B" fontSize="16" text="{singleton.fa_168}"/>
 			
 			<mx:HRule width="100%" height="1" />
 			
-			<s:Label width="100%" color="#ACACAC" fontSize="12" text="Huidige aantal pagina's:"/>
+			<s:Label width="100%" color="#ACACAC" fontSize="12" text="{singleton.fa_169}"/>
 			
 			<s:Label width="100%" color="#58595B" fontSize="16" text="{_numPages}"/>
 			
 			<mx:HRule width="100%" height="1" />
 			
-			<s:Label width="100%" color="#ACACAC" fontSize="12" text="Minimum aantal pagina's:"/>
+			<s:Label width="100%" color="#ACACAC" fontSize="12" text="{singleton.fa_170}"/>
 			
 			<s:Label width="100%" color="#58595B" fontSize="16" text="{singleton._minPages}"/>
 			
 			<mx:HRule width="100%" height="1" />
 			
-			<s:Label width="100%" color="#ACACAC" fontSize="12" text="Maximum aantal pagina's:"/>
+			<s:Label width="100%" color="#ACACAC" fontSize="12" text="{singleton.fa_171}"/>
 			
 			<s:Label width="100%" color="#58595B" fontSize="16" text="{singleton._maxPages}"/>
 			
 			<mx:HRule width="100%" height="1" />
 			
-			<s:Label width="100%" color="#ACACAC" fontSize="12" text="Stapgrootte:"/>
+			<s:Label width="100%" color="#ACACAC" fontSize="12" text="{singleton.fa_172}"/>
 			
 			<s:Label width="100%" color="#58595B" fontSize="16" text="{singleton._stepSize}"/>
 			
@@ -97,8 +97,8 @@
 	<mx:HRule width="100%" />
 	
 	<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="right" gap="10" paddingLeft="20" paddingRight="20" paddingTop="10" paddingBottom="10">	
-		<s:Button id="btnCancel" label="Annuleren" skinClass="skins.btnGraySkin" />
-		<s:Button id="btnAdd" label="Toevoegen" skinClass="skins.btnBlueSkin" />
+		<s:Button id="btnCancel" label="{singleton.fa_173}" skinClass="skins.btnGraySkin" />
+		<s:Button id="btnAdd" label="{singleton.fa_002}" skinClass="skins.btnBlueSkin" />
 	</s:HGroup>
 	
 </s:BorderContainer>

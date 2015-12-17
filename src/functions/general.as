@@ -342,9 +342,9 @@ private function onCreationComplete():void
 	
 	//Debug
 	/*
-	singleton._userID = "111122459"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "373"; //10 // themebuilder = 106843
-	singleton._userProductID = "17599"; //3045
+	singleton._userID = "111129740"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "65"; //10 // themebuilder = 106843
+	singleton._userProductID = "17608"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {
@@ -5549,7 +5549,7 @@ public function SelectSpread(event:selectSpreadEvent):void {
 	for (var p:int=0; p < spread.pages.length; p++)
 	{
 		if (spread.pages[p].pageType.toString() == "coverback") {
-			singleton.currentPageNumberLabel = "Cover";
+			singleton.currentPageNumberLabel = singleton.fa_185;
 			break;
 		} else {
 			singleton.currentPageNumberLabel += spread.pages[p].pageNumber;
@@ -11094,7 +11094,7 @@ public function CreatePhotoAlbum():void {
 				back.verticalWrap = singleton.userBook.coverWrap;
 				back.width = back.pageWidth + back.horizontalBleed + back.horizontalWrap;
 				back.height = back.pageHeight + (back.verticalBleed * 2) + (back.verticalWrap * 2);
-				back.pageNumber = "Achter";
+				back.pageNumber = singleton.fa_186;
 				back.singlepage = false;
 				back.backgroundColor = singleton.albumtimeline.getItemAt(u)..page[0].@backgroundColor.toString();
 				back.backgroundAlpha = singleton.albumtimeline.getItemAt(u)..page[0].@backgroundAlpha.toString();
@@ -11211,7 +11211,7 @@ public function CreatePhotoAlbum():void {
 				front.verticalWrap = singleton.userBook.coverWrap;
 				front.width = front.pageWidth + front.horizontalBleed + front.horizontalWrap;
 				front.height = front.pageHeight + (front.verticalBleed * 2) + (front.verticalWrap * 2);
-				front.pageNumber = "Voor";
+				front.pageNumber = singleton.fa_187;
 				front.singlepage = false;
 				front.backgroundColor = singleton.albumtimeline.getItemAt(u)..page[2].@backgroundColor.toString();
 				front.backgroundAlpha = singleton.albumtimeline.getItemAt(u)..page[2].@backgroundAlpha.toString();
@@ -11534,7 +11534,7 @@ public function CreatePhotoAlbum():void {
 				back.verticalWrap = singleton.userBook.coverWrap;
 				back.width = back.pageWidth + back.horizontalBleed + back.horizontalWrap;
 				back.height = back.pageHeight + (back.verticalBleed * 2) + (back.verticalWrap * 2);
-				back.pageNumber = "Achter";
+				back.pageNumber = singleton.fa_186;
 				back.singlepage = false;
 				back.backgroundColor = singleton.albumtimeline.getItemAt(u)..page[0].@backgroundColor.toString();
 				back.backgroundAlpha = singleton.albumtimeline.getItemAt(u)..page[0].@backgroundAlpha.toString();
@@ -11651,7 +11651,7 @@ public function CreatePhotoAlbum():void {
 				front.verticalWrap = singleton.userBook.coverWrap;
 				front.width = front.pageWidth + front.horizontalBleed + front.horizontalWrap;
 				front.height = front.pageHeight + (front.verticalBleed * 2) + (front.verticalWrap * 2);
-				front.pageNumber = "Voor";
+				front.pageNumber = singleton.fa_187;
 				front.singlepage = false;
 				front.backgroundColor = singleton.albumtimeline.getItemAt(u)..page[2].@backgroundColor.toString();
 				front.backgroundAlpha = singleton.albumtimeline.getItemAt(u)..page[2].@backgroundAlpha.toString();

@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.4.4";
+		public const version:String = "3.4.6";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -416,6 +416,7 @@ package classes
 		
 		[Bindable] public var selected_userphoto:Object;
 		[Bindable] public var selected_background:Object;
+		[Bindable] public var sortingarray:ArrayCollection;
 		
 		[Bindable] public var textcomponent_selected:Boolean = false;
 		[Bindable] public var multiselect:Boolean = false;
@@ -3238,7 +3239,7 @@ package classes
 			PopUpManager.removePopUp(editTextWindow);
 			
 		}
-	
+		
 		//Localize
 		[Bindable] public var fa_001:String = "Pagina's";
 		[Bindable] public var fa_002:String = "Toevoegen";
@@ -3404,6 +3405,67 @@ package classes
 		[Bindable] public var fa_162:String = "Datum (oud -> nieuw) ";
 		[Bindable] public var fa_163:String = "Naam (Z -> A)";
 		[Bindable] public var fa_164:String = "Naam (A -> Z)";
+		[Bindable] public var fa_165:String = "Pagina's toevoegen";
+		[Bindable] public var fa_166:String = "Hoeveel pagina's wil je toevoegen?";
+		[Bindable] public var fa_167:String = "Aantal pagina's:";
+		[Bindable] public var fa_168:String = "Informatie:";
+		[Bindable] public var fa_169:String = "Huidige aantal pagina's:";
+		[Bindable] public var fa_170:String = "Minimum aantal pagina's:";
+		[Bindable] public var fa_171:String = "Maximum aantal pagina's:";
+		[Bindable] public var fa_172:String = "Stapgrootte:";
+		[Bindable] public var fa_173:String = "Annuleren";
+		[Bindable] public var fa_174:String = "Minimum pagina's";
+		[Bindable] public var fa_175:String = "Het minimum aantal pagina's voor dit fotoalbum is";
+		[Bindable] public var fa_176:String = "Maximum pagina's";
+		[Bindable] public var fa_177:String = "Het maximum aantal pagina's voor dit fotoalbum is";
+		[Bindable] public var fa_178:String = "Spread verwijderen niet mogelijk";
+		[Bindable] public var fa_179:String = "Deze spread kan niet worden verwijderd";
+		[Bindable] public var fa_180:String = "Paginabeheer wordt geladen";
+		[Bindable] public var fa_181:String = "Pagina beheer";
+		[Bindable] public var fa_182:String = "Dupliceren";
+		[Bindable] public var fa_183:String = "Opslaan";
+		[Bindable] public var fa_184:String = "NIEUWE PAGINA'S";
+		[Bindable] public var fa_185:String = "Cover";
+		[Bindable] public var fa_186:String = "Achter";
+		[Bindable] public var fa_187:String = "Voor";
+		[Bindable] public var fa_188:String = "Wijzigingen opslaan";
+		[Bindable] public var fa_189:String = "Wil je de wijzigingen opslaan in je fotoalbum?";
+		[Bindable] public var fa_190:String = "Voorbeeld weergave";
+		[Bindable] public var fa_191:String = "Afsluiten";
+		[Bindable] public var fa_192:String = "Zoek naar achtergronden";
+		[Bindable] public var fa_193:String = "Categorieën";
+		[Bindable] public var fa_194:String = "Algemeen";
+		[Bindable] public var fa_195:String = "Baby";
+		[Bindable] public var fa_196:String = "Dieren";
+		[Bindable] public var fa_197:String = "Feest";
+		[Bindable] public var fa_198:String = "Herfst";
+		[Bindable] public var fa_199:String = "Huwelijk";
+		[Bindable] public var fa_200:String = "Kerst";
+		[Bindable] public var fa_201:String = "Kinderen";
+		[Bindable] public var fa_202:String = "Kleuren";
+		[Bindable] public var fa_203:String = "Koken";
+		[Bindable] public var fa_204:String = "Lente";
+		[Bindable] public var fa_205:String = "Liefde";
+		[Bindable] public var fa_206:String = "Pasen";
+		[Bindable] public var fa_207:String = "Reizen";
+		[Bindable] public var fa_208:String = "School & kantoor";
+		[Bindable] public var fa_209:String = "Vakantie winter";
+		[Bindable] public var fa_210:String = "Vakantie zon";
+		[Bindable] public var fa_211:String = "Verjaardag";
+		[Bindable] public var fa_212:String = "Aantal achtergronden geselecteerd:";
+		[Bindable] public var fa_213:String = "Selecteer:";
+		[Bindable] public var fa_214:String = "Alles";
+		[Bindable] public var fa_215:String = "Geen";
+		[Bindable] public var fa_216:String = "Zoek naar stickers";
+		[Bindable] public var fa_217:String = "Aantal stickers geselecteerd:";
+		[Bindable] public var fa_218:String = "Zoek naar kaders";
+		[Bindable] public var fa_219:String = "Aantal kaders geselecteerd:";
+		[Bindable] public var fa_220:String = "Letters en cijfers";
+		[Bindable] public var fa_221:String = "Lijsten";
+		[Bindable] public var fa_222:String = "Verlopen";
+		[Bindable] public var fa_223:String = "Vormen";
+		[Bindable] public var fa_224:String = "Preview uploaden";
+		
 		
 		
 	}

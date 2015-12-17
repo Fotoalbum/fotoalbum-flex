@@ -236,7 +236,7 @@
 		
 		<s:HGroup width="100%" horizontalAlign="center">
 			<s:Label color="0xFFFFFF" fontSize="18" paddingTop="2"
-					 text="Zoek naar achtergronden"/>
+					 text="{singleton.fa_192}"/>
 		</s:HGroup>
 		
 	</s:BorderContainer>
@@ -248,7 +248,7 @@
 			<s:ToggleButton id="btnOnDate" 
 							width="100%" height="30" 
 							skinClass="skins.btnToggleOpenCloseButtonWithArrow"
-							label="Categorieën" 
+							label="{singleton.fa_193}" 
 							click="btnOnDate_clickHandler(event)"
 							selected="true"/>
 			
@@ -340,13 +340,13 @@
 					</s:layout>
 					
 					<s:Label color="0x58595B" fontSize="11"
-							 text="Aantal achtergronden geselecteerd: {FlexGlobals.topLevelApplication.menuside.background_selected.length}"/>
+							 text="{singleton.fa_212} {FlexGlobals.topLevelApplication.menuside.background_selected.length}"/>
 					
 					<s:HGroup width="100%" height="30" gap="2" verticalAlign="middle" horizontalAlign="right">
-						<s:Label text="Selecteer:" fontSize="12" color="0x58595B" />
-						<s:Button label="Alles" click="{SelectAllPhotos()}" enabled="{background_items &amp;&amp; background_items.length > 0}"
+						<s:Label text="{singleton.fa_213}" fontSize="12" color="0x58595B" />
+						<s:Button label="{singleton.fa_214}" click="{SelectAllPhotos()}" enabled="{background_items &amp;&amp; background_items.length > 0}"
 								  skinClass="skins.btnBlueSkin"/>
-						<s:Button label="Geen" click="{DeSelectAllPhotos()}" enabled="{background_items &amp;&amp; background_items.length > 0}" 
+						<s:Button label="{singleton.fa_215}" click="{DeSelectAllPhotos()}" enabled="{background_items &amp;&amp; background_items.length > 0}" 
 								  skinClass="skins.btnGraySkin" />
 					</s:HGroup>
 					
@@ -374,8 +374,8 @@
 	
 	<s:HGroup right="10" bottom="10">
 		
-		<s:Button id="btnCancel" width="80" label="Annuleren" skinClass="skins.btnGraySkin"/>
-		<s:Button id="btnAdd" width="100" label="Toevoegen" skinClass="skins.btnGreenSkin"/>
+		<s:Button id="btnCancel" width="80" label="{singleton.fa_173}" skinClass="skins.btnGraySkin"/>
+		<s:Button id="btnAdd" width="100" label="{singleton.fa_002}" skinClass="skins.btnGreenSkin"/>
 		
 	</s:HGroup>
 	

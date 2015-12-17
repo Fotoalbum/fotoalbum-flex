@@ -1387,14 +1387,8 @@
 							
 							<s:Label text="{singleton.fa_159}" />
 							
-							<s:DropDownList id="ddPhotoSort" width="100%" selectedIndex="0" skinClass="skins.dropDownSkin" change="{ddPhotoSortPhotos_changeHandler(event)}">
-								<s:ArrayCollection>
-									<fx:String>{singleton.fa_160}</fx:String>
-									<fx:String>{singleton.fa_161}</fx:String>
-									<fx:String>{singleton.fa_162}</fx:String>
-									<fx:String>{singleton.fa_163}</fx:String>
-									<fx:String>{singleton.fa_164}</fx:String>
-								</s:ArrayCollection>
+							<s:DropDownList id="ddPhotoSort" width="100%" selectedIndex="0" skinClass="skins.dropDownSkin" change="{ddPhotoSortPhotos_changeHandler(event)}"
+											dataProvider="{singleton.sortingarray}">
 							</s:DropDownList>
 							
 						</s:HGroup>
@@ -1424,14 +1418,8 @@
 							
 							<s:Label text="{singleton.fa_159}" />
 							
-							<s:DropDownList id="ddPhotoSortList" width="100%" selectedIndex="0" skinClass="skins.dropDownSkin" change="{ddPhotoSortPhotos_changeHandler(event)}">
-								<s:ArrayCollection>
-									<fx:String>{singleton.fa_160}</fx:String>
-									<fx:String>{singleton.fa_161}</fx:String>
-									<fx:String>{singleton.fa_162}</fx:String>
-									<fx:String>{singleton.fa_163}</fx:String>
-									<fx:String>{singleton.fa_164}</fx:String>
-								</s:ArrayCollection>
+							<s:DropDownList id="ddPhotoSortList" width="100%" selectedIndex="0" skinClass="skins.dropDownSkin" change="{ddPhotoSortPhotos_changeHandler(event)}"
+											dataProvider="{singleton.sortingarray}">
 							</s:DropDownList>
 							
 						</s:HGroup>

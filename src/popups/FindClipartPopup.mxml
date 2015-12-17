@@ -229,7 +229,7 @@
 		
 		<s:HGroup width="100%" horizontalAlign="center">
 			<s:Label color="0xFFFFFF" fontSize="20"
-					 text="Zoek naar stickers"/>
+					 text="{singleton.fa_216}"/>
 		</s:HGroup>
 		
 	</s:BorderContainer>
@@ -241,7 +241,7 @@
 			<s:ToggleButton id="btnOnDate" 
 							width="100%" height="30" 
 							skinClass="skins.btnToggleOpenCloseButtonWithArrow"
-							label="Categorieën" 
+							label="{singleton.fa_193}" 
 							click="btnOnDate_clickHandler(event)"
 							selected="true"/>
 			
@@ -330,13 +330,13 @@
 					</s:layout>
 					
 					<s:Label color="0x58595B" fontSize="11"
-							 text="Aantal stickers geselecteerd: {FlexGlobals.topLevelApplication.menuside.clipart_selected.length}"/>
+							 text="{singleton.fa_217} {FlexGlobals.topLevelApplication.menuside.clipart_selected.length}"/>
 					
 					<s:HGroup width="100%" height="30" gap="2" verticalAlign="middle" horizontalAlign="right">
-						<s:Label text="Selecteer:" fontSize="12" color="0x58595B" />
-						<s:Button label="Alles" click="{SelectAllPhotos()}" enabled="{clipart_items &amp;&amp; clipart_items.length > 0}"
+						<s:Label text="{singleton.fa_213}" fontSize="12" color="0x58595B" />
+						<s:Button label="{singleton.fa_214}" click="{SelectAllPhotos()}" enabled="{clipart_items &amp;&amp; clipart_items.length > 0}"
 								  skinClass="skins.btnBlueSkin"/>
-						<s:Button label="Geen" click="{DeSelectAllPhotos()}" enabled="{clipart_items &amp;&amp; clipart_items.length > 0}" 
+						<s:Button label="{singleton.fa_215}" click="{DeSelectAllPhotos()}" enabled="{clipart_items &amp;&amp; clipart_items.length > 0}" 
 								  skinClass="skins.btnGraySkin" />
 					</s:HGroup>
 					
@@ -364,8 +364,8 @@
 	
 	<s:HGroup right="10" bottom="10">
 		
-		<s:Button id="btnCancel" label="Annuleren" skinClass="skins.btnGraySkin" />
-		<s:Button id="btnAdd" label="Toevoegen" skinClass="skins.btnGreenSkin" />
+		<s:Button id="btnCancel" label="{singleton.fa_173}" skinClass="skins.btnGraySkin" />
+		<s:Button id="btnAdd" label="{singleton.fa_002}" skinClass="skins.btnGreenSkin" />
 		
 	</s:HGroup>
 	

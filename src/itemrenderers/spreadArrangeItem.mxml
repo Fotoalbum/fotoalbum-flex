@@ -160,7 +160,7 @@
 							page.pageType.toString() == "coverspine" ||
 							page.pageType.toString() == "coverfront") 
 						{
-							pageNum.text = "Cover";
+							pageNum.text = singleton.fa_185;
 						} 
 						else 
 						{

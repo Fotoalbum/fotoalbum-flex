@@ -113,7 +113,7 @@
 							back.verticalWrap = singleton.userBook.coverWrap;
 							back.width = back.pageWidth + back.horizontalBleed + back.horizontalWrap;
 							back.height = back.pageHeight + (back.verticalBleed * 2) + (back.verticalWrap * 2);
-							back.pageNumber = "Achter";
+							back.pageNumber = singleton.fa_186;
 							back.singlepage = false;
 							back.backgroundColor = singleton.albumtimeline.getItemAt(u)..page[0].@backgroundColor.toString();
 							back.backgroundAlpha = singleton.albumtimeline.getItemAt(u)..page[0].@backgroundAlpha.toString();
@@ -228,7 +228,7 @@
 							front.verticalWrap = singleton.userBook.coverWrap;
 							front.width = front.pageWidth + front.horizontalBleed + front.horizontalWrap;
 							front.height = front.pageHeight + (front.verticalBleed * 2) + (front.verticalWrap * 2);
-							front.pageNumber = "Voor";
+							front.pageNumber = singleton.fa_187;
 							front.singlepage = false;
 							front.backgroundColor = singleton.albumtimeline.getItemAt(u)..page[2].@backgroundColor.toString();
 							front.backgroundAlpha = singleton.albumtimeline.getItemAt(u)..page[2].@backgroundAlpha.toString();
@@ -694,7 +694,7 @@
 				for (var p:int=0; p < spread.pages.length; p++)
 				{
 					if (spread.pages[p].pageType.toString() == "coverback") {
-						currentPageNumberLabel = "Cover";
+						currentPageNumberLabel = singleton.fa_185;
 						break;
 					} else {
 						currentPageNumberLabel += spread.pages[p].pageNumber;
@@ -710,7 +710,7 @@
 	</fx:Script>
 	
 	<s:Label left="10" top="10" color="#4e4e4e" fontSize="18"
-			 text="Voorbeeld weergave"/>
+			 text="{singleton.fa_190}"/>
 	
 	<s:Label right="10" top="10" text="&#xe614;"
 				   click="{btnClose.dispatchEvent(new MouseEvent(MouseEvent.CLICK))}"
@@ -744,15 +744,15 @@
 		</s:fill>
 	</s:Rect>
 	
-	<s:Button id="btnUploadPreview" visible="false" left="5" bottom="5" label="Preview uploaden"
+	<s:Button id="btnUploadPreview" visible="false" left="5" bottom="5" label="{singleton.fa_224}"
 			  click="{FlexGlobals.topLevelApplication.UploadPreviews()}" color="#FFFFFF"
 			  enabled="true" fontSize="16" skinClass="skins.btnSkin"/>
 	
-	<s:Button id="btnClose" right="5" bottom="5" width="120" label="Afsluiten"
+	<s:Button id="btnClose" right="5" bottom="5" width="120" label="{singleton.fa_191}"
 			  color="#FFFFFF" fontSize="16" skinClass="skins.btnBlueSkin"/>
 	
 	<mx:ProgressBar id="progress" visible="false" right="10" top="14" width="300"
-					label="Uploaden voorbeeld:" chromeColor="#64AADD" color="#FFFFFF"
+					label="{singleton.fa_124}" chromeColor="#64AADD" color="#FFFFFF"
 					indeterminate="false" labelPlacement="left" maximum="100" minimum="0"
 					mode="manual" fontFamily="_AppFontRegularMX"/>
 	

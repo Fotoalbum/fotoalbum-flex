@@ -36,7 +36,7 @@
 	</fx:Script>
 	
 	<s:HGroup width="100%" paddingLeft="20" paddingRight="20" paddingTop="20" paddingBottom="20">
-		<s:Label id="header" color="#4E4E4E" fontSize="18" text="Wijzigingen opslaan" fontFamily="_AppFontBold"/>
+		<s:Label id="header" color="#4E4E4E" fontSize="18" text="{singleton.fa_188}" fontFamily="_AppFontBold"/>
 	</s:HGroup>
 	
 	<mx:HRule width="100%" />
@@ -45,7 +45,7 @@
 		<s:VGroup gap="10" width="100%">
 			<s:TextArea id="message" width="100%" borderVisible="false" color="#4E4E4E" minHeight="0"
 						contentBackgroundAlpha="0.0" editable="false" fontSize="16" lineHeight="22"
-						selectable="false" text="Wil je de wijzigingen opslaan in je fotoalbum?"
+						selectable="false" text="{singleton.fa_189}"
 						textAlign="left" verticalAlign="top" change="{message.height = message.scroller.viewport.contentHeight + 2;}" />
 			
 			<s:TextArea id="uploadLbl" width="100%"  color="#4E4E4E" fontSize="18" text="Je project wordt opgeslagen en de voorbeelden voor in je bibliotheek worden nu geupload.\n\nDit kan even duren, afhankelijk van je internet verbinding.\n\nAls het uploaden klaar is wordt je automatisch doorgestuurd naar je winkelwagen." 

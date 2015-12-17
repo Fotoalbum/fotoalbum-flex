@@ -2910,8 +2910,10 @@ public function setGridColor(color:String):void {
 	}
 }
 
-public function localizeSoftware(phrases:String):String {
+public function localizeSoftware(phrases:String):void {
 
+	singleton.DebugPrint("Starting localization ...");
+	
 	var obj:Object = JSON.parse(
 		phrases,
 		function(key:String, val:Object): * {
@@ -2923,10 +2925,26 @@ public function localizeSoftware(phrases:String):String {
 		}
 	);
 	
+	singleton.sortingarray = new ArrayCollection();
+	singleton.sortingarray.addItem(singleton.fa_160);
+	singleton.sortingarray.addItem(singleton.fa_161);
+	singleton.sortingarray.addItem(singleton.fa_162);
+	singleton.sortingarray.addItem(singleton.fa_163);
+	singleton.sortingarray.addItem(singleton.fa_164);
+	
+	menuside.ddPhotoSort.selectedIndex = 0;
+	menuside.ddPhotoSortList.selectedIndex = 0;
+
 	//Update the buttons everywhere
+	setTimeout(UpdateLocalize, 500);
+	
+}
+
+private function UpdateLocalize():void {
+	
 	FlexGlobals.topLevelApplication.dispatchEvent(new updateLocalizeEvent(updateLocalizeEvent.UPDATE_LOCALIZE));
 	
-	return "localization done";
+	//return "localization done";
 }
 
 
