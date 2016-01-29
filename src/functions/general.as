@@ -342,9 +342,9 @@ private function onCreationComplete():void
 	
 	//Debug
 	/*
-	singleton._userID = "111129740"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "65"; //10 // themebuilder = 106843
-	singleton._userProductID = "17608"; //3045
+	singleton._userID = "111131826"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "10"; //10 // themebuilder = 106843
+	singleton._userProductID = "24520"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {
@@ -3929,7 +3929,7 @@ private function onGetUserProductResult(e:ResultEvent):void
 						
 						for (var elm:int=0; elm < spread..element.length(); elm++) {
 							
-							var element:XML = spread..element[elm];
+							var element:XML = XML(spread..element[elm].toXMLString());
 							
 							if (element.@type == "clipart") {
 								
@@ -4318,7 +4318,17 @@ private function onGetUserProductResult(e:ResultEvent):void
 								elementXML.@coverTitle = element.@coverTitle;
 								elementXML.@coverSpineTitle = element.@coverSpineTitle;
 								
-								if (element.hasOwnProperty("importtext")) {
+								var hasimporttext:Boolean = false;
+								
+								try {
+									if (element.@importtext.toString() == "1") {
+										hasimporttext = true;
+									}
+								} catch (ex:Error) {
+									//do nothing
+								}
+								
+								if (hasimporttext) {
 									
 									if (!fontstoload) {
 										fontstoload = new Array();
@@ -4390,7 +4400,7 @@ private function onGetUserProductResult(e:ResultEvent):void
 									
 									config.textFlowInitialFormat = textLayoutFormat;
 									
-									var tfclass:textflowclass = new textflowclass();
+									tfclass = new textflowclass();
 									tfclass.id = element.@tfID;
 									tfclass.tf = new TextFlow();
 									tfclass.tf = TextConverter.importToFlow(importtext, TextConverter.TEXT_FIELD_HTML_FORMAT, config);
@@ -4399,7 +4409,7 @@ private function onGetUserProductResult(e:ResultEvent):void
 									tfclass.sprite = new textsprite();
 									tfclass.sprite.tfID = tfclass.id;
 									
-									var cc:ContainerController = new ContainerController(tfclass.sprite, element.@objectWidth, element.@objectHeight);
+									cc = new ContainerController(tfclass.sprite, element.@objectWidth, element.@objectHeight);
 									cc.container.addEventListener(KeyboardEvent.KEY_UP, ContainerChangeEvent);
 									cc.container.addEventListener(FocusEvent.MOUSE_FOCUS_CHANGE, UpdateNavigationTextflow);
 									cc.container.addEventListener(Event.PASTE, onPaste);
@@ -4488,7 +4498,7 @@ private function onGetUserProductResult(e:ResultEvent):void
 								elementXML.@type = "photo";
 								elementXML.@status = element.@status;
 								
-								if (element.@status == "empty" || element.@status == "new") {
+								if (element.@status == "empty") { // || element.@status == "new") {
 									elementXML.@path = "";
 									elementXML.@hires = "";
 									elementXML.@hires_url = "";
@@ -10191,7 +10201,7 @@ private function onGetUserProductsByUserIdResult(result:ResultEvent):void {
 				correctionguidfolder = refObject.guid_folder;
 			}
 			
-			if (refObject.guid_folder == correctionguidfolder) {
+			//if (refObject.guid_folder == correctionguidfolder) {
 			
 				var uphoto:photoclass = new photoclass();
 				uphoto.photoRefID = refObject.id;
@@ -10230,9 +10240,84 @@ private function onGetUserProductsByUserIdResult(result:ResultEvent):void {
 				}
 				
 				singleton.otherprojectphotos.addItem(uphoto);
-			}
+			//}
 		}
 	}
+	
+	//Try to get the original image from the array
+	var foundall:Boolean = true;
+	
+	for (var x:int=0; x < imagesnotuploaded.length; x++) {
+		
+		var obj:Object = singleton.GetOriginalImageData(imagesnotuploaded[x]);
+		
+		if (obj) {
+			var userphoto:photoclass = new photoclass;
+			userphoto.id = obj.id;
+			userphoto.name = obj.name;
+			userphoto.lowres = obj.lowres;
+			userphoto.lowres_url = obj.lowres_url;
+			userphoto.thumb = obj.thumb;
+			userphoto.thumb_url = obj.thumb_url;
+			userphoto.hires = obj.hires;
+			userphoto.hires_url = obj.hires_url;
+			userphoto.origin = obj.origin;
+			userphoto.origin_type = obj.origin_type;
+			userphoto.originalWidth = obj.originalWidth;
+			userphoto.originalHeight = obj.originalHeight;
+			userphoto.path = obj.path;
+			userphoto.status = "done";
+			userphoto.userID = obj.userID;
+			userphoto.dateCreated = obj.dateCreated;
+			userphoto.timeCreated = obj.timeCreated;
+			userphoto.bytesize = obj.bytesize;
+			userphoto.fullPath = obj.fullPath;
+			userphoto.folderID = obj.folderID;
+			userphoto.folderName = obj.folderName;
+			userphoto.exif = XML(obj.exif.toXMLString());
+			
+			if (!singleton.userphotos) {
+				singleton.userphotos = new ArrayCollection();
+			}
+			
+			singleton.userphotos.addItem(userphoto);
+			
+		} else {
+			foundall = false;
+		}
+		
+	}
+	
+	if (!foundall) {
+		singleton.ShowMessage(singleton.fa_099, singleton.fa_100, false, false);
+	} 
+	
+	if (singleton.albumtimelineXML) {
+		
+		//Create the albumtimeline
+		singleton.albumtimeline = new XMLListCollection(singleton.albumtimelineXML..spread);
+		singleton.albumpreviewtimeline = new XMLListCollection(singleton.albumtimelineXML..spread);
+		
+		CreatePhotoAlbum();
+		
+	} else {
+		
+		if (singleton._userProductID && singleton._userProductInformation.pages_xml.toString() == "") {
+			
+			//Try to get the old photo's from other products
+			//GetUserFoldersFromOtherProducts();
+			
+			CreateNewStoryBoard();
+		}
+	}
+	
+	//singleton._startupSpread = false;
+	singleton._changesMade = false; 
+	singleton.UpdateWindowStatus();
+	
+	startup.visible = false;
+	
+	FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
 }
 
 private function onUpdateFolderGuidFail(event:FaultEvent):void {

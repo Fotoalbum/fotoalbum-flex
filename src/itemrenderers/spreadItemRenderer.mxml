@@ -68,6 +68,7 @@
 			import mx.core.IVisualElement;
 			import mx.events.CollectionEvent;
 			import mx.graphics.BitmapScaleMode;
+			import mx.rpc.AsyncToken;
 			import mx.utils.ObjectUtil;
 			import mx.utils.UIDUtil;
 			
@@ -251,58 +252,75 @@
 								photo.objectWidth = photo.width;
 								photo.objectHeight = photo.height;
 								
-								if (photo_class.allwaysontop) {
-									ontopelementcontainer.addElement(photo);
-								} else {
-									elementcontainer.addElement(photo);
-								}
-								
 								photo.RemoveImage(true);
 								
 								if (photo_class.status != "empty") {
 									if (!photo.tempImage) {
 										if (photo_class.status != "done") {
 											
-											//First check if this is an error
-											var objectExcist:Object = singleton.GetObjectFromAlbums(photo_class.original_image_id);
+											var photo_orig:Object = singleton.GetOriginalImageData(photo_class.original_image_id.toString());
 											
-											if (objectExcist) {
+											if (photo_orig) {
 												
-												//Update this object and continue
 												photo_class.status = "done";
-												photo_class.bytesize = objectExcist.bytesize;
-												photo_class.exif = objectExcist.exif.copy();
-												photo_class.guid = objectExcist.guid;
-												photo_class.hires = objectExcist.hires;
-												photo_class.hires_url = objectExcist.hires_url;
-												photo_class.lowres = objectExcist.lowres;
-												photo_class.lowres_url = objectExcist.lowres_url;
-												photo_class.thumb = objectExcist.thumb;
-												photo_class.thumb_url = objectExcist.thumb_url;
+												photo_class.thumb = photo_orig.thumb;
+												photo_class.thumb_url = photo_orig.thumb_url;
+												photo_class.lowres = photo_orig.lowres;
+												photo_class.lowres_url = photo_orig.lowres_url;
+												photo_class.hires = photo_orig.hires;
+												photo_class.hires_url = photo_orig.hires_url;
 												
-												singleton._changesMade = true;
-												singleton.UpdateWindowStatus();
-												
-												//Add this photo to the photo_xml
-												if (singleton.userphotos.getItemIndex(objectExcist) == -1) {
-													if (singleton.userphotoshidden.getItemIndex(objectExcist) == -1) {
-														//singleton.userphotos.addItem(objectExcist);
-													} else {
-														//singleton.userphotoshidden.addItem(objectExcist);
-													}
+												if (photo_class.allwaysontop) {
+													ontopelementcontainer.addElement(photo);
+												} else {
+													elementcontainer.addElement(photo);
 												}
 												
+												photo.CreateImage(true);
+												
+												photo.DrawBorder();
+												
 											}
+											//var ast:AsyncToken = FlexGlobals.topLevelApplication.api.api_getMissingPhotos(singleton._userID, photo_class.original_image_id);
+											//ast.addResponder(new mx.rpc.Responder(onGetMissingPhoto, onFault));
+										} else {
+											
+											if (photo_class.allwaysontop) {
+												ontopelementcontainer.addElement(photo);
+											} else {
+												elementcontainer.addElement(photo);
+											}
+											
+											photo.CreateImage(true);
+											
+											photo.DrawBorder();
 										}
-										photo.CreateImage(true);
+										
 									} else {
+									
+										if (photo_class.allwaysontop) {
+											ontopelementcontainer.addElement(photo);
+										} else {
+											elementcontainer.addElement(photo);
+										}
+										
 										photo.CreateImage(true);
+										
+										photo.DrawBorder();
+									}
+								} else {
+									
+									if (photo_class.allwaysontop) {
+										ontopelementcontainer.addElement(photo);
+									} else {
+										elementcontainer.addElement(photo);
 									}
 									
+									photo.CreateImage(true);
+									
+									photo.DrawBorder();
+									
 								}
-								
-								photo.DrawBorder();
-								
 							}
 							
 							if (obj.classtype.toString() == "[class userclipartclass]") {
@@ -535,6 +553,74 @@
 				FlexGlobals.topLevelApplication.addEventListener(updateElementsEvent.DELETEIMG, deleteElementImage);
 				FlexGlobals.topLevelApplication.addEventListener(selectSpreadEvent.SELECT, ShowSelectedSpreadInNavigation);
 				
+			}
+				
+			public function onFault(event:Event):void {
+				
+				
+			}
+			
+			private function onGetMissingPhoto(event:Event):void {
+				
+				trace(event);
+				/*
+				var photo_class:Object = obj as Object;
+				var photo:photocomponent = new photocomponent();
+				var photodata:Object = new Object();
+				photo.id = photo_class.id;
+				//trace(photo_class.original_image_id);
+				
+				//Update this object and continue
+				
+				photo_class.status = "done";
+				photo_class.bytesize = objectExcist.bytesize;
+				photo_class.exif = objectExcist.exif.copy();
+				photo_class.guid = objectExcist.guid;
+				photo_class.hires = objectExcist.hires;
+				photo_class.hires_url = objectExcist.hires_url;
+				photo_class.lowres = objectExcist.lowres;
+				photo_class.lowres_url = objectExcist.lowres_url;
+				photo_class.thumb = objectExcist.thumb;
+				photo_class.thumb_url = objectExcist.thumb_url;
+				
+				singleton._changesMade = true;
+				singleton.UpdateWindowStatus();
+				
+				//Add this photo to the photo_xml
+				
+				/*if (singleton.userphotos.getItemIndex(objectExcist) == -1) {
+					if (singleton.userphotoshidden.getItemIndex(objectExcist) == -1) {
+						//singleton.userphotos.addItem(objectExcist);
+					} else {
+						//singleton.userphotoshidden.addItem(objectExcist);
+					}
+				}
+				
+				
+				photo.x = photo_class.objectX;
+				photo.y = photo_class.objectY;
+				photo.width = photo_class.objectWidth;
+				photo.height = photo_class.objectHeight;
+				photo.rotation = photo_class.rotation;
+				photo.mouseEnabled = false;
+				photo.isNav = true;
+				photo.data = photo_class;
+				
+				photo.objectWidth = photo.width;
+				photo.objectHeight = photo.height;
+				
+				photo.RemoveImage(true);
+				
+				if (photo_class.allwaysontop) {
+					ontopelementcontainer.addElement(photo);
+				} else {
+					elementcontainer.addElement(photo);
+				}
+				
+				photo.CreateImage(true);
+				
+				photo.DrawBorder();	
+				*/
 			}
 			
 			private function UpdatePagenumber(event:updatePagenumberTimelineEvent):void {
@@ -798,7 +884,7 @@
 					}
 					
 					//Get optimum width and height
-					if (newimg) {
+					if (newimg || spreadData.backgroundData.width == "0") {
 						singleton.CalculateBackgroundDimensions(spreadbackgroundcontainer, spreadData.backgroundData, spreadData);
 					}
 					

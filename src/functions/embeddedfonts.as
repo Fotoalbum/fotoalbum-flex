@@ -114,13 +114,6 @@ private function onFontFamilyResult(e:ResultEvent):void {
 			
 		} else {
 			
-			//This user is not allowed to view this book, return to the site
-			if (!singleton._checkenabled) {
-				
-				GetUserFoldersFromOtherProducts();
-				
-			}
-			
 			if (singleton._userProductID) {
 				
 				GetUserProduct();
@@ -367,80 +360,36 @@ private function FinishLoadAndGotoEditor():void {
 	
 	if (imagesnotuploaded) {
 		
-		//Try to get the original image from the array
-		var foundall:Boolean = true;
-		
-		for (var x:int=0; x < imagesnotuploaded.length; x++) {
-			
-			var obj:Object = singleton.GetOriginalImageData(imagesnotuploaded[x]);
-			
-			if (obj) {
-				var userphoto:photoclass = new photoclass;
-				userphoto.id = obj.id;
-				userphoto.name = obj.name;
-				userphoto.lowres = obj.lowres;
-				userphoto.lowres_url = obj.lowres_url;
-				userphoto.thumb = obj.thumb;
-				userphoto.thumb_url = obj.thumb_url;
-				userphoto.hires = obj.hires;
-				userphoto.hires_url = obj.hires_url;
-				userphoto.origin = obj.origin;
-				userphoto.origin_type = obj.origin_type;
-				userphoto.originalWidth = obj.originalWidth;
-				userphoto.originalHeight = obj.originalHeight;
-				userphoto.path = obj.path;
-				userphoto.status = "done";
-				userphoto.userID = obj.userID;
-				userphoto.dateCreated = obj.dateCreated;
-				userphoto.timeCreated = obj.timeCreated;
-				userphoto.bytesize = obj.bytesize;
-				userphoto.fullPath = obj.fullPath;
-				userphoto.folderID = obj.folderID;
-				userphoto.folderName = obj.folderName;
-				userphoto.exif = XML(obj.exif.toXMLString());
-				
-				if (!singleton.userphotos) {
-					singleton.userphotos = new ArrayCollection();
-				}
-				
-				singleton.userphotos.addItem(userphoto);
-					
-			} else {
-				foundall = false;
-			}
-			
-		}
-		
-		if (!foundall) {
-			singleton.ShowMessage(singleton.fa_099, singleton.fa_100, false, false);
-		}
-	}
-	
-	if (singleton.albumtimelineXML) {
-		
-		//Create the albumtimeline
-		singleton.albumtimeline = new XMLListCollection(singleton.albumtimelineXML..spread);
-		singleton.albumpreviewtimeline = new XMLListCollection(singleton.albumtimelineXML..spread);
-		
-		CreatePhotoAlbum();
+		GetUserFoldersFromOtherProducts();
 		
 	} else {
-		
-		if (singleton._userProductID && singleton._userProductInformation.pages_xml.toString() == "") {
+	
+		if (singleton.albumtimelineXML) {
 			
-			//Try to get the old photo's from other products
-			//GetUserFoldersFromOtherProducts();
+			//Create the albumtimeline
+			singleton.albumtimeline = new XMLListCollection(singleton.albumtimelineXML..spread);
+			singleton.albumpreviewtimeline = new XMLListCollection(singleton.albumtimelineXML..spread);
 			
-			CreateNewStoryBoard();
+			CreatePhotoAlbum();
+			
+		} else {
+			
+			if (singleton._userProductID && singleton._userProductInformation.pages_xml.toString() == "") {
+				
+				//Try to get the old photo's from other products
+				//GetUserFoldersFromOtherProducts();
+				
+				CreateNewStoryBoard();
+			}
 		}
+		
+		//singleton._startupSpread = false;
+		singleton._changesMade = false; 
+		singleton.UpdateWindowStatus();
+		
+		startup.visible = false;
+		
+		FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
 	}
-	
-	//singleton._startupSpread = false;
-	singleton._changesMade = false; 
-	singleton.UpdateWindowStatus();
-	
-	startup.visible = false;
-	
-	FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
 	
 }

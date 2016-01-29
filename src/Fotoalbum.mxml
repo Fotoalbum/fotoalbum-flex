@@ -458,6 +458,7 @@
 	
 	<s:BorderContainer id="startup" width="100%" height="100%" backgroundColor="#000000" 
 					   borderVisible="false" visible="true" backgroundAlpha="0.9">
+			<s:SWFLoader horizontalCenter="0" verticalCenter="0" source="@Embed('assets/loading_anim.swf')" height="10%" smoothBitmapContent="true" />
 	</s:BorderContainer>
 	
 	<s:Group id="explodedView" width="200" height="200" visible="false" mouseEnabled="false" />

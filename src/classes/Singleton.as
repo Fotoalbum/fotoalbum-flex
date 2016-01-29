@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.4.7";
+		public const version:String = "3.5.1";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -992,6 +992,9 @@ package classes
 			}
 			
 			//trace(result);
+			//Skip the image quality check for now!
+			result = false;
+			
 			
 			return result;
 		}
@@ -2115,6 +2118,7 @@ package classes
 			var obj:Object;
 			
 			if (otherprojectphotos) {
+				
 				if (userphotos) {
 					for (var x:int=0; x < userphotos.length; x++) {
 						if (userphotos.getItemAt(x).id == id) {
@@ -2143,7 +2147,10 @@ package classes
 			if (!obj) {
 				if (otherprojectphotos) {
 					for (x=0; x < otherprojectphotos.length; x++) {
-						if (otherprojectphotos.getItemAt(x).guid == id) {
+						if (otherprojectphotos.getItemAt(x).guid.toString().toLowerCase() == "90108275-82a2-4f19-a1c1-3ca4a138babb") {
+							trace('ok');
+						}
+						if (otherprojectphotos.getItemAt(x).guid.toString().toLowerCase() == id.toString().toLowerCase()) {
 							if (otherprojectphotos.getItemAt(x).status == "done") {
 								obj = otherprojectphotos.getItemAt(x) as Object;
 							}
@@ -2248,7 +2255,7 @@ package classes
 			var result:Object; 
 			
 			for (var x:int=0; x < otherprojectphotos.length; x++) {
-				if (otherprojectphotos.getItemAt(x).id == id) {
+				if (otherprojectphotos.getItemAt(x).id == id || otherprojectphotos.getItemAt(x).guid == id) {
 					result = otherprojectphotos.getItemAt(x);
 					break;
 				}
