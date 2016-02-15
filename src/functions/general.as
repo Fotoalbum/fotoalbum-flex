@@ -342,9 +342,9 @@ private function onCreationComplete():void
 	
 	//Debug
 	/*
-	singleton._userID = "111131826"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "10"; //10 // themebuilder = 106843
-	singleton._userProductID = "24520"; //3045
+	singleton._userID = "20835"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "51"; //10 // themebuilder = 106843
+	singleton._userProductID = "25551"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {
@@ -2052,6 +2052,25 @@ protected function uploadprogress_mouseUpHandler(event:MouseEvent):void
 
 protected function app_keyUpHandler(event:KeyboardEvent):void
 {
+	
+	if (event.keyCode == 68) { //Ctrl-Alt-D
+		if (event.ctrlKey && event.altKey) {
+			trace("show developer menu");
+			menuside.vsMenu.selectedIndex = 7;
+		}
+	}
+	
+	//Restore photo in frame
+	if (event.keyCode == 82) { //Ctrl-Alt-R
+		if (event.ctrlKey && event.altKey) {
+			trace("restore photo");
+			singleton.selected_element.data.imageWidth = 0;
+			singleton.selected_element.data.imageHeight = 0;
+			singleton.selected_element.ResetPhoto();
+		}
+	}
+	
+	trace(event.keyCode);
 	
 	if (handleCopy || handleCut || handlePaste) {
 		
@@ -4388,15 +4407,15 @@ private function onGetUserProductResult(e:ResultEvent):void
 									var config:Configuration = new Configuration();
 									
 									var textLayoutFormat:TextLayoutFormat = new TextLayoutFormat();
-									textLayoutFormat.color = textcolor;
+									//textLayoutFormat.color = textcolor;
 									textLayoutFormat.fontFamily = fontfamily;
-									textLayoutFormat.fontSize = fontsize;
-									textLayoutFormat.lineHeight = leading;
+									//textLayoutFormat.fontSize = fontsize;
+									//textLayoutFormat.lineHeight = leading;
 									textLayoutFormat.kerning = Kerning.ON;
 									textLayoutFormat.fontStyle = FontPosture.NORMAL;
 									textLayoutFormat.renderingMode = RenderingMode.CFF;
 									textLayoutFormat.fontLookup = FontLookup.EMBEDDED_CFF;
-									textLayoutFormat.textAlign = TextAlign.LEFT;
+									//textLayoutFormat.textAlign = TextAlign.LEFT;
 									
 									config.textFlowInitialFormat = textLayoutFormat;
 									
@@ -7416,7 +7435,8 @@ private function SetImageData(obj:Object, elementXML:XML):void {
 		for (var q:int=0; q < singleton.userphotos.length; q++)
 		{
 			var phc:photoclass = singleton.userphotos.getItemAt(q) as photoclass;
-			if (obj.original_image_id.toString() == phc.id.toString()) {
+			if (obj.original_image_id.toString() == phc.id.toString() ||
+				obj.@original_image_id.toString() == phc.id.toString()) {
 				
 				elementXML.@path = phc.path;
 				elementXML.@hires = phc.hires;

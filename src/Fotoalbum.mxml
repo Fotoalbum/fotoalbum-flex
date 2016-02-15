@@ -84,6 +84,7 @@
 	<fx:Script source="functions/userfonts.as" />
 	<fx:Script source="functions/preview.as" />
 	<fx:Script source="functions/storyboard.as" />
+	<fx:Script source="functions/developer.as" />
 	<fx:Style source="styles/stylesheet.css" />
 	<fx:Style source="styles/oem_stylesheet.css" />
 	

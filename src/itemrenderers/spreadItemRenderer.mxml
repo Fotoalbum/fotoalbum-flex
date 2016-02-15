@@ -42,6 +42,7 @@
 			
 			import events.clearObjectHandlesEvent;
 			import events.countUsedPhotosEvent;
+			import events.developerEvents;
 			import events.selectSpreadEvent;
 			import events.textFlowEvent;
 			import events.undoredoResetEvent;
@@ -71,6 +72,7 @@
 			import mx.rpc.AsyncToken;
 			import mx.utils.ObjectUtil;
 			import mx.utils.UIDUtil;
+			import mx.utils.object_proxy;
 			
 			import spark.components.BorderContainer;
 			import spark.components.Image;
@@ -103,6 +105,8 @@
 				
 				FlexGlobals.topLevelApplication.addEventListener(updateSpreadFromTimelineEvent.UPDATE_SPREAD_ITEMS, UpdateSpreadFromTimeline);
 				FlexGlobals.topLevelApplication.addEventListener(updatePagenumberTimelineEvent.UPDATEPAGENUMBERTIMELINE, UpdatePagenumber);
+				
+				FlexGlobals.topLevelApplication.addEventListener(developerEvents.DEV_UPDATE_POSITION, DevUpdatePosition);
 				
 				if (spreadData) {
 					
@@ -2763,6 +2767,49 @@
 				}
 				
 				return snap;
+				
+			}
+			
+			private function DevUpdatePosition(event:developerEvents):void {
+				
+				for (var x:int=0; x < spreadData.elements.length; x++) {
+					var elm:Object = spreadData.elements[x] as Object;
+					if (elm.objectX < spreadData.pages[0].width) { //Left page
+						elm.objectX += event.horizontalOffsetLeft;
+						elm.objectY += event.verticalOffsetLeft;
+					} else {
+						elm.objectX += event.horizontalOffsetRight;
+						elm.objectY += event.verticalOffsetRight;
+					}
+				}
+				
+				//Update the page
+				for (x=0; x < elementcontainer.numElements; x++) {
+					elm = elementcontainer.getElementAt(x) as Object;
+					if (elm.x < spreadData.pages[0].width) { //Left page
+						elm.x += event.horizontalOffsetLeft;
+						elm.y += event.verticalOffsetLeft;
+					} else {
+						elm.x += event.horizontalOffsetRight;
+						elm.y += event.verticalOffsetRight;
+					}
+				}
+				
+				for (x=0; x < ontopelementcontainer.numElements; x++) {
+					elm = ontopelementcontainer.getElementAt(x) as Object;
+					if (elm.x < spreadData.pages[0].width) { //Left page
+						elm.x += event.horizontalOffsetLeft;
+						elm.y += event.verticalOffsetLeft;
+					} else {
+						elm.x += event.horizontalOffsetRight;
+						elm.y += event.verticalOffsetRight;
+					}
+				}
+				
+				//Refresh the page
+				if (singleton.selected_spread_item == this) {
+					SelectSpread();
+				}
 				
 			}
 		]]>

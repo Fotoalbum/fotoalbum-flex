@@ -5,25 +5,37 @@
 		 xmlns:skins="skins.*"
 		 width="322" height="100%" 
 		 creationComplete="_creationCompleteHandler(event)"
+		 initialize="_initializeHandler(event)"
 		 mouseEnabledWhereTransparent="false"
 		 currentState="album">
 	<fx:Script>
 		<![CDATA[
+			import classes.StyleModuleMarshaller;
 			import classes.undoActions;
 			import classes.undoredoClass;
 			
 			import events.SelectPhotoMenuEvent;
 			import events.SwitchMenuEvent;
 			import events.countUsedPhotosEvent;
+			import events.developerEvents;
 			import events.selectPhotoEvent;
+			import events.textFlowEvent;
 			import events.updateElementsEvent;
 			
+			import flash.text.engine.FontLookup;
+			import flash.text.engine.RenderingMode;
 			import flash.utils.setTimeout;
+			
+			import flashx.textLayout.container.ContainerController;
+			import flashx.textLayout.edit.EditManager;
+			import flashx.textLayout.elements.TextFlow;
+			import flashx.textLayout.formats.TextLayoutFormat;
 			
 			import itemrenderers.spreadItemRenderer;
 			
 			import mx.events.ColorPickerEvent;
 			import mx.events.FlexEvent;
+			import mx.events.ModuleEvent;
 			import mx.managers.PopUpManager;
 			import mx.rpc.AsyncToken;
 			import mx.rpc.events.FaultEvent;
@@ -1278,6 +1290,188 @@
 				FlexGlobals.topLevelApplication.dispatchEvent(new countUsedPhotosEvent(countUsedPhotosEvent.COUNT));
 					
 			}
+			
+			protected function btnDevUpdateMargin_clickHandler(event:MouseEvent):void
+			{
+				
+				var horLeft:Number = parseFloat(edDevHorizontalLeft.text);
+				var verLeft:Number = parseFloat(edDevVerticalLeft.text);
+				var horRight:Number = parseFloat(edDevHorizontalRight.text);
+				var verRight:Number = parseFloat(edDevVerticalRight.text);
+				
+				//Update all elements with new position change
+				FlexGlobals.topLevelApplication.dispatchEvent(new developerEvents(developerEvents.DEV_UPDATE_POSITION, horLeft, verLeft, horRight, verRight));
+
+				//Reset the fields
+				edDevHorizontalLeft.text = "0";
+				edDevVerticalLeft.text = "0";
+				edDevHorizontalRight.text = "0";
+				edDevVerticalRight.text = "0";
+				
+			}
+			
+			protected function edDevHorizontal_mouseDownHandler(event:MouseEvent):void
+			{
+				singleton.selected_element = null;
+			}
+			
+			protected function edDevVertical_mouseDownHandler(event:MouseEvent):void
+			{
+				singleton.selected_element = null;
+			}
+			
+			[Bindable] public var selected_fontfamily:Object;
+			[Bindable] public var corpsArr:Array;
+			[Bindable] public var corpsArray:ArrayCollection;
+			[Bindable] public var leadingArr:Array;
+			[Bindable] public var leadingArray:ArrayCollection;
+			[Bindable] private var myFontLoader:StyleModuleMarshaller = new StyleModuleMarshaller();
+			public function LoadFontFamily():void {
+				
+				try {
+					
+					//Check if this font was allready loaded
+					if (!singleton.loadedfonts) {
+						singleton.loadedfonts = new Array();
+					}
+					
+					var found:Boolean = false;
+					if (singleton.loadedfonts.indexOf(selected_fontfamily.name.toString()) > -1) { 
+						found = true; 
+					} else {
+						singleton.loadedfonts.push(selected_fontfamily.name.toString());
+					}
+					
+					if (!found) {
+						//Load the regular font first
+						singleton.AlertWaitWindow("Lettertype laden", "Lettertype " + selected_fontfamily.name + " wordt nu geladen...", false);
+						
+						loadedfont_type = "regular";
+						loadedfont_name = selected_fontfamily.regular_name;
+						loadedfont_swf = selected_fontfamily.regular_swfname;
+						LoadFontType();
+					} else {
+						//Set the font
+						setTimeout(UpdateTextFont, 100);
+					}
+					
+				} catch (err:Error) {
+					singleton.ShowMessage(singleton.fa_151, singleton.fa_150);
+				}
+				
+			}
+			
+			[Bindable] public var loadedfont_type:String;
+			[Bindable] public var loadedfont_name:String;
+			[Bindable] public var loadedfont_swf:String;
+			private function LoadFontType():void {
+				
+				myFontLoader.SetUrl(singleton._fonturl + loadedfont_swf);
+				myFontLoader.addEventListener(ModuleEvent.READY, fontLoadedHandler);
+				myFontLoader.addEventListener(ModuleEvent.ERROR, errorLoaderHandler);
+				myFontLoader.loadModule();
+				
+			}
+			
+			private function errorLoaderHandler(event:ModuleEvent):void {
+				
+				singleton.ShowMessage(singleton.fa_093, singleton.fa_094 + event.errorText);
+			}
+			
+			public function fontLoadedHandler(event:ModuleEvent):void {
+				
+				setTimeout(UpdateTextFont, 100);
+			}
+			
+			public function UpdateTextFont():void {
+				
+				if (!selected_fontfamily) {
+					
+					singleton.ShowMessage(singleton.fa_149, singleton.fa_150);
+					
+				} else {
+					
+					var tlf:TextLayoutFormat = new TextLayoutFormat();
+					tlf.fontLookup = FontLookup.EMBEDDED_CFF;
+					tlf.renderingMode = RenderingMode.CFF;
+					
+					//Check if bold and italic are pressed or not, to determine the correct font to load
+					loadedfont_name = selected_fontfamily.regular_name;
+					tlf.fontFamily = loadedfont_name;
+					tlf.fontSize = corps.selectedItem;
+					tlf.lineHeight = leading.selectedItem;
+					
+					var color:Object = new Object();
+					color.id = fontcolor.selectedColor;
+					color.rgb = singleton.GetRgb(color.id);
+					color.cmyk = singleton.GetCMYK(color.id);
+					singleton.colorcollection.addItem(color);
+					
+					tlf.color = fontcolor.selectedColor;
+				
+					//refresh all the textflow layouts
+					var tfcoll:ArrayCollection = singleton.textflowcollection;
+					for (var x:int=0; x < tfcoll.length; x++) {
+						
+						var tf:TextFlow = tfcoll[x].tf;
+					
+						tf.flowComposer.updateAllControllers();
+						
+						var em:EditManager = tf.interactionManager as EditManager;
+						em.selectAll();
+						em.applyLeafFormat(tlf);
+						
+						tf.flowComposer.updateAllControllers();
+						
+						//Update the controllers
+						for (var y:int=0; y < tf.flowComposer.numControllers; y++) {
+							var cc:ContainerController = tf.flowComposer.getControllerAt(y) as ContainerController;
+							cc.container.dispatchEvent(new KeyboardEvent(KeyboardEvent.KEY_UP));
+						}
+						
+						FlexGlobals.topLevelApplication.dispatchEvent(new textFlowEvent(textFlowEvent.UPDATETEXTFLOW, tfcoll[x].id));
+						
+					}
+					
+					singleton.CloseAlertWaitWindow();
+				
+				}
+				
+			}
+			
+			protected function _initializeHandler(event:FlexEvent):void
+			{
+				corpsArr = new Array();
+				leadingArr = new Array();
+				
+				for (var x:int=8; x < 124; x+=2) {
+					corpsArr.push(x);
+					leadingArr.push(x);
+				}
+				
+				corpsArray = new ArrayCollection(corpsArr);
+				leadingArray = new ArrayCollection(leadingArr);
+			}
+			
+			protected function corps_mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopPropagation();
+			}
+			
+			protected function leading_mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopPropagation();
+			}
+			
+			protected function btnUpdateFontBook_clickHandler(event:MouseEvent):void
+			{
+				
+				singleton.selected_element = null;
+				
+				selected_fontfamily = font.selectedItem;
+				LoadFontFamily();
+			}
+			
 		]]>
 	</fx:Script>
 	<s:states>
@@ -2451,6 +2645,70 @@
 					<s:SolidColorStroke color="0xFFFFFF" alpha="1" />		
 				</s:stroke>
 			</s:Line>
+			
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent label="developer" id="ncDeveloper">
+			
+			<s:BorderContainer width="100%" height="100%" backgroundColor="#E3E3E3" borderVisible="false">
+				<s:layout>
+					<s:VerticalLayout gap="10" paddingLeft="10" paddingRight="10" paddingTop="10" />
+				</s:layout>
+				
+				<s:Label text="Elementen LINKER PAGINA" />
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Horizontaal (px)" width="100%"/>
+					<s:TextInput id="edDevHorizontalLeft" text="0" width="100" mouseDown="edDevHorizontal_mouseDownHandler(event)" />
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Verticaal (px)" width="100%" />
+					<s:TextInput id="edDevVerticalLeft" text="0" width="100" mouseDown="edDevVertical_mouseDownHandler(event)" />
+				</s:HGroup>
+				
+				<s:Label text="Elementen RECHTER PAGINA" />
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Horizontaal (px)" width="100%"/>
+					<s:TextInput id="edDevHorizontalRight" text="0" width="100" mouseDown="edDevHorizontal_mouseDownHandler(event)" />
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Verticaal (px)" width="100%" />
+					<s:TextInput id="edDevVerticalRight" text="0" width="100" mouseDown="edDevVertical_mouseDownHandler(event)" />
+				</s:HGroup>
+				
+				<s:Button id="btnDevUpdateMargin" label="Toepassen" click="btnDevUpdateMargin_clickHandler(event)" />
+				
+				<mx:HRule width="100%"/>
+				
+				<s:Label text="Lettertype aanpassen" />
+				
+				<s:DropDownList id="font" width="100%"
+								dataProvider="{singleton.cms_font_families}" fontFamily="_eCalligraffitti"
+								itemRenderer="itemrenderers.fontsItemRenderer" labelField="name"
+								prompt="{singleton.fa_089}" selectedIndex="-1"
+								skinClass="skins.dropDownSkin" useVirtualLayout="false"/>
+				
+				<s:HGroup gap="4" width="100%" verticalAlign="middle">
+					<s:Label color="#000000" text="&#xf034;" fontSize="14" fontFamily="_AppFontAwesome" />
+					<s:DropDownList id="corps" width="55" dataProvider="{corpsArray}"
+									skinClass="skins.dropDownSkin" selectedIndex="0" 
+									mouseDown="corps_mouseDownHandler(event)" />
+				</s:HGroup>
+				
+				<s:HGroup gap="4" width="100%" verticalAlign="middle">
+					<s:Label color="#000000" text="&#xe618;" fontSize="14" fontFamily="_AppFontEnjoy" />
+					<s:DropDownList id="leading" width="55" dataProvider="{leadingArray}" 
+									mouseDown="leading_mouseDownHandler(event)"
+									skinClass="skins.dropDownSkin" selectedIndex="0" />
+				</s:HGroup>
+				
+				<s:HGroup gap="4" width="100%" verticalAlign="middle">
+					<s:Label color="#000000" text="Tekst kleur:" fontSize="14" fontFamily="_AppFontEnjoy" />
+					<mx:ColorPicker id="fontcolor" />
+				</s:HGroup>
+				
+				<s:Button id="btnUpdateFontBook" label="Lettertype Toepassen" click="btnUpdateFontBook_clickHandler(event)" />
+				
+			</s:BorderContainer>
 			
 		</s:NavigatorContent>
 		

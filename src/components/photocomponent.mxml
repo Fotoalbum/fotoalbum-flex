@@ -1847,6 +1847,12 @@
 				}
 			}
 			
+			public function ResetPhoto():void {
+			
+				singleton.CalculateImageDimensions(imagecontainer, img, data, true, _model, this);
+				
+			}
+			
 			public function SetImageRotation():void {
 				
 				if (imagecontainer) {
