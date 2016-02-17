@@ -33,6 +33,7 @@
 			
 			import itemrenderers.spreadItemRenderer;
 			
+			import mx.controls.Alert;
 			import mx.events.ColorPickerEvent;
 			import mx.events.FlexEvent;
 			import mx.events.ModuleEvent;
@@ -50,6 +51,7 @@
 			import spark.collections.Sort;
 			import spark.collections.SortField;
 			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
 			
 			protected function _creationCompleteHandler(event:FlexEvent):void
 			{
@@ -1291,31 +1293,107 @@
 					
 			}
 			
+			[Bindable] public var _coverBackHor:Number = 0;
+			[Bindable] public var _coverBackVer:Number = 0;
+			[Bindable] public var _coverFrontHor:Number = 0;
+			[Bindable] public var _coverFrontVer:Number = 0;
+			[Bindable] public var _fpHor:Number = 0;
+			[Bindable] public var _fpVer:Number = 0;
+			[Bindable] public var _horLeft:Number = 0;
+			[Bindable] public var _verLeft:Number = 0;
+			[Bindable] public var _horRight:Number = 0;
+			[Bindable] public var _verRight:Number = 0;
+			[Bindable] public var _lpHor:Number = 0;
+			[Bindable] public var _lpVer:Number = 0;
+			
 			protected function btnDevUpdateMargin_clickHandler(event:MouseEvent):void
 			{
+			
+				//Cover
+				var coverBackHor:Number = parseFloat(edDevCoverBackHorizontal.text);
+				var coverBackVer:Number = parseFloat(edDevCoverBackVertical.text);
+				var coverFrontHor:Number = parseFloat(edDevCoverFrontHorizontal.text);
+				var coverFrontVer:Number = parseFloat(edDevCoverFrontVertical.text);
 				
+				//Firstpage
+				var fpHor:Number = parseFloat(edDevFirstPageHorizontalLeft.text);
+				var fpVer:Number = parseFloat(edDevFirstPageVerticalLeft.text);
+				
+				//BBlock
 				var horLeft:Number = parseFloat(edDevHorizontalLeft.text);
 				var verLeft:Number = parseFloat(edDevVerticalLeft.text);
 				var horRight:Number = parseFloat(edDevHorizontalRight.text);
 				var verRight:Number = parseFloat(edDevVerticalRight.text);
 				
+				//Lastpage
+				var lpHor:Number = parseFloat(edDevLastPageHorizontalLeft.text);
+				var lpVer:Number = parseFloat(edDevLastPageVerticalLeft.text);
+				
+				_coverBackHor += coverBackHor;
+				_coverBackVer += coverBackVer;
+				_coverFrontHor += coverFrontHor;
+				_coverFrontVer += coverFrontVer;
+				_fpHor += fpHor;
+				_fpVer += fpVer;
+				_horLeft += horLeft;
+				_verLeft += verLeft;
+				_horRight += horRight;
+				_verRight += verRight;
+				_lpHor += lpHor;
+				_lpVer += lpVer;
+				
+				var json:String = "{" +	
+					"\"cover\" : {" +
+					"\"back\" : {" +
+					"\"left_x\": \"" + coverBackHor + "\"," +
+					"\"top_x\": \"" + coverBackVer + "\"" +
+					"}," +
+					"\"front\" : {" +
+					"\"left_x\": \"" + coverFrontHor + "\"," +
+					"\"top_x\": \"" + coverFrontVer + "\"" +
+					"}" +
+					"}," +	
+					"\"firstpage\" : {" +
+					"\"left_x\": \"" + fpHor + "\"," +
+					"\"top_x\": \"" + fpVer + "\"" + 
+					"}," +
+					"\"bblock\" : {" +
+					"\"leftpage\": {" +
+					"\"left_x\": \"" + horLeft + "\"," +
+					"\"top_x\": \"" + verLeft + "\"" +
+					"}," +
+					"\"rightpage\": {" +
+					"\"left_x\": \"" + horRight + "\"," +
+					"\"top_x\": \"" + verRight + "\"" +
+					"}" +
+					"}," +
+					"\"lastpage\": {" +
+					"\"left_x\": \"" + lpHor + "\"," +
+					"\"top_x\": \"" + lpVer + "\"" +
+					"}}";
+				
 				//Update all elements with new position change
-				FlexGlobals.topLevelApplication.dispatchEvent(new developerEvents(developerEvents.DEV_UPDATE_POSITION, horLeft, verLeft, horRight, verRight));
+				FlexGlobals.topLevelApplication.dispatchEvent(new developerEvents(developerEvents.DEV_UPDATE_POSITION, json));
 
 				//Reset the fields
+				edDevCoverBackHorizontal.text = "0";
+				edDevCoverBackVertical.text = "0";
+				edDevCoverFrontHorizontal.text = "0";
+				edDevCoverFrontVertical.text = "0";
+				edDevFirstPageHorizontalLeft.text = "0";
+				edDevFirstPageVerticalLeft.text = "0";
 				edDevHorizontalLeft.text = "0";
 				edDevVerticalLeft.text = "0";
 				edDevHorizontalRight.text = "0";
 				edDevVerticalRight.text = "0";
+				edDevLastPageHorizontalLeft.text = "0";
+				edDevLastPageVerticalLeft.text = "0";
 				
+				btnDevUpdateOffset.enabled = true;
+				btnDevUpdateMargin.enabled = false;
 			}
 			
-			protected function edDevHorizontal_mouseDownHandler(event:MouseEvent):void
-			{
-				singleton.selected_element = null;
-			}
-			
-			protected function edDevVertical_mouseDownHandler(event:MouseEvent):void
+			protected function edDev_mouseDownHandler(event:MouseEvent):void
 			{
 				singleton.selected_element = null;
 			}
@@ -1470,6 +1548,73 @@
 				
 				selected_fontfamily = font.selectedItem;
 				LoadFontFamily();
+			}
+			
+			protected function btnDevUpdateOffset_clickHandler(event:MouseEvent):void
+			{
+				
+				try {
+						
+					//Create the data object from the offsets available
+					var json:String = "{" +	
+						  "\"cover\" : {" +
+						    "\"back\" : {" +
+						      "\"left_x\": \"" + _coverBackHor + "\"," +
+						      "\"top_x\": \"" + _coverBackVer + "\"" +
+						    "}," +
+						    "\"front\" : {" +
+						      "\"left_x\": \"" + _coverFrontHor + "\"," +
+						      "\"top_x\": \"" + _coverFrontVer + "\"" +
+						    "}" +
+						  "}," +	
+						  "\"firstpage\" : {" +
+						    "\"left_x\": \"" + _fpHor + "\"," +
+						    "\"top_x\": \"" + _fpVer + "\"" + 
+						  "}," +
+						  "\"bblock\" : {" +
+						    "\"leftpage\": {" +
+						      "\"left_x\": \"" + _horLeft + "\"," +
+						      "\"top_x\": \"" + _verLeft + "\"" +
+						    "}," +
+							"\"rightpage\": {" +
+							"\"left_x\": \"" + _horRight + "\"," +
+							"\"top_x\": \"" + _verRight + "\"" +
+							"}" +
+						  "}," +
+						  "\"lastpage\": {" +
+						    "\"left_x\": \"" + _lpHor + "\"," +
+						    "\"top_x\": \"" + _lpVer + "\"" +
+						  "}}";
+					
+					//Save the extra offset to the albums with the same width and height
+					var request:URLRequest = new URLRequest("http://api.xhibit.com/v2/softwares/save_extra_offset");
+					
+					var variables:URLVariables = new URLVariables();
+					variables.product_id = singleton._productID;
+					variables.extra_offset = json;
+					request.data = variables;
+					request.method = URLRequestMethod.POST;
+					
+					var loader:URLLoader = new URLLoader(); 
+					loader.addEventListener(Event.COMPLETE, postSaveOffsetResult);
+					loader.load(request); 
+				
+				} catch (ex:Error) {
+					
+					Alert.show(ex.message);
+				}
+			}
+				
+			public function postSaveOffsetResult(event:Event):void {
+				
+				Alert.show("De extra offset is bijgewerkt in de tabel xhibit_product_conversions");
+				btnDevUpdateOffset.enabled = false;
+			}
+			
+			protected function edDev_changeHandler(event:TextOperationEvent):void
+			{
+				btnDevUpdateOffset.enabled = false;
+				btnDevUpdateMargin.enabled = true;
 			}
 			
 		]]>
@@ -2655,27 +2800,71 @@
 					<s:VerticalLayout gap="10" paddingLeft="10" paddingRight="10" paddingTop="10" />
 				</s:layout>
 				
-				<s:Label text="Elementen LINKER PAGINA" />
+				<s:Label text="** COVER **" />
+				<s:Label text="Cover achterzijde" />
 				<s:HGroup width="100%" verticalAlign="middle">
 					<s:Label text="Horizontaal (px)" width="100%"/>
-					<s:TextInput id="edDevHorizontalLeft" text="0" width="100" mouseDown="edDevHorizontal_mouseDownHandler(event)" />
+					<s:TextInput id="edDevCoverBackHorizontal" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
 				</s:HGroup>
 				<s:HGroup width="100%" verticalAlign="middle">
 					<s:Label text="Verticaal (px)" width="100%" />
-					<s:TextInput id="edDevVerticalLeft" text="0" width="100" mouseDown="edDevVertical_mouseDownHandler(event)" />
+					<s:TextInput id="edDevCoverBackVertical" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
+				</s:HGroup>
+				<s:Label text="Cover voorzijde" />
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Horizontaal (px)" width="100%"/>
+					<s:TextInput id="edDevCoverFrontHorizontal" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Verticaal (px)" width="100%" />
+					<s:TextInput id="edDevCoverFrontVertical" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
+				</s:HGroup>
+				
+				<s:Label text="** BINNENWERK **" />
+				
+				<s:Label text="Elementen EERSTE PAGINA" />
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Horizontaal (px)" width="100%"/>
+					<s:TextInput id="edDevFirstPageHorizontalLeft" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Verticaal (px)" width="100%" />
+					<s:TextInput id="edDevFirstPageVerticalLeft" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
+				</s:HGroup>
+				
+				<s:Label text="Elementen LINKER PAGINA" />
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Horizontaal (px)" width="100%"/>
+					<s:TextInput id="edDevHorizontalLeft" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Verticaal (px)" width="100%" />
+					<s:TextInput id="edDevVerticalLeft" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
 				</s:HGroup>
 				
 				<s:Label text="Elementen RECHTER PAGINA" />
 				<s:HGroup width="100%" verticalAlign="middle">
 					<s:Label text="Horizontaal (px)" width="100%"/>
-					<s:TextInput id="edDevHorizontalRight" text="0" width="100" mouseDown="edDevHorizontal_mouseDownHandler(event)" />
+					<s:TextInput id="edDevHorizontalRight" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
 				</s:HGroup>
 				<s:HGroup width="100%" verticalAlign="middle">
 					<s:Label text="Verticaal (px)" width="100%" />
-					<s:TextInput id="edDevVerticalRight" text="0" width="100" mouseDown="edDevVertical_mouseDownHandler(event)" />
+					<s:TextInput id="edDevVerticalRight" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
+				</s:HGroup>
+				
+				<s:Label text="Elementen LAATSTE PAGINA" />
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Horizontaal (px)" width="100%"/>
+					<s:TextInput id="edDevLastPageHorizontalLeft" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:Label text="Verticaal (px)" width="100%" />
+					<s:TextInput id="edDevLastPageVerticalLeft" text="0" width="100" change="edDev_changeHandler(event)" mouseDown="edDev_mouseDownHandler(event)" />
 				</s:HGroup>
 				
 				<s:Button id="btnDevUpdateMargin" label="Toepassen" click="btnDevUpdateMargin_clickHandler(event)" />
+				
+				<s:Button id="btnDevUpdateOffset" enabled="false" label="Opslaan voor alle albums" click="btnDevUpdateOffset_clickHandler(event)"/>
 				
 				<mx:HRule width="100%"/>
 				

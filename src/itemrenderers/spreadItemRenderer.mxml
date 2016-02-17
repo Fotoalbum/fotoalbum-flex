@@ -1657,7 +1657,7 @@
 						
 					}
 					
-					if (event.new_source == true) {
+					if (event.new_source == true && obj.data.classtype.toString() == "[class userphotoclass]" ) {
 					
 						//Update the image
 						if (event.temp_Image) {
@@ -2772,45 +2772,146 @@
 			
 			private function DevUpdatePosition(event:developerEvents):void {
 				
-				for (var x:int=0; x < spreadData.elements.length; x++) {
-					var elm:Object = spreadData.elements[x] as Object;
-					if (elm.objectX < spreadData.pages[0].width) { //Left page
-						elm.objectX += event.horizontalOffsetLeft;
-						elm.objectY += event.verticalOffsetLeft;
-					} else {
-						elm.objectX += event.horizontalOffsetRight;
-						elm.objectY += event.verticalOffsetRight;
-					}
-				}
+				//Check for cover, firstpage, bblock or lastpage
+				var data:Object = event.offsetData;
 				
-				//Update the page
-				for (x=0; x < elementcontainer.numElements; x++) {
-					elm = elementcontainer.getElementAt(x) as Object;
-					if (elm.x < spreadData.pages[0].width) { //Left page
-						elm.x += event.horizontalOffsetLeft;
-						elm.y += event.verticalOffsetLeft;
-					} else {
-						elm.x += event.horizontalOffsetRight;
-						elm.y += event.verticalOffsetRight;
-					}
-				}
-				
-				for (x=0; x < ontopelementcontainer.numElements; x++) {
-					elm = ontopelementcontainer.getElementAt(x) as Object;
-					if (elm.x < spreadData.pages[0].width) { //Left page
-						elm.x += event.horizontalOffsetLeft;
-						elm.y += event.verticalOffsetLeft;
-					} else {
-						elm.x += event.horizontalOffsetRight;
-						elm.y += event.verticalOffsetRight;
-					}
+				switch (spreadData.pages.length) {
+					
+					case 3: //Cover
+						
+						//Data update
+						for (var x:int=0; x < spreadData.elements.length; x++) {
+							
+							var elm:Object = spreadData.elements[x] as Object;
+							
+							if (elm.objectX < spreadData.pages[0].width) {
+								elm.objectX += parseFloat(data.cover.back.left_x);
+								elm.objectY += parseFloat(data.cover.back.top_x);
+							} else {
+								elm.objectX += parseFloat(data.cover.front.left_x);
+								elm.objectY += parseFloat(data.cover.front.top_x);
+							}
+						}
+						
+						//Physical elements
+						for (x=0; x < elementcontainer.numElements; x++) {
+							
+							elm = elementcontainer.getElementAt(x) as Object;
+							
+							if (elm.x < spreadData.pages[0].width) {
+								elm.x += parseFloat(data.cover.back.left_x);
+								elm.y += parseFloat(data.cover.back.top_x);
+							} else {
+								elm.x += parseFloat(data.cover.front.left_x);
+								elm.y += parseFloat(data.cover.front.top_x);
+							}
+						}
+						
+						//Textelements
+						for (x=0; x < ontopelementcontainer.numElements; x++) {
+							
+							elm = ontopelementcontainer.getElementAt(x) as Object;
+							
+							if (elm.x < spreadData.pages[0].width) {
+								elm.x += parseFloat(data.cover.back.left_x);
+								elm.y += parseFloat(data.cover.back.top_x);
+							} else {
+								elm.x += parseFloat(data.cover.front.left_x);
+								elm.y += parseFloat(data.cover.front.top_x);
+							}
+						}
+						break;
+					case 2: //Bblock
+						//Data update
+						for (x=0; x < spreadData.elements.length; x++) {
+							
+							elm = spreadData.elements[x] as Object;
+							
+							if (elm.objectX < spreadData.pages[0].width) {
+								elm.objectX += parseFloat(data.bblock.leftpage.left_x);
+								elm.objectY += parseFloat(data.bblock.leftpage.top_x);
+							} else {
+								elm.objectX += parseFloat(data.bblock.rightpage.left_x);
+								elm.objectY += parseFloat(data.bblock.rightpage.top_x);
+							}
+						}
+						
+						//Physical elements
+						for (x=0; x < elementcontainer.numElements; x++) {
+							
+							elm = elementcontainer.getElementAt(x) as Object;
+							
+							if (elm.x < spreadData.pages[0].width) {
+								elm.x += parseFloat(data.bblock.leftpage.left_x);
+								elm.y += parseFloat(data.bblock.leftpage.top_x);
+							} else {
+								elm.x += parseFloat(data.bblock.rightpage.left_x);
+								elm.y += parseFloat(data.bblock.rightpage.top_x);
+							}
+						}
+						
+						//Textelements
+						for (x=0; x < ontopelementcontainer.numElements; x++) {
+							
+							elm = ontopelementcontainer.getElementAt(x) as Object;
+							
+							if (elm.x < spreadData.pages[0].width) {
+								elm.x += parseFloat(data.bblock.leftpage.left_x);
+								elm.y += parseFloat(data.bblock.leftpage.top_x);
+							} else {
+								elm.x += parseFloat(data.bblock.rightpage.left_x);
+								elm.y += parseFloat(data.bblock.rightpage.top_x);
+							}
+						}
+						break;
+					case 1: //Single page
+						if (spreadData.pages[0].singlepageFirst == true) { //First page
+							//Data update
+							for (x=0; x < spreadData.elements.length; x++) {
+								elm = spreadData.elements[x] as Object;
+								elm.objectX += parseFloat(data.firstpage.left_x);
+								elm.objectY += parseFloat(data.firstpage.top_x);
+							}
+							//Physical elements
+							for (x=0; x < elementcontainer.numElements; x++) {
+								elm = elementcontainer.getElementAt(x) as Object;
+								elm.x += parseFloat(data.firstpage.left_x);
+								elm.y += parseFloat(data.firstpage.top_x);
+							}
+							//Textelements
+							for (x=0; x < ontopelementcontainer.numElements; x++) {
+								elm = ontopelementcontainer.getElementAt(x) as Object;
+								elm.x += parseFloat(data.firstpage.left_x);
+								elm.y += parseFloat(data.firstpage.top_x);
+							}
+						} else { //Last page
+							//Data update
+							for (x=0; x < spreadData.elements.length; x++) {
+								elm = spreadData.elements[x] as Object;
+								elm.objectX += parseFloat(data.lastpage.left_x);
+								elm.objectY += parseFloat(data.lastpage.top_x);
+							}
+							//Physical elements
+							for (x=0; x < elementcontainer.numElements; x++) {
+								elm = elementcontainer.getElementAt(x) as Object;
+								elm.x += parseFloat(data.lastpage.left_x);
+								elm.y += parseFloat(data.lastpage.top_x);
+							}
+							//Textelements
+							for (x=0; x < ontopelementcontainer.numElements; x++) {
+								elm = ontopelementcontainer.getElementAt(x) as Object;
+								elm.x += parseFloat(data.lastpage.left_x);
+								elm.y += parseFloat(data.lastpage.top_x);
+							}
+						}
+						break;
 				}
 				
 				//Refresh the page
 				if (singleton.selected_spread_item == this) {
 					SelectSpread();
 				}
-				
+								
 			}
 		]]>
 	</fx:Script>

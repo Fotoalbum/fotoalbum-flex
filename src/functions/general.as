@@ -341,11 +341,11 @@ private function onCreationComplete():void
 	}
 	
 	//Debug
-	/*
-	singleton._userID = "20835"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "51"; //10 // themebuilder = 106843
-	singleton._userProductID = "25551"; //3045
-	*/
+	
+	singleton._userID = "111131826"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "14"; //10 // themebuilder = 106843
+	singleton._userProductID = "26941"; //3045
+	
 	
 	if (singleton._checkenabled == true) {
 		
@@ -3156,6 +3156,7 @@ private function onGetUserProductResult(e:ResultEvent):void
 					userphoto.fullPath = photos[ph].@fullPath;
 					userphoto.folderID = photos[ph].@folderID;
 					userphoto.folderName = photos[ph].@folderName;
+					
 					userphoto.exif = XML(photos[ph].exif.toXMLString());
 					
 					if (userphoto.exif.@date_created) {
@@ -4579,6 +4580,11 @@ private function onGetUserProductResult(e:ResultEvent):void
 								elementXML.@refScale = element.@refScale;
 								elementXML.@scaling = element.@scaling;
 								
+								if (element.@imageRotationUpdate.toString() == "1") {
+									elementXML.@imageWidth = 0;
+									elementXML.@imageHeight = 0;
+								}
+							
 								elementXML.@mask_original_id = element.@mask_original_id;
 								elementXML.@mask_original_width = element.@mask_original_width;
 								elementXML.@mask_original_height = element.@mask_original_height;

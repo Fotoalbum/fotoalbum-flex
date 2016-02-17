@@ -80,7 +80,6 @@ public function initAppExtCalls():void
 	ExternalInterface.addCallback("pagesToFlex", pagesToFlex);
 	ExternalInterface.addCallback("updatePhotosToFlex", updatePhotosToFlex);
 	
-	
 	ExternalInterface.addCallback("addTextPlaceholder", AddTextPlaceholder);
 	ExternalInterface.addCallback("addPhotoPlaceholder", AddPhotoPlaceholder);
 	ExternalInterface.addCallback("undo", Undo);

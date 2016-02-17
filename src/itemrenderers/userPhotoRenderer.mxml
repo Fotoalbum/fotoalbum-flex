@@ -262,46 +262,17 @@
 			protected function img_mouseDownHandler(event:MouseEvent):void
 			{
 				
-				event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, DragItem);
-				event.currentTarget.addEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
-				
-				var maxHeight:Number = singleton._defaultPageHeight / 2;
-				var maxWidth:Number = maxHeight * 1.5;
-				
-				var z:Number = 0;
-				var w:Number = 0;
-				var h:Number = 0;
-				var found:Boolean = false;
-				
-				var ow:Number;
-				var oh:Number;
-				ow = data.originalWidth;
-				oh = data.originalHeight;
-				
-				while (found == false) 
-				{
-					w = ow * z;
-					h = oh * z;
-					if (w >= maxWidth || h >= maxHeight) {
-						z -= 0.01;
-						w = ow * z;
-						h = oh * z;
-						found = true;
-					}
-					z += 0.01;
-				}
-				
-				sizeObj = new Object();
-				sizeObj.w = w * FlexGlobals.topLevelApplication.viewer.scaleX;
-				sizeObj.h = h * FlexGlobals.topLevelApplication.viewer.scaleX;
-					
 				var bmdata:BitmapData;
 				if (data.origin == "3rdparty") {
 					
 					if (img.bitmapData) {
 						bmdata = img.bitmapData;
 					} else {
-						bmdata = img.source.bitmapData;
+						if (img.source) {
+							bmdata = img.source.bitmapData;
+						} else {
+							bmdata = null;
+						}
 					}
 					
 				} else {
@@ -309,34 +280,74 @@
 					if (img.bitmapData) {
 						bmdata = img.bitmapData;
 					} else {
-						bmdata = img.source.bitmapData;
+						if (img.source) {
+							bmdata = img.source.bitmapData;
+						} else {
+							bmdata = null;
+						}
 					}
 				}
 				
-				var bitmap:Bitmap = new Bitmap(bmdata);
-				clone = new Image();
-				if (img.source.constructor.toString() == "[class BitmapData]") {
-					clone.source = img.source.clone();
-				} else {
-					clone.source = img.source.bitmapData.clone();
+				if (bmdata) {
+					
+					event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, DragItem);
+					event.currentTarget.addEventListener(DragEvent.DRAG_COMPLETE, dragComplete);
+					
+					var maxHeight:Number = singleton._defaultPageHeight / 2;
+					var maxWidth:Number = maxHeight * 1.5;
+					
+					var z:Number = 0;
+					var w:Number = 0;
+					var h:Number = 0;
+					var found:Boolean = false;
+					
+					var ow:Number;
+					var oh:Number;
+					ow = data.originalWidth;
+					oh = data.originalHeight;
+					
+					while (found == false) 
+					{
+						w = ow * z;
+						h = oh * z;
+						if (w >= maxWidth || h >= maxHeight) {
+							z -= 0.01;
+							w = ow * z;
+							h = oh * z;
+							found = true;
+						}
+						z += 0.01;
+					}
+					
+					sizeObj = new Object();
+					sizeObj.w = w * FlexGlobals.topLevelApplication.viewer.scaleX;
+					sizeObj.h = h * FlexGlobals.topLevelApplication.viewer.scaleX;
+					
+					var bitmap:Bitmap = new Bitmap(bmdata);
+					clone = new Image();
+					if (img.source.constructor.toString() == "[class BitmapData]") {
+						clone.source = img.source.clone();
+					} else {
+						clone.source = img.source.bitmapData.clone();
+					}
+					clone.scaleMode = BitmapScaleMode.ZOOM;
+					clone.width = w * FlexGlobals.topLevelApplication.viewer.scaleX;
+					clone.height = h * FlexGlobals.topLevelApplication.viewer.scaleX;
+					clone.horizontalCenter = 0;
+					clone.verticalCenter = 0;
+					clone.validateNow();
+					
+					sizeObj.cloneW = clone.width;
+					sizeObj.cloneH = clone.height;
+					
+					var cloneBitmap:Bitmap = new Bitmap(bmdata);
+					imgOrig = new Image();
+					imgOrig.rotation = 0; //imgContainer.rotation;
+					imgOrig.width = data.originalWidth;
+					imgOrig.height = data.originalHeight;
+					imgOrig.source = cloneBitmap;
+					imgOrig.validateNow();
 				}
-				clone.scaleMode = BitmapScaleMode.ZOOM;
-				clone.width = w * FlexGlobals.topLevelApplication.viewer.scaleX;
-				clone.height = h * FlexGlobals.topLevelApplication.viewer.scaleX;
-				clone.horizontalCenter = 0;
-				clone.verticalCenter = 0;
-				clone.validateNow();
-				
-				sizeObj.cloneW = clone.width;
-				sizeObj.cloneH = clone.height;
-				
-				var cloneBitmap:Bitmap = new Bitmap(bmdata);
-				imgOrig = new Image();
-				imgOrig.rotation = 0; //imgContainer.rotation;
-				imgOrig.width = data.originalWidth;
-				imgOrig.height = data.originalHeight;
-				imgOrig.source = cloneBitmap;
-				imgOrig.validateNow();
 			
 			}
 			
