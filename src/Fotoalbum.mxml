@@ -395,19 +395,19 @@
 												   height="30" width="120"
 												   buttonType="add"	
 												   mouseUp="{AddSpreadToAlbum()}"
-												   buttonLabel="Toevoegen"/>
+												   buttonLabel="fa_002"/>
 						<classes:pageControlButton id="btnDeleteSpreadTimeline" 
 												   height="30" width="120"
 												   buttonType="delete"		
 												   mouseUp="{DeleteSpreadFromAlbum()}"
 												   enabled="{singleton.selected_timeline_spread != null}"
-												   buttonLabel="Verwijderen"/>
+												   buttonLabel="fa_003"/>
 						<classes:pageControlButton id="btnDuplicateSpreadTimeline" 
 												   height="30" width="120"
 												   enabled="{singleton.selected_timeline_spread != null}"
 												   mouseUp="{DuplicateSpreadInAlbum()}"
 												   buttonType="dupli"			   
-												   buttonLabel="Dupliceren"/>
+												   buttonLabel="fa_004"/>
 					</s:HGroup>
 					
 				</s:NavigatorContent>
@@ -459,7 +459,15 @@
 	
 	<s:BorderContainer id="startup" width="100%" height="100%" backgroundColor="#000000" 
 					   borderVisible="false" visible="true" backgroundAlpha="0.9">
-			<s:SWFLoader horizontalCenter="0" verticalCenter="0" source="@Embed('assets/loading_anim.swf')" height="10%" smoothBitmapContent="true" />
+			
+			<s:VGroup horizontalCenter="0" verticalCenter="0">
+				
+				<s:SWFLoader source="@Embed('assets/loading_anim.swf')" height="10%" smoothBitmapContent="true" />
+		
+				<s:Label id="startupMsg" color="0xFFFFFF" fontSize="22" text="" textAlign="center" />
+		
+			</s:VGroup>
+		
 	</s:BorderContainer>
 	
 	<s:Group id="explodedView" width="200" height="200" visible="false" mouseEnabled="false" />

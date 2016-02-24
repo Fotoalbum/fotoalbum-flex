@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.5.4";
+		public const version:String = "3.5.8";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -150,7 +150,7 @@ package classes
 		[Bindable] public var _previewupload_url:String = "http://new.xhibit.com/";
 		[Bindable] public var _register_url:String = "http://new.xhibit.com/";
 		[Bindable] public var _fonturl:String = "http://new.xhibit.com/fonts_swf/";
-		[Bindable] public var _appLanguage:String = "nl_NL";
+		[Bindable] public var _appLanguage:String = "nld";
 		
 		[Bindable] public var _oldProductID:String;
 		
@@ -3472,6 +3472,7 @@ package classes
 		[Bindable] public var fa_222:String = "Verlopen";
 		[Bindable] public var fa_223:String = "Vormen";
 		[Bindable] public var fa_224:String = "Preview uploaden";
+		[Bindable] public var fa_225:String = "Wij zijn nog even bezig met het importeren van de tekstvelden in je album. Dit kan even duren.";
 		
 		
 		

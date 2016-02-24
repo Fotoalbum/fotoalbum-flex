@@ -588,7 +588,7 @@
 									   buttonFont="_AppFontEnjoy"
 									   mouseDown="{AddSpreadToAlbum()}"
 									   buttonTypeLabel="&#xe616;"
-									   buttonLabel="Toevoegen"
+									   buttonLabel="fa_002"
 									   enabled="{lstSpreadArrange.selectedIndices.length &lt; 2}"/>
 			<classes:pageControlButton id="btnDeleteSpread" 
 									   minWidth="130" height="30"
@@ -597,7 +597,7 @@
 									   buttonTypeLabel="&#xe615;"
 									   mouseDown="{DeleteSpreadFromAlbum()}"
 									   enabled="{singleton.selected_spread_item != null}"
-									   buttonLabel="Verwijderen"/>
+									   buttonLabel="fa_003"/>
 			<classes:pageControlButton id="btnDuplicateSpread" 
 									   minWidth="130" height="30"
 									   buttonType="dupli"		
@@ -605,7 +605,7 @@
 									   buttonTypeLabel="&#xf0c5;"
 									   mouseDown="{DuplicateSpreadInAlbum()}"
 									   enabled="{singleton.selected_spread_item != null &amp;&amp; lstSpreadArrange.selectedIndices.length &lt; 2}"
-									   buttonLabel="Dupliceren"/>
+									   buttonLabel="fa_004"/>
 			
 		</s:BorderContainer>
 		

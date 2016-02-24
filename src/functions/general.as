@@ -114,6 +114,7 @@ import flashx.textLayout.elements.Configuration;
 import flashx.textLayout.elements.FlowLeafElement;
 import flashx.textLayout.elements.GlobalSettings;
 import flashx.textLayout.elements.ParagraphElement;
+import flashx.textLayout.elements.SpanElement;
 import flashx.textLayout.elements.TextFlow;
 import flashx.textLayout.events.SelectionEvent;
 import flashx.textLayout.formats.TextAlign;
@@ -342,10 +343,11 @@ private function onCreationComplete():void
 	
 	//Debug
 	
+	/*
 	singleton._userID = "111131826"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "14"; //10 // themebuilder = 106843
-	singleton._userProductID = "26941"; //3045
-	
+	singleton._productID = "65"; //10 // themebuilder = 106843
+	singleton._userProductID = "27702"; //3045
+	*/
 	
 	if (singleton._checkenabled == true) {
 		
@@ -385,8 +387,12 @@ private function onCreationComplete():void
 	isUploading(false);
 	singleton._isUploading = false;
 	
+	if (singleton._appLanguage == "") {
+		singleton._appLanguage = "nld";
+	}
+	
 	//Get the product information
-	var ast:AsyncToken = api.api_getConfig(singleton._appPlatform);
+	var ast:AsyncToken = api.api_getConfig(singleton._appPlatform, singleton._appLanguage);
 	ast.addResponder(new mx.rpc.Responder(onConfigResult, onConfigFault));
 	
 }
@@ -2056,7 +2062,10 @@ protected function app_keyUpHandler(event:KeyboardEvent):void
 	if (event.keyCode == 68) { //Ctrl-Alt-D
 		if (event.ctrlKey && event.altKey) {
 			trace("show developer menu");
-			menuside.vsMenu.selectedIndex = 7;
+			
+			//Get the extra_offset setup
+			var ast:AsyncToken = api.get_extra_offset(singleton._productID);
+			ast.addResponder(new mx.rpc.Responder(onGetExtraOffset, onConfigFault));
 		}
 	}
 	
@@ -2070,10 +2079,11 @@ protected function app_keyUpHandler(event:KeyboardEvent):void
 		}
 	}
 	
-	trace(event.keyCode);
+	//trace(event.keyCode);
 	
 	if (handleCopy || handleCut || handlePaste) {
-		
+	
+		/*
 		if (handleCopy) {
 			ObjectCopy();
 		}
@@ -2085,6 +2095,7 @@ protected function app_keyUpHandler(event:KeyboardEvent):void
 		if (handlePaste) {
 			ObjectPaste();
 		}
+		*/
 		
 		handleCopy = false;
 		handleCut = false;
@@ -2228,6 +2239,36 @@ protected function app_keyUpHandler(event:KeyboardEvent):void
 		}
 	}
 }
+
+private function onGetExtraOffset(event:ResultEvent):void {
+	
+	menuside.vsMenu.selectedIndex = 7;
+	
+	if (event.result !== "") {
+		var json:Object = JSON.parse(event.result.toString());
+		
+		menuside._coverBackHor = parseFloat(json.cover.back.left_x);
+		menuside._coverBackVer = parseFloat(json.cover.back.top_x);
+		menuside._coverFrontHor = parseFloat(json.cover.front.left_x);
+		menuside._coverFrontVer = parseFloat(json.cover.front.top_x);
+		menuside._fpHor = parseFloat(json.firstpage.left_x);
+		menuside._fpVer = parseFloat(json.firstpage.top_x);
+		menuside._lpHor = parseFloat(json.lastpage.left_x);
+		menuside._lpVer = parseFloat(json.lastpage.top_x);
+		menuside._horLeft = parseFloat(json.bblock.leftpage.left_x);
+		menuside._verLeft = parseFloat(json.bblock.leftpage.top_x);
+		menuside._horRight = parseFloat(json.bblock.rightpage.left_x);
+		menuside._verRight = parseFloat(json.bblock.rightpage.top_x);
+		
+		menuside.edDevMod.visible = true;
+		
+		
+	} else {
+		menuside.edDevMod.visible = false;
+	}
+	
+}
+
 
 private function onFinishedPhotoSelection(e:Event):void {
 	
@@ -4343,6 +4384,9 @@ private function onGetUserProductResult(e:ResultEvent):void
 								try {
 									if (element.@importtext.toString() == "1") {
 										hasimporttext = true;
+										startupMsg.text = singleton.fa_225;
+									} else {
+										startupMsg.text = "";
 									}
 								} catch (ex:Error) {
 									//do nothing
@@ -4354,11 +4398,6 @@ private function onGetUserProductResult(e:ResultEvent):void
 										fontstoload = new Array();
 									}
 									
-									var font:Object = new Object();
-									font.regular_swfname = "arial.swf";
-									font.regular_name = "_arial";
-									fontstoload.push(font);
-									
 									//This is a cewe conversion, import the text into a new textflow object
 									var importtext:String = element[0];
 									importtext = importtext.replace(new RegExp("<style.+?>.+?<\/style>"), "");
@@ -4366,64 +4405,97 @@ private function onGetUserProductResult(e:ResultEvent):void
 									importtext = importtext.replace(new RegExp("<head>.+?<\/head>"), "");
 									importtext = importtext.replace(new RegExp("<\/html>"), "");
 									var fontinfo:XML = XML(importtext);
-									var style:Array = StringUtil.trim(fontinfo.@style).split(";");
+									
+									var styleStr:String = StringUtil.trim(fontinfo.@style.toString());
+									styleStr = styleStr.split(" ").join("");
+									var style:Array = styleStr.split(";");
+									
+									//Defaults
 									var fontfamily:String = "_arial";
 									var fontsize:int = 14;
-									var textcolor:String = "#000";
-									var leading:int = 16;
-									for (var x:int=0; x < style.length; x++) {
-										/*
-										if (style[x].toString().indexOf("font-family") > -1) {
-											var fam:String = StringUtil.trim(style[x].toString());
-											fam = fam.replace("font-family:", "");
-											fam = fam.replace("'", "");
-											fam = fam.replace("'", "");
-											loadedfont_swf = fam.toLowerCase() + ".swf";
-											if (!fontstoload) {
-												fontstoload = new Array();
-											}
-											
-											fam = "_" + fam.toLowerCase();
-											
-											loadedfont_type = "regular";
-											loadedfont_name = fam;
+									var textcolor:String = "000000";
+									var leading:int =  fontsize + 2; 
+									
+									for (var r:int=0; r < style.length; r++) {
+										
+										if (style[r].toString().indexOf("font-family") > -1) {
+											var si:String = style[r].toString();
+											si = si.replace("font-family:", "");
+											si = si.split("'").join("");
+											fontfamily = CheckIfWeHaveThisFont(si);
 										}
-										*/
-										if (style[x].toString().indexOf("font-size") > -1) {
-											var size:String = StringUtil.trim(style[x].toString());
-											size = size.replace("font-size:", "");
-											size = size.replace("pt", "");
-											fontsize = parseInt(size);
+										
+										if (style[r].toString().indexOf("font-size") > -1) {
+											si = style[r].toString();
+											si = si.replace("font-size:", "");
+											si = si.replace("pt", "");
+											fontsize = parseInt(si);
 											leading = fontsize + 2;
 										}
-										if (style[x].toString().indexOf("color") > -1) {
-											var _color:String = StringUtil.trim(style[x].toString());
-											_color = _color.replace("color:", "");
-											_color = _color.replace("'", "");
-											_color = _color.replace("'", "");
-											textcolor = _color;
+										
+										if (style[r].toString().indexOf("color") > -1) {
+											si = style[r].toString();
+											si = si.replace("color:#", "");
+											textcolor = si;
 										}
+									}
+									
+									var tfStr:TextFlow = new TextFlow();
+									
+									for each(var par:XML in fontinfo..p) {
+										//Get the style settings from the paragraph
+										var paragraph:ParagraphElement = new ParagraphElement();
+										var pFormat:TextLayoutFormat = new TextLayoutFormat();
+										pFormat.color = convertStringToUint(textcolor);
+										pFormat.fontSize = fontsize;
+										pFormat.lineHeight = leading;
+										paragraph.format = pFormat;
+										
+										//Now get the spans and create them
+										for each (var span:XML in par..span) {
+											var spanArr:Array = span.@style.toString().split(";");
+											for (r=0; r < spanArr.length; r++) {
+												
+												if (spanArr[r].toString().indexOf("font-family") > -1) {
+													si = spanArr[r].toString();
+													si = si.replace("font-family:", "");
+													si = si.split("'").join("");
+													fontfamily = CheckIfWeHaveThisFont(si);
+												}
+												
+												if (spanArr[r].toString().indexOf("font-size") > -1) {
+													si = spanArr[r].toString();
+													si = si.replace("font-size:", "");
+													si = si.replace("pt", "");
+													fontsize = parseInt(si);
+													leading = fontsize + 2;
+												}
+												
+												if (spanArr[r].toString().indexOf("color") > -1) {
+													si = spanArr[r].toString();
+													si = si.split(" ").join("");
+													si = si.replace("color:#", "");
+													textcolor = si;
+												}
+											}	
+											var spane:SpanElement = new SpanElement();
+											var sFormat:TextLayoutFormat = new TextLayoutFormat();
+											sFormat.color = convertStringToUint(textcolor);
+											sFormat.fontSize = fontsize;
+											sFormat.lineHeight = leading;
+											spane.text = span[0];
+											spane.format = sFormat;
+											paragraph.addChild(spane);
+										}
+										tfStr.addChild(paragraph);
 									}
 									
 									var config:Configuration = new Configuration();
 									
-									var textLayoutFormat:TextLayoutFormat = new TextLayoutFormat();
-									//textLayoutFormat.color = textcolor;
-									textLayoutFormat.fontFamily = fontfamily;
-									//textLayoutFormat.fontSize = fontsize;
-									//textLayoutFormat.lineHeight = leading;
-									textLayoutFormat.kerning = Kerning.ON;
-									textLayoutFormat.fontStyle = FontPosture.NORMAL;
-									textLayoutFormat.renderingMode = RenderingMode.CFF;
-									textLayoutFormat.fontLookup = FontLookup.EMBEDDED_CFF;
-									//textLayoutFormat.textAlign = TextAlign.LEFT;
-									
-									config.textFlowInitialFormat = textLayoutFormat;
-									
 									tfclass = new textflowclass();
 									tfclass.id = element.@tfID;
 									tfclass.tf = new TextFlow();
-									tfclass.tf = TextConverter.importToFlow(importtext, TextConverter.TEXT_FIELD_HTML_FORMAT, config);
+									tfclass.tf = tfStr;
 									tfclass.tf.invalidateAllFormats();
 									
 									tfclass.sprite = new textsprite();
@@ -4910,6 +4982,65 @@ private function onGetUserProductResult(e:ResultEvent):void
 			
 		}
 	}
+}
+
+public function convertStringToUint(value:String):uint {  
+	var colorString:String = "0x" + value;  
+	var colorUint:uint = mx.core.Singleton.getInstance("mx.styles::IStyleManager2").getColorName( colorString );  
+	
+	return colorUint;  
+}
+
+private var fontconversionlst:Object = {
+	akronim:"akronim"
+};
+
+public function CheckIfWeHaveThisFont(fontName:String):String {
+	
+	var returnFont:String = "_arial";
+	
+	var testName:String = fontName.split(" ").join("");
+	testName = testName.toLowerCase();
+	testName = StringUtil.trim(testName);
+	
+	trace(testName);
+	
+	switch(testName) {
+		case "comicsansms":
+			testName = "comicsans";
+			break;
+		case "times":
+			testName = "timesnewroman";
+			break;
+		case "lucindahandwriting":
+		case "calligraphscript":
+		case "segoescript":
+			testName = "calligraffitti";
+			break;
+		case "calibri":
+		case "mvboli":
+		case "baskervilleoldface":
+			testName = "bpreplay";
+			break;
+	}
+	
+	for (var x:int=0; x < singleton.cms_font_families.length; x++) {
+		if (singleton.cms_font_families.getItemAt(x).name.toString().toLowerCase() == testName) {
+			returnFont = singleton.cms_font_families.getItemAt(x).regular_name.toString();
+			var font:Object = new Object();
+			font.regular_swfname = singleton.cms_font_families.getItemAt(x).regular_swfname.toString()
+			font.regular_name = singleton.cms_font_families.getItemAt(x).regular_name.toString();
+			//Check if the font excists allready?
+			if (fontstoload.indexOf(font) < 0) {
+				fontstoload.push(font);
+			}
+			break;
+		}
+	}
+	
+	trace(returnFont);
+	
+	return returnFont;
 }
 
 [Bindable] public var autoLayoutPhotoCount:int=0;
@@ -10121,6 +10252,8 @@ private function UploadCoverPreview(snap:snapshot):void {
 		variables.userproductID = singleton._userProductID;
 		
 		request.data = variables;
+		
+		singleton.DebugPrint("Uploading: " + variables.filename);
 		
 		_loader.load(request);
 		

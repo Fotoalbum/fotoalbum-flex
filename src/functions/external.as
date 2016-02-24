@@ -2918,8 +2918,14 @@ public function localizeSoftware(phrases:String):void {
 		function(key:String, val:Object): * {
 			if (val is String)
 			{
-				//singleton.DebugPrint(key + " | " + val);
-				singleton[key] = val.toString();
+				try {
+					if (singleton[key]) {
+						singleton[key] = val.toString();
+					}
+				} catch (err:Error) {
+					//Do nothing
+				}
+				
 			}
 		}
 	);

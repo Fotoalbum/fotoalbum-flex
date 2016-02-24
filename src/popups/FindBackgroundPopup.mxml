@@ -259,7 +259,7 @@
 					selectedIndex="0" requireSelection="true"
 					creationComplete="lstContentOnDate_creationCompleteHandler(event)"
 					dataProvider="{singleton.background_categories}" horizontalScrollPolicy="off"
-					itemRenderer="itemrenderers.CMSLabelRenderer" useVirtualLayout="false">
+					itemRenderer="itemrenderers.CMSLabelRenderer" useVirtualLayout="true">
 				<s:layout>
 					<s:VerticalLayout gap="1"
 									  paddingBottom="1" paddingLeft="0"

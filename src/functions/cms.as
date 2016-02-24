@@ -38,10 +38,14 @@ private function onGetBackgroundCategoriesResult(e:ResultEvent):void
 			switch (singleton._appLanguage) {
 				case "nl_NL":
 				case "nl_BE":
+				case "nl":
+				case "nl-be":
 				case "nld":
 					item.name = obj.Category.nl_NL;
 					break;
+				case "fr-be":
 				case "fr_BE":
+				case "fra":
 					item.name = obj.Category.fr_FR;		
 					break;
 			}
@@ -121,10 +125,14 @@ private function onGetClipartCategoriesResult(e:ResultEvent):void
 			switch (singleton._appLanguage) {
 				case "nl_NL":
 				case "nl_BE":
+				case "nl":
+				case "nl-be":
 				case "nld":
 					item.name = obj.Category.nl_NL;
 					break;
+				case "fr-be":
 				case "fr_BE":
+				case "fra":
 					item.name = obj.Category.fr_FR;		
 					break;
 			}

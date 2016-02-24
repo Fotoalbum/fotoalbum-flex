@@ -441,7 +441,6 @@
 									text.height = text_class.objectHeight;
 									text.rotation = text_class.rotation;
 									
-									
 									var content:String = "";
 									if (tfclass) {
 										content = TextConverter.export(tfclass.tf, TextConverter.TEXT_LAYOUT_FORMAT, ConversionType.STRING_TYPE).toString();

@@ -250,7 +250,7 @@
 					contentBackgroundColor="#FFFFFF"
 					mouseUp="lstContentOnDate_mouseUpHandler(event)"
 					dataProvider="{singleton.clipart_categories}" horizontalScrollPolicy="off"
-					itemRenderer="itemrenderers.CMSLabelRenderer" useVirtualLayout="false">
+					itemRenderer="itemrenderers.CMSLabelRenderer" useVirtualLayout="true">
 				<s:layout>
 					<s:VerticalLayout gap="1"
 									  paddingBottom="0" paddingLeft="0"
