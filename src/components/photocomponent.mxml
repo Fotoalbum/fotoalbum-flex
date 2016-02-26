@@ -705,6 +705,14 @@
 				
 				if (img.width == 0 || img.height == 0 || setnewphoto == true) {
 					singleton.CalculateImageDimensions(imagecontainer, img, data, true, _model, this);
+				} else {
+					//Check if the image really fits in the container
+					var fit_w:Number = img.width + img.x;
+					var fit_h:Number = img.height + img.y;
+					
+					if (fit_w < container.width || fit_h < container.height) {
+						singleton.CalculateImageDimensions(imagecontainer, img, data, true, _model, this);
+					}
 				} 
 				
 				//loading.visible = false;

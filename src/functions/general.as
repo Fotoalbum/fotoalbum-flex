@@ -345,8 +345,8 @@ private function onCreationComplete():void
 	
 	/*
 	singleton._userID = "111131826"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "65"; //10 // themebuilder = 106843
-	singleton._userProductID = "27702"; //3045
+	singleton._productID = "49"; //10 // themebuilder = 106843
+	singleton._userProductID = "28341"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {
@@ -4398,6 +4398,10 @@ private function onGetUserProductResult(e:ResultEvent):void
 										fontstoload = new Array();
 									}
 									
+									if (elementXML.@coverSpineTitle.toString() == "true") {
+										elementXML.@objectX = singleton.userBook.coverWidth + singleton.userBook.coverBleed + singleton.userBook.coverWrap + singleton.userBook.coverSpine;
+									}
+									
 									//This is a cewe conversion, import the text into a new textflow object
 									var importtext:String = element[0];
 									importtext = importtext.replace(new RegExp("<style.+?>.+?<\/style>"), "");
@@ -4443,12 +4447,16 @@ private function onGetUserProductResult(e:ResultEvent):void
 									var tfStr:TextFlow = new TextFlow();
 									
 									for each(var par:XML in fontinfo..p) {
+										
 										//Get the style settings from the paragraph
 										var paragraph:ParagraphElement = new ParagraphElement();
 										var pFormat:TextLayoutFormat = new TextLayoutFormat();
 										pFormat.color = convertStringToUint(textcolor);
 										pFormat.fontSize = fontsize;
 										pFormat.lineHeight = leading;
+										if (elementXML.@coverSpineTitle.toString() == "true"){
+											pFormat.textAlign = TextAlign.CENTER;
+										}
 										paragraph.format = pFormat;
 										
 										//Now get the spans and create them
@@ -4652,11 +4660,6 @@ private function onGetUserProductResult(e:ResultEvent):void
 								elementXML.@refScale = element.@refScale;
 								elementXML.@scaling = element.@scaling;
 								
-								if (element.@imageRotationUpdate.toString() == "1") {
-									elementXML.@imageWidth = 0;
-									elementXML.@imageHeight = 0;
-								}
-							
 								elementXML.@mask_original_id = element.@mask_original_id;
 								elementXML.@mask_original_width = element.@mask_original_width;
 								elementXML.@mask_original_height = element.@mask_original_height;
@@ -5031,14 +5034,19 @@ public function CheckIfWeHaveThisFont(fontName:String):String {
 			font.regular_swfname = singleton.cms_font_families.getItemAt(x).regular_swfname.toString()
 			font.regular_name = singleton.cms_font_families.getItemAt(x).regular_name.toString();
 			//Check if the font excists allready?
-			if (fontstoload.indexOf(font) < 0) {
+			var excist:Boolean = false;
+			for (var f:int=0; f < fontstoload.length; f++) {
+				if (fontstoload[f].regular_name == font.regular_name) {
+					excist = true;
+					break;
+				}
+			}
+			if (!excist) {
 				fontstoload.push(font);
 			}
 			break;
 		}
 	}
-	
-	trace(returnFont);
 	
 	return returnFont;
 }
