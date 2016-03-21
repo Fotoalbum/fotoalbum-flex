@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.6.0";
+		public const version:String = "3.6.1";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -554,7 +554,16 @@ package classes
 				case 6:
 					spine = (((numPages / 2) / 10) / 80) * _printerProduct.ProductPaperweight.api_code;
 					break;
+				case 7:
+					spine = (numPages / 12) + 1;
+					break;
+				case 8:
+					spine = (numPages * 0.2) + 1
+					break;
 			}
+			
+			DebugPrint("new spine mm: " + spine);
+			DebugPrint("new spine pt: " + mm2pt(spine));
 			
 			return mm2pt(spine);
 			
