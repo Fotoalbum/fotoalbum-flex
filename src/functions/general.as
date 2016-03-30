@@ -343,11 +343,10 @@ private function onCreationComplete():void
 	
 	//Debug
 	
-	/*
 	singleton._userID = "111131826"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "49"; //10 // themebuilder = 106843
-	singleton._userProductID = "28341"; //3045
-	*/
+	singleton._productID = "10"; //10 // themebuilder = 106843
+	singleton._userProductID = "29822"; //3045
+	
 	
 	if (singleton._checkenabled == true) {
 		
@@ -4489,6 +4488,10 @@ private function onGetUserProductResult(e:ResultEvent):void
 											var spane:SpanElement = new SpanElement();
 											var sFormat:TextLayoutFormat = new TextLayoutFormat();
 											sFormat.color = convertStringToUint(textcolor);
+											if (fontsize == 0) {
+												fontsize = 12;
+												leading = 14;
+											}
 											sFormat.fontSize = fontsize;
 											sFormat.lineHeight = leading;
 											spane.text = span[0];
@@ -8622,6 +8625,7 @@ private function UpdateOptionMenu(event:optionMenuEvent):void {
 		editor.photomenu.validateNow();
 		editor.textmenu.visible = false;
 		editor.shapemenu.visible = false;
+		//designBarView.selectedIndex = 1;
 		editor.photomenu.visible = true;
 		editor.photomenu.x = 10;
 		editor.photomenu.y = 10;
@@ -8650,6 +8654,8 @@ private function UpdateOptionMenu(event:optionMenuEvent):void {
 		editor.textmenu.visible = false;
 		editor.shapemenu.visible = false;
 		editor.photomenu.visible = true;
+		//designBarView.selectedIndex = 1;
+		//mainPhotoBar.currentState = "photo";
 		
 		if (singleton._toolbarMoved == false) {
 			
@@ -8706,6 +8712,7 @@ private function UpdateOptionMenu(event:optionMenuEvent):void {
 		editor.textmenu.visible = false;
 		editor.shapemenu.visible = false;
 		editor.photomenu.visible = true;
+		//designBarView.selectedIndex = 1;
 		
 		if (singleton._toolbarMoved == false) {
 		
