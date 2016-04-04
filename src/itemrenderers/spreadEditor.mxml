@@ -958,6 +958,8 @@
 			
 				FlexGlobals.topLevelApplication.startup.visible = false;
 				
+				DrawBorder();
+				
 				setTimeout(CallSoftwareDoneLoading, 3000);
 				
 				
@@ -4044,15 +4046,21 @@
 				}
 			}
 			
+			public function DrawBorder():void {
+				
+				borderlayer.graphics.clear();
+				borderlayer.graphics.lineStyle(1, 0xD2D2D2, 1);
+				borderlayer.graphics.drawRect(0, 0, width, height);
+			}
+			
 		]]>
 	</fx:Script>
 	
 	<s:Group id="maincontainer" width="{this.width}" height="{this.height}" mouseEnabled="false" 
 			 horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="false">
 		
-			<s:Group id="container" width="{this.width}" height="{this.height}" mouseEnabled="false" 
+		<s:Group id="container" width="{this.width}" height="{this.height}" mouseEnabled="false" 
 					 horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="true" />
-	
 	</s:Group>
 	
 	<s:SpriteVisualElement id="centerlayer" top="0" bottom="0"
@@ -4063,6 +4071,9 @@
 	<components:pageBar id="spreadBar" visible="false" />
 	
 	<s:Group id="decorator" width="{this.width}" height="{this.height}" mouseEnabled="false" 
+			 horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="false" />
+	
+	<s:Group id="borderlayer" width="{this.width}" height="{this.height}" mouseEnabled="false" 
 			 horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="false" />
 	
 </s:BorderContainer>

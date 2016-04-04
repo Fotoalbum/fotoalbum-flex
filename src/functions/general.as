@@ -342,11 +342,11 @@ private function onCreationComplete():void
 	}
 	
 	//Debug
-	
-	singleton._userID = "111131826"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "10"; //10 // themebuilder = 106843
-	singleton._userProductID = "29822"; //3045
-	
+	/*
+	singleton._userID = "96174"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "670"; //10 // themebuilder = 106843
+	singleton._userProductID = "31346"; //3045
+	*/
 	
 	if (singleton._checkenabled == true) {
 		
@@ -3202,11 +3202,16 @@ private function onGetUserProductResult(e:ResultEvent):void
 					if (userphoto.exif.@date_created) {
 						if (userphoto.exif.@date_created.toString() !== "") {
 							var datetimesplit:Array = userphoto.exif.@date_created.toString().split(" ");
-							var dateparse:Array = datetimesplit[0].split(":");
-							var timeparse:Array = datetimesplit[1].split(":");
-							userphoto.dateCreated = dateparse[0] + "-" + dateparse[1] + "-" + dateparse[2] + " " + timeparse[0] + ":" + timeparse[1] + ":" + timeparse[2];
+							try {
+								var dateparse:Array = datetimesplit[0].split(":");
+								var timeparse:Array = datetimesplit[1].split(":");
+								userphoto.dateCreated = dateparse[0] + "-" + dateparse[1] + "-" + dateparse[2] + " " + timeparse[0] + ":" + timeparse[1] + ":" + timeparse[2];
+							} catch (ex:Error) {
+								var dt:Date = new Date();
+								userphoto.dateCreated = dt.fullYear + "-" + (dt.month + 1) + "-" + dt.date + " " + dt.hours + ":" + dt.minutes + ":" + dt.seconds;
+							}
 						} else {
-							var dt:Date = new Date();
+							dt = new Date();
 							userphoto.dateCreated = dt.fullYear + "-" + (dt.month + 1) + "-" + dt.date + " " + dt.hours + ":" + dt.minutes + ":" + dt.seconds;
 						}	
 					} else {
@@ -5008,8 +5013,6 @@ public function CheckIfWeHaveThisFont(fontName:String):String {
 	var testName:String = fontName.split(" ").join("");
 	testName = testName.toLowerCase();
 	testName = StringUtil.trim(testName);
-	
-	trace(testName);
 	
 	switch(testName) {
 		case "comicsansms":
