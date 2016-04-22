@@ -343,9 +343,9 @@ private function onCreationComplete():void
 	
 	//Debug
 	/*
-	singleton._userID = "96174"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "670"; //10 // themebuilder = 106843
-	singleton._userProductID = "31346"; //3045
+	singleton._userID = "111119464"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "10"; //10 // themebuilder = 106843
+	singleton._userProductID = "30777"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {
@@ -2113,40 +2113,10 @@ protected function app_keyUpHandler(event:KeyboardEvent):void
 			
 				if (singleton.selected_element.data.classtype == "[class userphotoclass]") {
 					
-					if (singleton.selected_element.img) 
-					{
-						
-						oldData = singleton.CloneObject(singleton.selected_element.data);
-						
-						singleton.selected_element.RemoveImage();
+					//Check if we have a mask applied?
+					if (singleton.selected_element.data.mask_original_id !== "" || singleton.selected_element.data.overlay_hires !== "") {
 						
 						//Update the data and update the navigation
-						singleton.selected_element.data.hires = "";
-						singleton.selected_element.data.hires_url = "";
-						singleton.selected_element.data.fullPath = "";
-						singleton.selected_element.data.bytesize = "0";
-						singleton.selected_element.data.imageWidth = "";
-						singleton.selected_element.data.imageHeight = "";
-						singleton.selected_element.data.imageRotation = "0";
-						singleton.selected_element.data.lowres = "";
-						singleton.selected_element.data.lowres_url = "";
-						singleton.selected_element.data.origin = "";
-						singleton.selected_element.data.originalHeight = "";
-						singleton.selected_element.data.originalWidth = "";
-						singleton.selected_element.data.original_image_id = "";
-						singleton.selected_element.data.path = "";
-						singleton.selected_element.data.offsetX = 0;
-						singleton.selected_element.data.offsetY = 0;
-						singleton.selected_element.data.refHeight = "";
-						singleton.selected_element.data.refWidth = "";
-						singleton.selected_element.data.refOffsetX = "";
-						singleton.selected_element.data.refOffsetY = "";
-						singleton.selected_element.data.refScale = "";
-						singleton.selected_element.data.status = "empty";
-						singleton.selected_element.data.thumb = "";
-						singleton.selected_element.data.thumb_url = "";
-						singleton.selected_element.data.scaling = 0;
-						
 						singleton.selected_element.data.mask_original_id = "";
 						singleton.selected_element.data.mask_original_width = "";
 						singleton.selected_element.data.mask_original_height = "";
@@ -2177,39 +2147,107 @@ protected function app_keyUpHandler(event:KeyboardEvent):void
 							singleton.selected_element.imageOverlay = null;
 						}
 						
-						singleton.selected_element.qualityAlert.visible = false;
-						
-						FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.DELETEIMG, singleton.selected_spread.spreadID, singleton.selected_element.data));
-						
-						singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_DELETE_IMAGE, singleton.GetRealObjectIndex(this));
+						singleton.selected_element.CreateImage(false, true);
 						
 					} else {
-						
-						//Delete this component
-						var oldData:Object = singleton.CloneObject(singleton.selected_element.data);
-						
-						var index:int = singleton.GetRealObjectIndex(singleton.selected_element);
-						
-						var elementContainer:Group = singleton.selected_spread_editor.elementcontainer as Group;
-						elementContainer.removeElement(singleton.selected_element as IVisualElement);
-						
-						singleton.selected_element.parentObjectHandles.selectionManager.clearSelection();
-						singleton.selected_element.graphics.clear();
-						
-						FlexGlobals.topLevelApplication.dispatchEvent(new showPoofEvent(showPoofEvent.POOF));
-						
-						FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.DELETE, singleton.selected_spread.spreadID, singleton.selected_element.data));
-						
-						singleton.selected_spread_editor.photomenu.visible = false;
-						singleton.selected_spread_editor.shapemenu.visible = false;
-						singleton.selected_spread_editor.textmenu.visible = false;
-						
-						singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_DELETE_ELEMENT, index);
-	
-					}
+					
+						if (singleton.selected_element.img) {
+							
+							oldData = singleton.CloneObject(singleton.selected_element.data);
+							
+							singleton.selected_element.RemoveImage();
+							
+							//Update the data and update the navigation
+							singleton.selected_element.data.hires = "";
+							singleton.selected_element.data.hires_url = "";
+							singleton.selected_element.data.fullPath = "";
+							singleton.selected_element.data.bytesize = "0";
+							singleton.selected_element.data.imageWidth = "";
+							singleton.selected_element.data.imageHeight = "";
+							singleton.selected_element.data.imageRotation = "0";
+							singleton.selected_element.data.lowres = "";
+							singleton.selected_element.data.lowres_url = "";
+							singleton.selected_element.data.origin = "";
+							singleton.selected_element.data.originalHeight = "";
+							singleton.selected_element.data.originalWidth = "";
+							singleton.selected_element.data.original_image_id = "";
+							singleton.selected_element.data.path = "";
+							singleton.selected_element.data.offsetX = 0;
+							singleton.selected_element.data.offsetY = 0;
+							singleton.selected_element.data.refHeight = "";
+							singleton.selected_element.data.refWidth = "";
+							singleton.selected_element.data.refOffsetX = "";
+							singleton.selected_element.data.refOffsetY = "";
+							singleton.selected_element.data.refScale = "";
+							singleton.selected_element.data.status = "empty";
+							singleton.selected_element.data.thumb = "";
+							singleton.selected_element.data.thumb_url = "";
+							singleton.selected_element.data.scaling = 0;
+							
+							singleton.selected_element.data.mask_original_id = "";
+							singleton.selected_element.data.mask_original_width = "";
+							singleton.selected_element.data.mask_original_height = "";
+							singleton.selected_element.data.mask_hires = "";
+							singleton.selected_element.data.mask_hires_url = "";
+							singleton.selected_element.data.mask_lowres = "";
+							singleton.selected_element.data.mask_lowres_url = "";
+							singleton.selected_element.data.mask_thumb = "";
+							singleton.selected_element.data.mask_thumb_url = "";
+							singleton.selected_element.data.mask_path = "";
+							
+							singleton.selected_element.data.overlay_original_width = "";
+							singleton.selected_element.data.overlay_original_height = "";
+							singleton.selected_element.data.overlay_hires = "";
+							singleton.selected_element.data.overlay_hires_url = "";
+							singleton.selected_element.data.overlay_lowres = "";
+							singleton.selected_element.data.overlay_lowres_url = "";
+							singleton.selected_element.data.overlay_thumb = "";
+							singleton.selected_element.data.overlay_thumb_url = "";
+							
+							if (singleton.selected_element.imageMask) {
+								singleton.selected_element.removeElement(singleton.selected_element.imageMask);
+								singleton.selected_element.imageMask = null;
+							}
+							
+							if (singleton.selected_element.imageOverlay) {
+								singleton.selected_element.overlayGroup.removeElement(singleton.selected_element.imageOverlay);
+								singleton.selected_element.imageOverlay = null;
+							}
+							
+							singleton.selected_element.qualityAlert.visible = false;
+							
+							FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.DELETEIMG, singleton.selected_spread.spreadID, singleton.selected_element.data));
+							
+							singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_DELETE_IMAGE, singleton.GetRealObjectIndex(this));
+							
+						} else {
+							
+							//Delete this component
+							var oldData:Object = singleton.CloneObject(singleton.selected_element.data);
+							
+							var index:int = singleton.GetRealObjectIndex(singleton.selected_element);
+							
+							var elementContainer:Group = singleton.selected_spread_editor.elementcontainer as Group;
+							elementContainer.removeElement(singleton.selected_element as IVisualElement);
+							
+							singleton.selected_element.parentObjectHandles.selectionManager.clearSelection();
+							singleton.selected_element.graphics.clear();
+							
+							FlexGlobals.topLevelApplication.dispatchEvent(new showPoofEvent(showPoofEvent.POOF));
+							
+							FlexGlobals.topLevelApplication.dispatchEvent(new updateElementsEvent(updateElementsEvent.DELETE, singleton.selected_spread.spreadID, singleton.selected_element.data));
+							
+							singleton.selected_spread_editor.photomenu.visible = false;
+							singleton.selected_spread_editor.shapemenu.visible = false;
+							singleton.selected_spread_editor.textmenu.visible = false;
+							
+							singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_DELETE_ELEMENT, index);
+		
+						}
+					}	
 					
 				} else {
-					
+						
 					if (singleton.selected_element.data.classtype != "[class usertextclass]") {
 						
 						//Delete this component
@@ -2232,6 +2270,7 @@ protected function app_keyUpHandler(event:KeyboardEvent):void
 						singleton.selected_spread_editor.textmenu.visible = false;
 						
 						singleton.selected_undoredomanager.AddUndo(oldData, singleton.selected_element, singleton.selectedspreadindex, undoActions.ACTION_DELETE_ELEMENT, index);
+				
 					}
 				}
 			}

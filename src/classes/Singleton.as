@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.6.3";
+		public const version:String = "3.6.5";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -3482,6 +3482,8 @@ package classes
 		[Bindable] public var fa_223:String = "Vormen";
 		[Bindable] public var fa_224:String = "Preview uploaden";
 		[Bindable] public var fa_225:String = "Wij zijn nog even bezig met het importeren van de tekstvelden in je album. Dit kan even duren.";
+		[Bindable] public var fa_226:String = "Let op! Deze blauwe rand geeft aan waar de omslag gevouwen of gesneden wordt. Alles wat onder deze blauwe rand staat, komt niet mee op de kaft of pagina van het fotoalbum!";
+		[Bindable] public var fa_227:String = "Let op! Deze blauwe rand is de snijrand. Zet je foto of tekst niet te dicht bij deze rand, dan kan het afvallen";
 		
 		
 		

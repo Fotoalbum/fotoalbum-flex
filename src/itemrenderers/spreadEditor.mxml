@@ -2850,6 +2850,9 @@
 						
 					}
 					
+					//Check for bleed overlay
+					CheckDistanceFromBleed();
+					
 				}
 			}
 			
@@ -2868,6 +2871,7 @@
 					singleton.objectX = geo.x;  //- singleton.bleed;
 					singleton.objectY = geo.y; //- singleton.bleed;
 					singleton.objectRotation = geo.rotation;
+					
 				}
 				
 			}
@@ -4053,6 +4057,101 @@
 				borderlayer.graphics.drawRect(0, 0, width, height);
 			}
 			
+			public function CheckDistanceFromBleed():void {
+				
+				messagelayer.visible = false;
+				
+				//Get the left, top and right x and y position
+				var left:Number = singleton.selected_element.data.objectX;
+				var top:Number = singleton.selected_element.data.objectY;
+				var right:Number = singleton.selected_element.data.objectX + singleton.selected_element.data.objectWidth;
+				var bottom:Number = singleton.selected_element.data.objectY + singleton.selected_element.data.objectHeight;
+				
+				var mainLeft:Number = singleton._defaultPageBleed;
+				var mainTop:Number = singleton._defaultPageBleed;
+				var mainRight:Number = spreadData.totalWidth - singleton._defaultPageBleed;
+				var mainBottom:Number = spreadData.totalHeight - singleton._defaultPageBleed;
+				
+				var status:Boolean = false;
+				var overedge:Boolean = false;
+				
+				//Check if we are on the cover
+				if (isCover) {
+					mainLeft = singleton._defaultCoverBleed + singleton._defaultCoverWrap;
+					mainTop = mainLeft;
+					mainRight = spreadData.totalWidth - singleton._defaultCoverBleed - singleton._defaultCoverWrap;
+					mainBottom = spreadData.totalHeight - singleton._defaultCoverBleed - singleton._defaultCoverWrap;
+				}
+				
+				//Left
+				if (left < mainLeft) {
+					status = true;
+					overedge = true;
+				} else {
+					if ((left-5) < mainLeft) {
+						status = true;
+						overedge = false;
+					}
+				}
+				
+				//Top
+				if (top < mainTop) {
+					status = true;
+					overedge = true;
+				} else {
+					if ((top-5) < mainTop) {
+						status = true;
+						overedge = false;
+					}
+				}
+				
+				//Right
+				if (right > mainRight) {
+					status = true;
+					overedge = true;
+				} else {
+					if ((right + 5) > mainRight) {
+						status = true;
+						overedge = false;
+					}
+				}
+				
+				//Bottom
+				if (bottom > mainBottom) {
+					status = true;
+					overedge = true;
+				} else {
+					if ((bottom + 5) > mainBottom) {
+						status = true;
+						overedge = false;
+					}
+				}
+				
+				if (status == true) {
+					ShowWarningBleed(overedge);
+				}
+				
+			}
+			
+			public function ShowWarningBleed(overedge:Boolean = false):void {
+				
+				if (overedge) {
+					//Warning, over the edge
+					bleed_message.text = singleton.fa_226;
+				} else {
+					//Warning, too close to the edge
+					bleed_message.text = singleton.fa_227;
+				}
+				
+				messagelayer.visible = true;
+				
+			}
+			
+			protected function btnCloseWindow_clickHandler(event:MouseEvent):void
+			{
+				messagelayer.visible = false;
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -4075,5 +4174,29 @@
 	
 	<s:Group id="borderlayer" width="{this.width}" height="{this.height}" mouseEnabled="false" 
 			 horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="false" />
+	
+	<s:Group id="messagelayer" width="400" height="300" mouseEnabled="false" visible="false" 
+			 horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="false">
+			
+		<s:Rect width="100%" height="100%" radiusX="5" radiusY="5">
+			<s:fill>
+				<s:SolidColor color="0xFFFFFF" alpha="1"/>
+			</s:fill>
+			<s:stroke>
+				<s:SolidColorStroke color="0x58595B" weight="1" />
+			</s:stroke>
+		</s:Rect>
+		
+		<s:TextArea id="bleed_message" width="90%" borderVisible="false" color="#000"
+					contentBackgroundAlpha="0.0" editable="false" fontSize="22" horizontalCenter="0"
+					text="{singleton.fa_226}" textAlign="center" verticalAlign="middle"
+					verticalCenter="0"/>
+		
+		<s:Label id="btnCloseWindow" right="5" top="5" click="btnCloseWindow_clickHandler(event)"
+				 fontFamily="_AppFontEnjoy" fontSize="24" color="#000000" text="&#xe614;" />
+	</s:Group>
+	
+	
+	
 	
 </s:BorderContainer>
