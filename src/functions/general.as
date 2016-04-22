@@ -343,9 +343,9 @@ private function onCreationComplete():void
 	
 	//Debug
 	/*
-	singleton._userID = "111119464"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "10"; //10 // themebuilder = 106843
-	singleton._userProductID = "30777"; //3045
+	singleton._userID = "43972"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "373"; //10 // themebuilder = 106843
+	singleton._userProductID = "29106"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {

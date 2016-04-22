@@ -706,12 +706,21 @@
 				if (img.width == 0 || img.height == 0 || setnewphoto == true) {
 					singleton.CalculateImageDimensions(imagecontainer, img, data, true, _model, this);
 				} else {
+					
 					//Check if the image really fits in the container
+					var w:Number = img.width;
+					var h:Number = img.height;
+					
 					var fit_w:Number = img.width + img.x;
 					var fit_h:Number = img.height + img.y;
 					
+					if (data.imageRotation == 90 || data.imageRotation == 270) {
+						fit_w = img.height + img.x;
+						fit_h = img.width + img.y;
+					}
+					
 					if (fit_w < container.width || fit_h < container.height) {
-						singleton.CalculateImageDimensions(imagecontainer, img, data, true, _model, this);
+						//singleton.CalculateImageDimensions(imagecontainer, img, data, true, _model, this);
 					}
 				} 
 				
@@ -985,11 +994,17 @@
 				
 				img.removeEventListener(MouseEvent.MOUSE_UP, dragImageMouseUpHandler);
 				
-				data.offsetX = dragimg.x;
-				data.offsetY = dragimg.y;
-				
-				data.refOffsetX = dragimg.x;
-				data.refOffsetY = dragimg.y;
+				if (data.imageRotation == "90" || data.imageRotation == "270") {
+					data.offsetX = dragimg.y;
+					data.offsetY = dragimg.x;
+					data.refOffsetX = dragimg.y;
+					data.refOffsetY = dragimg.x;
+				} else {
+					data.offsetX = dragimg.x;
+					data.offsetY = dragimg.y;
+					data.refOffsetX = dragimg.x;
+					data.refOffsetY = dragimg.y;
+				}
 				
 				img.x = dragimg.x;
 				img.y = dragimg.y;
