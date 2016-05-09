@@ -482,6 +482,23 @@
 		<s:Label id="waitMessage" horizontalCenter="0" verticalCenter="0" color="0xFFFFFF" fontSize="22" text="" textAlign="center" />
 	</s:BorderContainer>
 	
+	<s:BorderContainer id="messagelayer" width="400" visible="false" 
+			 horizontalCenter="0" verticalCenter="0" backgroundColor="#ffffff" cornerRadius="10">
+		<s:layout>
+			<s:VerticalLayout gap="10" paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10"
+							  verticalAlign="middle" horizontalAlign="center"/>
+		</s:layout>
+		
+		<s:TextArea id="bleed_message" width="100%" borderVisible="false" color="#000"
+					contentBackgroundAlpha="0.0" editable="false" fontSize="22"
+					text="{singleton.fa_226}" textAlign="center" verticalAlign="middle" />
+		
+		<s:CheckBox id="cbBleed" change="cbBleed_changeHandler(event)" bottom="10" horizontalCenter="0" label="{singleton.fa_228}" fontSize="18" />
+		
+		<s:Button id="btnCloseWindow" click="btnCloseWindow_clickHandler(event)" label="{singleton.fa_191}" skinClass="skins.btnBlueSkin" fontSize="18" />
+		
+	</s:BorderContainer>
+	
 	<s:HGroup visible="false" left="10" top="0" gap="1">
 		
 			<s:Button label="Copy" mouseDown="{ObjectCopy(event)}" enabled="{singleton.selected_element || (selectedObjects &amp;&amp; selectedObjects.length &gt; 0)}" skinClass="skins.btnBlueSkin" />

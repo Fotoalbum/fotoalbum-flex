@@ -2851,8 +2851,9 @@
 					}
 					
 					//Check for bleed overlay
-					CheckDistanceFromBleed();
-					
+					if (singleton._bleedWarning) {
+						CheckDistanceFromBleed();
+					}					
 				}
 			}
 			
@@ -4059,7 +4060,7 @@
 			
 			public function CheckDistanceFromBleed():void {
 				
-				messagelayer.visible = false;
+				FlexGlobals.topLevelApplication.messagelayer.visible = false;
 				
 				//Get the left, top and right x and y position
 				var left:Number = singleton.selected_element.data.objectX;
@@ -4137,19 +4138,14 @@
 				
 				if (overedge) {
 					//Warning, over the edge
-					bleed_message.text = singleton.fa_226;
+					FlexGlobals.topLevelApplication.bleed_message.text = singleton.fa_226;
 				} else {
 					//Warning, too close to the edge
-					bleed_message.text = singleton.fa_227;
+					FlexGlobals.topLevelApplication.bleed_message.text = singleton.fa_227;
 				}
 				
-				messagelayer.visible = true;
+				FlexGlobals.topLevelApplication.messagelayer.visible = true;
 				
-			}
-			
-			protected function btnCloseWindow_clickHandler(event:MouseEvent):void
-			{
-				messagelayer.visible = false;
 			}
 			
 		]]>
@@ -4173,30 +4169,6 @@
 			 horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="false" />
 	
 	<s:Group id="borderlayer" width="{this.width}" height="{this.height}" mouseEnabled="false" 
-			 horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="false" />
-	
-	<s:Group id="messagelayer" width="400" height="300" mouseEnabled="false" visible="false" 
-			 horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="false">
-			
-		<s:Rect width="100%" height="100%" radiusX="5" radiusY="5">
-			<s:fill>
-				<s:SolidColor color="0xFFFFFF" alpha="1"/>
-			</s:fill>
-			<s:stroke>
-				<s:SolidColorStroke color="0x58595B" weight="1" />
-			</s:stroke>
-		</s:Rect>
-		
-		<s:TextArea id="bleed_message" width="90%" borderVisible="false" color="#000"
-					contentBackgroundAlpha="0.0" editable="false" fontSize="22" horizontalCenter="0"
-					text="{singleton.fa_226}" textAlign="center" verticalAlign="middle"
-					verticalCenter="0"/>
-		
-		<s:Label id="btnCloseWindow" right="5" top="5" click="btnCloseWindow_clickHandler(event)"
-				 fontFamily="_AppFontEnjoy" fontSize="24" color="#000000" text="&#xe614;" />
-	</s:Group>
-	
-	
-	
+			 horizontalCenter="0" verticalCenter="0" clipAndEnableScrolling="false" />	
 	
 </s:BorderContainer>

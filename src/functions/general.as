@@ -343,9 +343,9 @@ private function onCreationComplete():void
 	
 	//Debug
 	/*
-	singleton._userID = "43972"; //96174 // studio@fotoalbum.nl - themebuilder
-	singleton._productID = "373"; //10 // themebuilder = 106843
-	singleton._userProductID = "29106"; //3045
+	singleton._userID = "111117875"; //96174 // studio@fotoalbum.nl - themebuilder
+	singleton._productID = "10"; //10 // themebuilder = 106843
+	singleton._userProductID = "30449"; //3045
 	*/
 	
 	if (singleton._checkenabled == true) {
@@ -13548,6 +13548,16 @@ public function onPaste(event:Event):void {
 	//event.stopImmediatePropagation();
 	//event.stopPropagation();
 	
+}
+
+public function cbBleed_changeHandler(event:Event):void
+{
+	singleton._bleedWarning = !(event.currentTarget.selected);
+}
+
+public function btnCloseWindow_clickHandler(event:MouseEvent):void
+{
+	FlexGlobals.topLevelApplication.messagelayer.visible = false;
 }
 
 
