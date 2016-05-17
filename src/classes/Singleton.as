@@ -75,7 +75,7 @@ package classes
 		/**************************************************************************
 		 APP VERSION
 		 ***************************************************************************/
-		public const version:String = "3.6.8";
+		public const version:String = "3.7.0";
 		
 		[Bindable] public var baseFontColor:uint = 0xFFFFFF;
 		
@@ -650,6 +650,18 @@ package classes
 			if (ExternalInterface.available) {
 				var wrapperFunction:String = "setHasChanges";
 				s = ExternalInterface.call(wrapperFunction, _changesMade);
+			} else {
+				s = "Wrapper not available";
+			}
+		}
+		
+		public function BleedWarning(type:String, position:String):void 
+		{
+			var s:String;
+			var json:String = "{type:" + type + ",position:" + position + "}";
+			if (ExternalInterface.available) {
+				var wrapperFunction:String = "bleedWarning";
+				s = ExternalInterface.call(wrapperFunction, json);
 			} else {
 				s = "Wrapper not available";
 			}
@@ -2076,12 +2088,12 @@ package classes
 			
 		}
 		
-		public function AlertWithQuestion(header:String, message:String, btnOkHandler:Function, btnCancelLabel:String = "Annuleren", btnOkLabel:String = "OK", ShowLoader:Boolean = true):void {
+		public function AlertWithQuestion(header:String, message:String, btnOkHandler:Function, btnCancelLabel:String, btnOkLabel:String = "OK", ShowLoader:Boolean = true):void {
 			
 			alertwindow = alertWindow(PopUpManager.createPopUp(FlexGlobals.topLevelApplication.vsEditor, popups.alertWindow, true));
 			PopUpManager.centerPopUp(alertwindow);
 			
-			alertwindow.btnCancel.label = btnCancelLabel;
+			alertwindow.btnCancel.label = fa_173;
 			alertwindow.btnOk.label = btnOkLabel;
 			alertwindow.progress.visible = ShowLoader;
 			

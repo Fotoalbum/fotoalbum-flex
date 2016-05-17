@@ -35,6 +35,7 @@
 			import classes.userrectangle;
 			import classes.usertextclass;
 			
+			import com.adobe.utils.StringUtil;
 			import com.roguedevelopment.objecthandles.DragGeometry;
 			import com.roguedevelopment.objecthandles.Flex4HandleFactory;
 			import com.roguedevelopment.objecthandles.HandleDefinitions;
@@ -4075,7 +4076,7 @@
 				
 				var status:Boolean = false;
 				var overedge:Boolean = false;
-				
+				var position:String = "";
 				//Check if we are on the cover
 				if (isCover) {
 					mainLeft = singleton._defaultCoverBleed + singleton._defaultCoverWrap;
@@ -4088,10 +4089,12 @@
 				if (left < mainLeft) {
 					status = true;
 					overedge = true;
+					position += "left ";
 				} else {
 					if ((left-5) < mainLeft) {
 						status = true;
 						overedge = false;
+						position += "left ";
 					}
 				}
 				
@@ -4099,10 +4102,12 @@
 				if (top < mainTop) {
 					status = true;
 					overedge = true;
+					position += "top ";
 				} else {
 					if ((top-5) < mainTop) {
 						status = true;
 						overedge = false;
+						position += "top ";
 					}
 				}
 				
@@ -4110,10 +4115,12 @@
 				if (right > mainRight) {
 					status = true;
 					overedge = true;
+					position += "right ";
 				} else {
 					if ((right + 5) > mainRight) {
 						status = true;
 						overedge = false;
+						position += "right ";
 					}
 				}
 				
@@ -4121,30 +4128,34 @@
 				if (bottom > mainBottom) {
 					status = true;
 					overedge = true;
+					position += "bottom ";
 				} else {
 					if ((bottom + 5) > mainBottom) {
 						status = true;
 						overedge = false;
+						position += "bottom ";
 					}
 				}
 				
 				if (status == true) {
-					ShowWarningBleed(overedge);
+					ShowWarningBleed(overedge, StringUtil.trim(position));
 				}
 				
 			}
 			
-			public function ShowWarningBleed(overedge:Boolean = false):void {
+			public function ShowWarningBleed(overedge:Boolean = false, position:String = "unknown"):void {
 				
 				if (overedge) {
 					//Warning, over the edge
+					singleton.BleedWarning("over", position);
 					FlexGlobals.topLevelApplication.bleed_message.text = singleton.fa_226;
 				} else {
 					//Warning, too close to the edge
+					singleton.BleedWarning("near", position);
 					FlexGlobals.topLevelApplication.bleed_message.text = singleton.fa_227;
 				}
 				
-				FlexGlobals.topLevelApplication.messagelayer.visible = true;
+				//FlexGlobals.topLevelApplication.messagelayer.visible = true;
 				
 			}
 			

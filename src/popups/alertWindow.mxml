@@ -60,7 +60,7 @@
 	<mx:HRule width="100%" visible="true" />
 	
 	<s:HGroup id="btnGroup" width="100%" verticalAlign="middle" horizontalAlign="right" gap="10" paddingLeft="20" paddingRight="20" paddingTop="10" paddingBottom="10">
-		<s:Button id="btnCancel" label="Annuleren" skinClass="skins.btnGraySkin" />
+		<s:Button id="btnCancel" label="{singleton.fa_173}" skinClass="skins.btnGraySkin" />
 		<s:Button id="btnOk" label="OK" skinClass="skins.btnBlueSkin" />
 	</s:HGroup>	
 		

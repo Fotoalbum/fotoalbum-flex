@@ -70,9 +70,9 @@
 	
 	<s:HGroup id="btnGroup" width="100%" verticalAlign="middle" horizontalAlign="right" 
 			  gap="10" paddingLeft="20" paddingRight="20" paddingTop="10" paddingBottom="10">
-		<s:Button id="btnNo" label="Nee" visible="false" skinClass="skins.btnGraySkin" width="0"/>
-		<s:Button id="btnYes" label="Ja" visible="false" skinClass="skins.btnBlueSkin" width="0" />
-		<s:Button id="btnOK" label="Sluiten" visible="false" skinClass="skins.btnBlueSkin" width="0" />
+		<s:Button id="btnNo" label="{singleton.fa_104}" visible="false" skinClass="skins.btnGraySkin" width="0"/>
+		<s:Button id="btnYes" label="{singleton.fa_103}" visible="false" skinClass="skins.btnBlueSkin" width="0" />
+		<s:Button id="btnOK" label="{singleton.fa_191}" visible="false" skinClass="skins.btnBlueSkin" width="0" />
 	</s:HGroup>	
 	
 </s:BorderContainer>

@@ -3446,9 +3446,9 @@
 						  click="{CreateStoryBoard(event)}"
 						  enabled="{singleton.userphotosforupload &amp;&amp; singleton.userphotosforupload.length > 0 &amp;&amp; !FlexGlobals.topLevelApplication.loadingstatus}"/>
 				
-				<s:Button id="btnCancelAdd" width="0" visible="false" label="Annuleren" skinClass="skins.btnGraySkin" />
+				<s:Button id="btnCancelAdd" width="0" visible="false" label="{singleton.fa_173}" skinClass="skins.btnGraySkin" />
 				
-				<s:Button id="btnFinishedAdd" width="0" visible="false" label="OK" skinClass="skins.btnGreenSkin" />
+				<s:Button id="btnFinishedAdd" width="0" visible="false" label="{singleton.fa_183}" skinClass="skins.btnGreenSkin" />
 				
 			</s:HGroup>
 			

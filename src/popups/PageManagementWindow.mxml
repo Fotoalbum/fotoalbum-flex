@@ -565,7 +565,7 @@
 		</s:fill>
 	</s:Rect>
 	
-	<s:Label left="15" top="15" color="#4E4E4E" fontSize="18" text="Pagina beheer"/>
+	<s:Label left="15" top="15" color="#4E4E4E" fontSize="18" text="{singleton.fa_181}"/>
 	
 	<mx:HRule left="0" right="0" top="40" />
 	
@@ -634,10 +634,10 @@
 	<s:HGroup bottom="10" right="20">
 		
 		<s:Button id="btnCancel" width="100"
-				  skinClass="skins.btnGraySkin" label="Annuleren" />
+				  skinClass="skins.btnGraySkin" label="{singleton.fa_173}" />
 		
 		<s:Button id="btnOK" width="120"
-				  skinClass="skins.btnBlueSkin" label="Opslaan" />
+				  skinClass="skins.btnBlueSkin" label="{singleton.fa_183}" />
 	</s:HGroup>
 	
 	<s:Label id="btnCloseWindow" right="5" top="5"

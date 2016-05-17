@@ -67,8 +67,8 @@
 	<s:SpriteVisualElement id="sprite" left="15" right="15" top="55" bottom="55" />
 		
 	<s:HGroup width="100%" height="40" bottom="0" gap="10" paddingRight="10" horizontalAlign="right" verticalAlign="middle">
-		<s:Button id="btnCancel" label="Annuleren" skinClass="skins.btnGraySkin" height="25"/>
-		<s:Button id="btnSave" label="Opslaan" skinClass="skins.btnBlueSkin" height="25" />
+		<s:Button id="btnCancel" label="{singleton.fa_173}" skinClass="skins.btnGraySkin" height="25"/>
+		<s:Button id="btnSave" label="{singleton.fa_183}" skinClass="skins.btnBlueSkin" height="25" />
 	</s:HGroup>
 	
 </s:BorderContainer>

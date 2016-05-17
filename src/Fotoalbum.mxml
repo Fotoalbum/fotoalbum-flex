@@ -489,9 +489,9 @@
 							  verticalAlign="middle" horizontalAlign="center"/>
 		</s:layout>
 		
-		<s:TextArea id="bleed_message" width="100%" borderVisible="false" color="#000"
+		<!-- <s:TextArea id="bleed_message" width="100%" borderVisible="false" color="#000"
 					contentBackgroundAlpha="0.0" editable="false" fontSize="22"
-					text="{singleton.fa_226}" textAlign="center" verticalAlign="middle" />
+					text="{singleton.fa_226}" textAlign="center" verticalAlign="middle" /> -->
 		
 		<s:CheckBox id="cbBleed" change="cbBleed_changeHandler(event)" bottom="10" horizontalCenter="0" label="{singleton.fa_228}" fontSize="18" />
 		
