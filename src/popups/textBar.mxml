@@ -6,7 +6,8 @@
 				   xmlns:components="components.*"
 				   height="30"
 				   backgroundColor="#4e4e4e"
-				   borderVisible="false" cornerRadius="0"
+				   borderVisible="false" 
+				   cornerRadius="0"
 				   filters="{[toolbarShadow]}"
 				   creationComplete="_creationCompleteHandler(event)"
 				   initialize="_initializeHandler(event)"
@@ -115,6 +116,9 @@
 					FlexGlobals.topLevelApplication.dispatchEvent(new textFlowEvent(textFlowEvent.UPDATETEXTFLOW, text.sprite.tfID));
 					
 					text.SizeTextComponentToContent();
+					
+					//Set default fontSize for the next new textfield and update ALL empty text fields
+					
 				}
 				
 			}
@@ -517,7 +521,6 @@
 				italic.selected = _italic;
 				underline.selected = _underline;
 				color.selectedColor = _color;
-				
 			}
 			
 			private function GetCorpsIndex(value:String):int {

@@ -658,7 +658,7 @@ package classes
 		public function BleedWarning(type:String, position:String):void 
 		{
 			var s:String;
-			var json:String = "{type:" + type + ",position:" + position + "}";
+			var json:String = '{"type":"' + type + '","position":"' + position + '"}';
 			if (ExternalInterface.available) {
 				var wrapperFunction:String = "bleedWarning";
 				s = ExternalInterface.call(wrapperFunction, json);
@@ -1017,7 +1017,6 @@ package classes
 			//trace(result);
 			//Skip the image quality check for now!
 			result = false;
-			
 			
 			return result;
 		}
